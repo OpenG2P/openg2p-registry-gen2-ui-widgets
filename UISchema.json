@@ -1,0 +1,461 @@
+{
+  "sections": [
+    {
+      "section-id": "personal-details",
+      "section-title": "Personal Details",
+      "section-editable": false,
+      "panels": [
+        {
+          "panel-id": "main-panel",
+          "panel-orientation": "horizontal",
+          "panels": [
+            {
+              "panel-id": "left-panel",
+              "panel-orientation": "vertical",
+              "widgets": [
+                {
+                  "_comment": "Example 1: Single value dataPath (string format)",
+                  "widget": "text",
+                  "widget-type": "input",
+                  "widget-label": "Name",
+                  "widget-id": "name",
+                  "widget-data-path": "person.fname",
+                  "widget-data-default": "Sarah Elizabeth",
+                  "widget-required": false,
+                  "widget-readonly": false
+                },
+                {
+                  "_comment": "Example 2: Multi-value dataPath (object format) - combines multiple schema properties",
+                  "widget": "text",
+                  "widget-type": "input",
+                  "widget-label": "Full Name",
+                  "widget-id": "fullName",
+                  "widget-data-path": {
+                    "firstName": "person.fname",
+                    "lastName": "person.lname",
+                    "middleName": "person.mname"
+                  },
+                  "widget-data-default": "Sarah Elizabeth",
+                  "widget-required": false,
+                  "widget-readonly": false
+                },
+                {
+                  "_comment": "Example 3: Field with validation rules - will explore zod framework for validation",
+                  "widget": "text",
+                  "widget-type": "input",
+                  "widget-label": "ID",
+                  "widget-id": "id",
+                  "widget-data-path": "person.id",
+                  "widget-data-default": "1234567890",
+                  "widget-required": true,
+                  "widget-readonly": false,
+                  "widget-data-validation": {
+                    "required": true,
+                    "pattern": "^[0-9]{10}$",
+                    "minLength": 10,
+                    "maxLength": 10,
+                    "custom": "validateIdFormat"
+                  },
+                  "widget-data-placeholder": "Enter 10-digit ID",
+                  "widget-data-helptext": "This should match your government-issued ID",
+                  "widget-data-tooltip": "Format: XXXX-XXXX-XX"
+                },
+                {
+                  "_comment": "Example 4: Date field with formatting and widget-specific options",
+                  "widget": "date",
+                  "widget-type": "input",
+                  "widget-label": "Date of Birth",
+                  "widget-id": "dob",
+                  "widget-data-path": "person.dob",
+                  "widget-data-default": "25 Jan 1980",
+                  "widget-required": false,
+                  "widget-readonly": false,
+                  "widget-data-format": {
+                    "dateFormat": "DD/MM/YYYY",
+                    "locale": "en-US"
+                  },
+                  "widget-data-options": {
+                    "minDate": "1900-01-01",
+                    "maxDate": "today",
+                    "showCalendar": true
+                  }
+                },
+                {
+                  "_comment": "Example 5: Email field with validation and conditional rendering",
+                  "widget": "text",
+                  "widget-type": "input",
+                  "widget-label": "Email Address",
+                  "widget-id": "email",
+                  "widget-data-path": "person.email",
+                  "widget-data-default": "abcd@gmail.com",
+                  "widget-required": false,
+                  "widget-readonly": false,
+                  "widget-data-format": {
+                    "inputType": "email"
+                  },
+                  "widget-data-validation": {
+                    "pattern": "^[\\w-\\.]+@([\\w-]+\\.)+[\\w-]{2,4}$",
+                    "minLength": 5,
+                    "maxLength": 100
+                  },
+                  "widget-data-placeholder": "example@email.com",
+                  "widget-data-helptext": "We'll use this to send important updates"
+                }
+              ]
+            },
+            {
+              "panel-id": "right-panel",
+              "panel-orientation": "vertical",
+              "widgets": [
+                {
+                  "_comment": "Example 6: Dropdown with static data source",
+                  "widget": "select",
+                  "widget-type": "input",
+                  "widget-label": "Country",
+                  "widget-id": "country",
+                  "widget-data-path": "address.country",
+                  "widget-data-default": "us",
+                  "widget-required": false,
+                  "widget-readonly": false,
+                  "widget-data-source": {
+                    "type": "static",
+                    "options": [
+                      {
+                        "value": "us",
+                        "label": "United States"
+                      },
+                      {
+                        "value": "uk",
+                        "label": "United Kingdom"
+                      },
+                      {
+                        "value": "in",
+                        "label": "India"
+                      },
+                      {
+                        "value": "ca",
+                        "label": "Canada"
+                      }
+                    ]
+                  }
+                },
+                {
+                  "_comment": "Example 7: Dropdown with API data source",
+                  "widget": "select",
+                  "widget-type": "input",
+                  "widget-label": "State",
+                  "widget-id": "state",
+                  "widget-data-path": "address.state",
+                  "widget-data-default": "",
+                  "widget-required": false,
+                  "widget-readonly": false,
+                  "widget-data-source": {
+                    "_comment": "sends country value as filter to API",
+                    "type": "api",
+                    "url": "/api/states",
+                    "method": "GET",
+                    "dependsOn": "address.country",
+                    "valueKey": "id",
+                    "labelKey": "name"
+                  },
+                  "widget-data-options": {
+                    "action": "enable",
+                    "condition": {
+                      "field": "address.country",
+                      "operator": "notEmpty"
+                    }
+                  }
+                },
+                {
+                  "_comment": "Example 8: Dependent/cascading dropdown (depends on state)",
+                  "widget": "select",
+                  "widget-type": "input",
+                  "widget-label": "City",
+                  "widget-id": "city",
+                  "widget-data-path": "address.city",
+                  "widget-data-default": "",
+                  "widget-required": false,
+                  "widget-readonly": false,
+                  "widget-data-source": {
+                    "_comment": "sends state value as filter to API",
+                    "type": "api",
+                    "url": "/api/cities",
+                    "method": "GET",
+                    "dependsOn": "address.state",
+                    "valueKey": "id",
+                    "labelKey": "name"
+                  },
+                  "widget-data-options": {
+                    "action": "enable",
+                    "condition": {
+                      "field": "address.state",
+                      "operator": "notEmpty"
+                    }
+                  }
+                },
+                {
+                  "_comment": "Example 9: Dropdown with schema reference data source",
+                  "widget": "select",
+                  "widget-type": "input",
+                  "widget-label": "Village",
+                  "widget-id": "village",
+                  "widget-data-path": "address.village",
+                  "widget-data-default": "Village Name",
+                  "widget-required": false,
+                  "widget-readonly": false,
+                  "widget-data-source": {
+                    "_comment": "path to the schema reference data",
+                    "type": "schema",
+                    "path": "reference.villages",
+                    "valueKey": "code",
+                    "labelKey": "name"
+                  }
+                },
+                {
+                  "_comment": "Example 10: Phone field with formatting",
+                  "widget": "text",
+                  "widget-type": "input",
+                  "widget-label": "Phone",
+                  "widget-id": "phone",
+                  "widget-data-path": "person.phone",
+                  "widget-data-default": "12345 67890",
+                  "widget-required": false,
+                  "widget-readonly": false,
+                  "widget-data-format": {
+                    "inputType": "tel",
+                    "pattern": "(XXX) XXX-XXXX",
+                    "locale": "en-US"
+                  },
+                  "widget-data-placeholder": "(123) 456-7890"
+                },
+                {
+                  "_comment": "Example 11: Currency field with formatting",
+                  "widget": "text",
+                  "widget-type": "input",
+                  "widget-label": "Salary",
+                  "widget-id": "salary",
+                  "widget-data-path": "person.salary",
+                  "widget-data-default": "50000",
+                  "widget-required": false,
+                  "widget-readonly": false,
+                  "widget-data-format": {
+                    "inputType": "number",
+                    "currency": "USD",
+                    "locale": "en-US",
+                    "decimals": 2
+                  }
+                },
+                {
+                  "_comment": "Example 12: Field with conditional rendering (show only if marital status is married)",
+                  "widget": "text",
+                  "widget-type": "input",
+                  "widget-label": "Spouse Name",
+                  "widget-id": "spouseName",
+                  "widget-data-path": "person.spouseName",
+                  "widget-data-default": "",
+                  "widget-required": false,
+                  "widget-readonly": false,
+                  "widget-data-options": {
+                    "action": "show",
+                    "condition": {
+                      "field": "person.maritalStatus",
+                      "operator": "equals",
+                      "value": "married"
+                    }
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "panel-id": "table-panel",
+          "panel-orientation": "vertical",
+          "widgets": [
+            {
+              "_comment": "Example 13: Table/Grid widget for structured data",
+              "widget": "simple-table",
+          "widget-type": "table",
+          "widget-label": "Education History",
+          "widget-id": "educationHistory",
+          "widget-data-path": "education.history",
+          "widget-data-columns": [
+            {
+              "column-key": "degree",
+              "widget-label": "Degree",
+              "widget": "text",
+              "widget-data-path": "degree"
+            },
+            {
+              "column-key": "institution",
+              "widget-label": "Institution",
+              "widget": "text",
+              "widget-data-path": "institution"
+            },
+            {
+              "column-key": "year",
+              "widget-label": "Year",
+              "widget": "input",
+              "widget-data-path": "year"
+            },
+            {
+              "column-key": "grade",
+              "widget-label": "Grade",
+              "widget": "text",
+              "widget-data-path": "grade"
+            }
+          ],
+          "widget-readonly": false,
+          "widget-data-operations": {
+            "add": true,
+            "remove": true,
+            "edit": true
+          }
+            }
+          ]
+        },
+        {
+          "panel-id": "array-panel",
+          "panel-orientation": "vertical",
+          "widgets": [
+            {
+              "_comment": "Example 14: Array widget for simple repeating values",
+              "widget": "array-widget",
+          "widget-type": "group",
+          "widget-label": "Skills",
+          "widget-id": "skills",
+          "widget-data-path": "person.skills",
+          "widget-item": {
+            "widget": "text",
+            "widget-type": "input",
+            "widget-label": "Skill"
+          },
+          "widget-data-add-label": "Add Skill",
+          "widget-data-operations": {
+            "add": true,
+            "remove": true
+          }
+            }
+          ]
+        },
+        {
+          "panel-id": "accordion-panel",
+          "panel-orientation": "vertical",
+          "widgets": [
+            {
+              "_comment": "Example 15: Iterable accordion widget - expandable/collapsible container for widgets",
+              "widget": "iterable-accordion",
+          "widget-type": "group",
+          "widget-label": "Advanced Options",
+          "widget-id": "advancedOptions",
+          "widget-data-path": "person.notes",
+          "widget-data-collapsed": true,
+          "widget-item": {
+            "widget": "text",
+            "widget-type": "input",
+            "widget-label": "Additional Notes",
+            "widget-id": "notes",
+            "widget-data-default": "",
+            "widget-required": false,
+            "widget-readonly": false
+          }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "section-id": "other-details",
+      "section-title": "Other Details",
+      "section-editable": false,
+      "panels": [
+        {
+          "panel-id": "other-main-panel",
+          "panel-orientation": "horizontal",
+          "panels": [
+            {
+              "panel-id": "other-left-panel",
+              "panel-orientation": "vertical",
+              "widgets": [
+                {
+                  "_comment": "Example 16: Field with field dependency (enabled based on another field)",
+                  "widget": "text",
+                  "widget-type": "input",
+                  "widget-label": "Details 1",
+                  "widget-id": "details1",
+                  "widget-data-path": "other.details1",
+                  "widget-data-default": "Details 01",
+                  "widget-required": false,
+                  "widget-readonly": false,
+                  "widget-data-options": {
+                    "action": "enable",
+                    "condition": {
+                      "field": "person.id",
+                      "operator": "notEmpty"
+                    }
+                  }
+                },
+                {
+                  "widget": "text",
+                  "widget-type": "input",
+                  "widget-label": "Details 2",
+                  "widget-id": "details2",
+                  "widget-data-path": "other.details2",
+                  "widget-data-default": "Details 02",
+                  "widget-required": false,
+                  "widget-readonly": false
+                },
+                {
+                  "widget": "text",
+                  "widget-type": "input",
+                  "widget-label": "Details 3",
+                  "widget-id": "details3",
+                  "widget-data-path": "other.details3",
+                  "widget-data-default": "Details 03",
+                  "widget-required": false,
+                  "widget-readonly": false
+                }
+              ]
+            },
+            {
+              "panel-id": "other-right-panel",
+              "panel-orientation": "vertical",
+              "widgets": [
+                {
+                  "widget": "text",
+                  "widget-type": "input",
+                  "widget-label": "Details 4",
+                  "widget-id": "details4",
+                  "widget-data-path": "other.details4",
+                  "widget-data-default": "Details 04",
+                  "widget-required": false,
+                  "widget-readonly": false
+                },
+                {
+                  "widget": "text",
+                  "widget-type": "input",
+                  "widget-label": "Details 5",
+                  "widget-id": "details5",
+                  "widget-data-path": "other.details5",
+                  "widget-data-default": "Details 05",
+                  "widget-required": false,
+                  "widget-readonly": false
+                },
+                {
+                  "widget": "text",
+                  "widget-type": "input",
+                  "widget-label": "Details 6",
+                  "widget-id": "details6",
+                  "widget-data-path": "other.details6",
+                  "widget-data-default": "Details 06",
+                  "widget-required": false,
+                  "widget-readonly": false
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
