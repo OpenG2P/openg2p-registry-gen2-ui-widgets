@@ -416,8 +416,3 @@ Registry for managing widget components.
 - `has(widgetName: string)` - Check if widget is registered
 - `unregister(widgetName: string)` - Unregister a widget
 - `clear()` - Clear all widgets
-
-## License
-
-MIT
-
