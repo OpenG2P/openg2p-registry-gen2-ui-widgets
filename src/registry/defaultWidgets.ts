@@ -9,6 +9,8 @@ import {
   SimpleTableWidget,
   ArrayWidget,
   IterableAccordionWidget,
+  PhoneInputWidget,
+  CurrencyInputWidget
 } from '../widgets';
 
 /**
@@ -40,6 +42,9 @@ export const registerDefaultWidgets = () => {
   // Group widgets
   widgetRegistry.register({ widget: 'array-widget', component: ArrayWidget });
   widgetRegistry.register({ widget: 'iterable-accordion', component: IterableAccordionWidget });
+  // Phone and Currency Widgets
+  widgetRegistry.register({ widget: 'phone', component: PhoneInputWidget });
+  widgetRegistry.register({ widget: 'currency', component: CurrencyInputWidget });
 };
 
 // Auto-register on import

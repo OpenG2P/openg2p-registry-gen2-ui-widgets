@@ -28,7 +28,11 @@ import { WidgetRenderer } from '../components/WidgetRenderer';
  *   }
  * }
  */
-export const SimpleTableWidget: React.FC<{ config: BaseWidgetConfig }> = ({ config }) => {
+interface SimpleTableWidgetProps {
+  config: BaseWidgetConfig;
+}
+
+export const SimpleTableWidget = ({ config }: SimpleTableWidgetProps) => {
   const {
     value,
     error,
@@ -56,14 +60,24 @@ export const SimpleTableWidget: React.FC<{ config: BaseWidgetConfig }> = ({ conf
     onChange(newRows);
   };
 
-  const updateCell = (rowIndex: number, columnKey: string, newValue: any) => {
-    const newRows = [...rows];
-    if (!newRows[rowIndex]) {
-      newRows[rowIndex] = {};
-    }
-    newRows[rowIndex][columnKey] = newValue;
-    onChange(newRows);
+ const updateCell = (rowIndex: number, columnKey: string, newValue: any) => {
+  // Clone rows array
+  const newRows = rows.map((row) => ({ ...row }));  // deep clone rows
+
+  // Ensure row exists
+  if (!newRows[rowIndex]) {
+    newRows[rowIndex] = {};
+  }
+
+  // Assign value safely into cloned object
+  newRows[rowIndex] = {
+    ...newRows[rowIndex],
+    [columnKey]: newValue,
   };
+
+  onChange(newRows);
+};
+
 
   return (
     <div className="mb-4">

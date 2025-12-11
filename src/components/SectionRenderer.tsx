@@ -13,13 +13,13 @@ export interface SectionRendererProps {
 /**
  * Renders a section with its panels
  */
-export const SectionRenderer: React.FC<SectionRendererProps> = ({
+export const SectionRenderer = ({
   section,
   apiAdapter,
   schemaData,
   onValueChange,
-}) => {
-  return (
+}: SectionRendererProps) => {
+  return  (
     <div className="section" data-section-id={section['section-id']}>
       {section['section-title'] && (
         <h2 className="text-xl font-semibold mb-4">{section['section-title']}</h2>

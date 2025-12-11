@@ -21,6 +21,10 @@ export interface UseBaseWidgetOptions {
   onValueChange?: (widgetId: string, value: any) => void;
 }
 
+// Define stable empty arrays to avoid selector reference issues
+const EMPTY_ERRORS: string[] = [];
+const EMPTY_DATA_SOURCE: any[] = [];
+
 export const useBaseWidget = (options: UseBaseWidgetOptions) => {
   const { config, apiAdapter, schemaData, onValueChange } = options;
   const dispatch = useDispatch();
@@ -28,11 +32,11 @@ export const useBaseWidget = (options: UseBaseWidgetOptions) => {
 
   // Get state from Redux
   const values = useSelector((state: WidgetRootState) => state.widget.values);
-  const errors = useSelector((state: WidgetRootState) => state.widget.errors[widgetId] || []);
+  const errors = useSelector((state: WidgetRootState) => state.widget.errors[widgetId] ?? EMPTY_ERRORS);
   const touched = useSelector((state: WidgetRootState) => state.widget.touched[widgetId] || false);
   const loading = useSelector((state: WidgetRootState) => state.widget.loading[widgetId] || false);
   const dataSourceOptions = useSelector(
-    (state: WidgetRootState) => state.widget.dataSources[widgetId] || []
+    (state: WidgetRootState) => state.widget.dataSources[widgetId] ?? EMPTY_DATA_SOURCE
   );
 
   // Skip value handling for layout widgets (they don't store data values)

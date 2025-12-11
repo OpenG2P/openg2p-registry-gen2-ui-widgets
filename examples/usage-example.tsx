@@ -86,7 +86,7 @@ const exampleConfig = {
 };
 
 // 5. Use in your app
-export const ExampleApp: React.FC = () => {
+export const ExampleApp = () => {
   return (
     <WidgetProvider store={store} apiAdapter={apiAdapter}>
       <div className="p-6 max-w-2xl mx-auto">

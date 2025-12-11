@@ -30,7 +30,11 @@ import { BaseWidgetConfig } from '../types';
  *   }
  * }
  */
-export const CheckboxWidget: React.FC<{ config: BaseWidgetConfig }> = ({ config }) => {
+interface CheckboxWidgetProps {
+  config: BaseWidgetConfig;
+}
+
+export const CheckboxWidget = ({ config }: CheckboxWidgetProps) => {
   const {
     value,
     error,

@@ -26,7 +26,11 @@ import { WidgetRenderer } from '../components/WidgetRenderer';
  * Note: widget-item can be any widget config. If it has nested widgets property,
  * those will be rendered as well.
  */
-export const IterableAccordionWidget: React.FC<{ config: BaseWidgetConfig }> = ({ config }) => {
+interface IterableAccordionWidgetProps {
+  config: BaseWidgetConfig;
+}
+
+export const IterableAccordionWidget = ({ config }: IterableAccordionWidgetProps) => {
   const {
     value,
     error,

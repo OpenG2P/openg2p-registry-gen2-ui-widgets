@@ -1,19 +1,49 @@
-import get from 'lodash.get';
-import set from 'lodash.set';
-
 /**
  * Get value from object using dot notation path
+ * Safely handles nested paths like "person.name" or "address.street.number"
  */
 export const getValueByPath = (obj: any, path: string): any => {
-  return get(obj, path);
+  if (!obj || !path) return undefined;
+  
+  const keys = path.split('.');
+  let result = obj;
+  
+  for (const key of keys) {
+    if (result == null || typeof result !== 'object') {
+      return undefined;
+    }
+    result = result[key];
+  }
+  
+  return result;
 };
 
 /**
  * Set value in object using dot notation path
+ * Safely creates nested objects as needed
  */
 export const setValueByPath = (obj: any, path: string, value: any): any => {
-  const newObj = { ...obj };
-  set(newObj, path, value);
+  if (!path) return obj;
+  
+  const newObj = Array.isArray(obj) ? [...obj] : { ...obj };
+  const keys = path.split('.');
+  const lastKey = keys.pop()!;
+  
+  let current = newObj;
+  for (const key of keys) {
+    if (current[key] == null) {
+      current[key] = {};
+    } else if (Array.isArray(current[key])) {
+      current[key] = [...current[key]];
+    } else if (typeof current[key] === 'object') {
+      current[key] = { ...current[key] };
+    } else {
+      current[key] = {};
+    }
+    current = current[key];
+  }
+  
+  current[lastKey] = value;
   return newObj;
 };
 

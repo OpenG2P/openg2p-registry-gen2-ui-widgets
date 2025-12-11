@@ -1,5 +1,5 @@
 import React from 'react';
-import { WidgetRenderer, BaseWidgetConfig, UseBaseWidgetOptions } from '../src';
+import { WidgetRenderer, BaseWidgetConfig, UseBaseWidgetOptions } from '@openg2p/react-widgets';
 
 /**
  * Example: Vertical layout widget
@@ -13,12 +13,19 @@ import { WidgetRenderer, BaseWidgetConfig, UseBaseWidgetOptions } from '../src';
  *   ]
  * }
  */
-export const VerticalLayoutWidget: React.FC<{
+interface VerticalLayoutWidgetProps {
   config: BaseWidgetConfig;
   apiAdapter?: UseBaseWidgetOptions['apiAdapter'];
   schemaData?: UseBaseWidgetOptions['schemaData'];
   onValueChange?: UseBaseWidgetOptions['onValueChange'];
-}> = ({ config, apiAdapter, schemaData, onValueChange }) => {
+}
+
+export const VerticalLayoutWidget = ({
+  config,
+  apiAdapter,
+  schemaData,
+  onValueChange,
+}: VerticalLayoutWidgetProps) => {
   const widgets = config.widgets || [];
 
   return (
@@ -48,12 +55,19 @@ export const VerticalLayoutWidget: React.FC<{
  *   ]
  * }
  */
-export const HorizontalLayoutWidget: React.FC<{
+interface HorizontalLayoutWidgetProps {
   config: BaseWidgetConfig;
   apiAdapter?: UseBaseWidgetOptions['apiAdapter'];
   schemaData?: UseBaseWidgetOptions['schemaData'];
   onValueChange?: UseBaseWidgetOptions['onValueChange'];
-}> = ({ config, apiAdapter, schemaData, onValueChange }) => {
+}
+
+export const HorizontalLayoutWidget = ({
+  config,
+  apiAdapter,
+  schemaData,
+  onValueChange,
+}: HorizontalLayoutWidgetProps) => {
   const widgets = config.widgets || [];
 
   return (

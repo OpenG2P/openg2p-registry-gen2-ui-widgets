@@ -19,7 +19,11 @@ import { BaseWidgetConfig } from '../types';
  *   }
  * }
  */
-export const FileInputWidget: React.FC<{ config: BaseWidgetConfig }> = ({ config }) => {
+interface FileInputWidgetProps {
+  config: BaseWidgetConfig;
+}
+
+export const FileInputWidget = ({ config }: FileInputWidgetProps) => {
   const {
     value,
     error,

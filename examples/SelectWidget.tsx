@@ -1,5 +1,5 @@
 import React from 'react';
-import { useBaseWidget, BaseWidgetConfig } from '../src';
+import { useBaseWidget, BaseWidgetConfig } from '@openg2p/react-widgets';
 
 /**
  * Example: Select/Dropdown widget with data source support
@@ -19,7 +19,11 @@ import { useBaseWidget, BaseWidgetConfig } from '../src';
  *   }
  * }
  */
-export const SelectWidget: React.FC<{ config: BaseWidgetConfig }> = ({ config }) => {
+interface SelectWidgetProps {
+  config: BaseWidgetConfig;
+}
+
+export const SelectWidget = ({ config }: SelectWidgetProps) => {
   const {
     value,
     error,

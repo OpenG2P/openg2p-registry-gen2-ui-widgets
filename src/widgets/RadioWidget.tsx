@@ -21,7 +21,11 @@ import { BaseWidgetConfig } from '../types';
  *   }
  * }
  */
-export const RadioWidget: React.FC<{ config: BaseWidgetConfig }> = ({ config }) => {
+interface RadioWidgetProps {
+  config: BaseWidgetConfig;
+}
+
+export const RadioWidget = ({ config }: RadioWidgetProps) => {
   const {
     value,
     error,

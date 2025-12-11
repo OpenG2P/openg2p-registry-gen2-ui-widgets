@@ -25,7 +25,11 @@ import { WidgetRenderer } from '../components/WidgetRenderer';
  *   }
  * }
  */
-export const ArrayWidget: React.FC<{ config: BaseWidgetConfig }> = ({ config }) => {
+interface ArrayWidgetProps {
+  config: BaseWidgetConfig;
+}
+
+export const ArrayWidget = ({ config }: ArrayWidgetProps) => {
   const {
     value,
     error,

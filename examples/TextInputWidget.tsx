@@ -1,5 +1,5 @@
 import React from 'react';
-import { useBaseWidget, BaseWidgetConfig } from '../src';
+import { useBaseWidget, BaseWidgetConfig } from '@openg2p/react-widgets';
 
 /**
  * Example: Simple text input widget
@@ -18,7 +18,11 @@ import { useBaseWidget, BaseWidgetConfig } from '../src';
  *   }
  * }
  */
-export const TextInputWidget: React.FC<{ config: BaseWidgetConfig }> = ({ config }) => {
+interface TextInputWidgetProps {
+  config: BaseWidgetConfig;
+}
+
+export const TextInputWidget = ({ config }: TextInputWidgetProps) => {
   const {
     value,
     error,
