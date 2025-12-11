@@ -17,7 +17,11 @@ import { BaseWidgetConfig } from '../types';
  *   }
  * }
  */
-export const PhoneInputWidget: React.FC<{ config: BaseWidgetConfig }> = ({ config }) => {
+interface PhoneInputWidgetProps {
+  config: BaseWidgetConfig;
+}
+
+export const PhoneInputWidget = ({ config }: PhoneInputWidgetProps) => {
   const {
     value,
     formattedValue,

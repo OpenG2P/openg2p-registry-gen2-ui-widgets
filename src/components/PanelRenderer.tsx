@@ -17,12 +17,12 @@ export interface PanelRendererProps {
  * - Nested panels (for layout composition)
  * - Widgets (for actual form inputs/controls)
  */
-export const PanelRenderer: React.FC<PanelRendererProps> = ({
+export const PanelRenderer = ({
   panel,
   apiAdapter,
   schemaData,
   onValueChange,
-}) => {
+}: PanelRendererProps) => {
   const orientation = panel['panel-orientation'] || 'vertical';
   const nestedPanels = panel.panels || [];
   const widgets = panel.widgets || [];

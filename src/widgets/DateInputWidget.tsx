@@ -17,7 +17,11 @@ import { BaseWidgetConfig } from '../types';
  *   }
  * }
  */
-export const DateInputWidget: React.FC<{ config: BaseWidgetConfig }> = ({ config }) => {
+interface DateInputWidgetProps {
+  config: BaseWidgetConfig;
+}
+
+export const DateInputWidget = ({ config }: DateInputWidgetProps) => {
   const {
     value,
     formattedValue,

@@ -22,12 +22,12 @@ export const useWidgetContext = () => {
   return useContext(WidgetContext);
 };
 
-export const WidgetProvider: React.FC<WidgetProviderProps> = ({
+export const WidgetProvider = ({
   store,
   apiAdapter,
   schemaData,
   children,
-}) => {
+}: WidgetProviderProps) => {
   const widgetStore = store || createWidgetStore();
 
   return (

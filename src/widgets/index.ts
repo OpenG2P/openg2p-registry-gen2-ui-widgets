@@ -8,3 +8,5 @@ export { FileInputWidget } from './FileInputWidget';
 export { SimpleTableWidget } from './SimpleTableWidget';
 export { ArrayWidget } from './ArrayWidget';
 export { IterableAccordionWidget } from './IterableAccordionWidget';
+export {PhoneInputWidget} from './PhoneInputWidget';
+export {CurrencyInputWidget}from './CurrencyInputWidget';

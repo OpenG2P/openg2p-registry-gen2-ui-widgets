@@ -9,13 +9,13 @@ export interface WidgetRendererProps extends Omit<UseBaseWidgetOptions, 'config'
   defaultComponent?: React.ComponentType<any>;
 }
 
-export const WidgetRenderer: React.FC<WidgetRendererProps> = ({
+export const WidgetRenderer = ({
   config,
   apiAdapter: propApiAdapter,
   schemaData: propSchemaData,
   onValueChange,
   defaultComponent,
-}) => {
+}: WidgetRendererProps) => {
   // Use context values as fallback
   const context = useWidgetContext();
   const apiAdapter = propApiAdapter || context.apiAdapter;

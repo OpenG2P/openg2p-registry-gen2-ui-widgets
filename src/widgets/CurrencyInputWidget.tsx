@@ -19,7 +19,11 @@ import { BaseWidgetConfig } from '../types';
  *   }
  * }
  */
-export const CurrencyInputWidget: React.FC<{ config: BaseWidgetConfig }> = ({ config }) => {
+interface CurrencyInputWidgetProps {
+  config: BaseWidgetConfig;
+}
+
+export const CurrencyInputWidget = ({ config }: CurrencyInputWidgetProps) => {
   const {
     value,
     formattedValue,

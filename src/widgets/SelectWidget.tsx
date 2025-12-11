@@ -18,7 +18,11 @@ import { BaseWidgetConfig } from '../types';
  *   }
  * }
  */
-export const SelectWidget: React.FC<{ config: BaseWidgetConfig }> = ({ config }) => {
+interface SelectWidgetProps {
+  config: BaseWidgetConfig;
+}
+
+export const SelectWidget = ({ config }: SelectWidgetProps) => {
   const {
     value,
     error,

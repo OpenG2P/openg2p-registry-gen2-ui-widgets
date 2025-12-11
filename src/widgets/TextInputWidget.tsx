@@ -20,7 +20,11 @@ import { BaseWidgetConfig } from '../types';
  *   "widget-data-validation": { ... }
  * }
  */
-export const TextInputWidget: React.FC<{ config: BaseWidgetConfig }> = ({ config }) => {
+interface TextInputWidgetProps {
+  config: BaseWidgetConfig;
+}
+
+export const TextInputWidget = ({ config }: TextInputWidgetProps) => {
   const {
     value,
     formattedValue,
