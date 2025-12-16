@@ -1,6 +1,7 @@
 import resolve from '@rollup/plugin-node-resolve';
 import commonjs from '@rollup/plugin-commonjs';
 import typescript from '@rollup/plugin-typescript';
+import json from '@rollup/plugin-json';
 import dts from 'rollup-plugin-dts';
 import { readFileSync } from 'fs';
 import { fileURLToPath } from 'url';
@@ -30,9 +31,12 @@ export default [
         browser: true,
       }),
       commonjs(),
+      json(),
       typescript({
         tsconfig: './tsconfig.json',
         exclude: ['**/*.test.ts', '**/*.test.tsx'],
+        declaration: true,
+        declarationDir: './dist',
       }),
     ],
     external: [
@@ -41,20 +45,28 @@ export default [
       '@reduxjs/toolkit',
       'react-redux',
       'zod',
+      'i18next',
+      'react-i18next',
       'lodash.get',
       'lodash.set',
     ],
   },
   {
-    input: 'dist/index.d.ts',
+    input: 'src/index.ts',
     output: [{ file: 'dist/index.d.ts', format: 'esm' }],
-    plugins: [dts()],
+    plugins: [
+      dts({
+        tsconfig: './tsconfig.json',
+      }),
+    ],
     external: [
       'react',
       'react-dom',
       '@reduxjs/toolkit',
       'react-redux',
       'zod',
+      'i18next',
+      'react-i18next',
     ],
   },
 ];

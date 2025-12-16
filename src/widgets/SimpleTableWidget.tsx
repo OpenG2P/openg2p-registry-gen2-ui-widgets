@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useBaseWidget } from '../hooks/useBaseWidget';
 import { BaseWidgetConfig } from '../types';
 import { WidgetRenderer } from '../components/WidgetRenderer';
+import { useWidgetTranslation } from '../hooks/useWidgetTranslation';
 
 /**
  * Simple table widget for structured data
@@ -41,6 +42,8 @@ export const SimpleTableWidget = ({ config }: SimpleTableWidgetProps) => {
     onChange,
     config: widgetConfig,
   } = useBaseWidget({ config });
+
+  const { translate, translateConfig } = useWidgetTranslation();
 
   const rows: any[] = Array.isArray(value) ? value : [];
   const columns = widgetConfig['widget-data-columns'] || [];
@@ -83,9 +86,9 @@ export const SimpleTableWidget = ({ config }: SimpleTableWidgetProps) => {
     <div className="mb-4">
       <div className="flex justify-between items-center mb-2">
         <label className="block text-sm font-medium text-gray-700">
-          {widgetConfig['widget-label']}
+          {translateConfig(widgetConfig['widget-label'])}
           {widgetConfig['widget-required'] && (
-            <span className="text-red-500 ml-1">*</span>
+            <span className="text-red-500 ml-1">{translate('common.required')}</span>
           )}
         </label>
         {operations.add && !isReadonly && isEnabled && (
@@ -94,14 +97,14 @@ export const SimpleTableWidget = ({ config }: SimpleTableWidgetProps) => {
             onClick={addRow}
             className="px-3 py-1 text-sm bg-blue-500 text-white rounded hover:bg-blue-600"
           >
-            Add Row
+            {translate('common.addRow')}
           </button>
         )}
       </div>
       
       {rows.length === 0 ? (
         <div className="text-gray-500 text-sm py-4 text-center border border-gray-300 rounded">
-          No data. {operations.add && !isReadonly && 'Click "Add Row" to add an entry.'}
+          {translate('common.noData')}. {operations.add && !isReadonly && translate('common.clickToAddRow')}
         </div>
       ) : (
         <div className="overflow-x-auto border border-gray-300 rounded">
@@ -113,12 +116,12 @@ export const SimpleTableWidget = ({ config }: SimpleTableWidgetProps) => {
                     key={col['column-key']}
                     className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
                   >
-                    {col['widget-label']}
+                    {translateConfig(col['widget-label'])}
                   </th>
                 ))}
                 {operations.remove && !isReadonly && (
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Actions
+                    {translate('common.actions')}
                   </th>
                 )}
               </tr>
@@ -166,7 +169,7 @@ export const SimpleTableWidget = ({ config }: SimpleTableWidgetProps) => {
                         disabled={!isEnabled}
                         className="text-red-600 hover:text-red-800 text-sm"
                       >
-                        Remove
+                        {translate('common.remove')}
                       </button>
                     </td>
                   )}
@@ -182,7 +185,7 @@ export const SimpleTableWidget = ({ config }: SimpleTableWidgetProps) => {
       )}
       {widgetConfig['widget-data-helptext'] && (
         <p className="text-gray-500 text-sm mt-1">
-          {widgetConfig['widget-data-helptext']}
+          {translateConfig(widgetConfig['widget-data-helptext'])}
         </p>
       )}
     </div>

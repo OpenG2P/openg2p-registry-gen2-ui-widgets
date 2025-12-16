@@ -14,6 +14,7 @@ export type { UseBaseWidgetOptions } from './hooks/useBaseWidget';
 export { WidgetRenderer } from './components/WidgetRenderer';
 export { WidgetProvider, useWidgetContext } from './components/WidgetProvider';
 export { SectionRenderer } from './components/SectionRenderer';
+export { SectionsContainer } from './components/SectionsContainer';
 export { PanelRenderer } from './components/PanelRenderer';
 
 // Registry (import defaultWidgets to auto-register widgets)
@@ -31,4 +32,10 @@ export * from './utils/validation';
 export * from './utils/formatting';
 export * from './utils/conditions';
 export * from './utils/dataSource';
+
+// i18n
+export { initI18n } from './i18n/config';
+export { useWidgetTranslation } from './hooks/useWidgetTranslation';
+export { default as i18n } from './i18n/config';
+export { translateUISchema, translateWidgetConfig, translatePanelConfig } from './utils/schemaTranslation';
 

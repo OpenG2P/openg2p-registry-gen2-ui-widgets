@@ -1,6 +1,7 @@
 import React from 'react';
 import { useBaseWidget } from '../hooks/useBaseWidget';
 import { BaseWidgetConfig } from '../types';
+import { useWidgetTranslation } from '../hooks/useWidgetTranslation';
 
 /**
  * Phone input widget with formatting
@@ -33,6 +34,8 @@ export const PhoneInputWidget = ({ config }: PhoneInputWidgetProps) => {
     config: widgetConfig,
   } = useBaseWidget({ config });
 
+  const { translate, translateConfig } = useWidgetTranslation();
+
   // Use formatted value if available, otherwise raw value
   const displayValue = formattedValue !== undefined && formattedValue !== value 
     ? formattedValue 
@@ -41,9 +44,9 @@ export const PhoneInputWidget = ({ config }: PhoneInputWidgetProps) => {
   return (
     <div className="mb-4">
       <label className="block text-sm font-medium text-gray-700 mb-1">
-        {widgetConfig['widget-label']}
+        {translateConfig(widgetConfig['widget-label'])}
         {widgetConfig['widget-required'] && (
-          <span className="text-red-500 ml-1">*</span>
+          <span className="text-red-500 ml-1">{translate('common.required')}</span>
         )}
       </label>
       <input
@@ -52,20 +55,20 @@ export const PhoneInputWidget = ({ config }: PhoneInputWidgetProps) => {
         onChange={(e) => onChange(e.target.value)}
         onBlur={onBlur}
         disabled={!isEnabled || widgetConfig['widget-readonly']}
-        placeholder={widgetConfig['widget-data-placeholder']}
+        placeholder={translateConfig(widgetConfig['widget-data-placeholder'])}
         className={`w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
           touched && error.length > 0
             ? 'border-red-500 focus:ring-red-500 focus:border-red-500'
             : 'border-gray-300'
         } ${!isEnabled || widgetConfig['widget-readonly'] ? 'bg-gray-100 cursor-not-allowed' : 'bg-white'}`}
-        title={widgetConfig['widget-data-tooltip']}
+        title={translateConfig(widgetConfig['widget-data-tooltip'])}
       />
       {touched && error.length > 0 && (
         <p className="text-red-500 text-sm mt-1">{error[0]}</p>
       )}
       {widgetConfig['widget-data-helptext'] && (
         <p className="text-gray-500 text-sm mt-1">
-          {widgetConfig['widget-data-helptext']}
+          {translateConfig(widgetConfig['widget-data-helptext'])}
         </p>
       )}
     </div>

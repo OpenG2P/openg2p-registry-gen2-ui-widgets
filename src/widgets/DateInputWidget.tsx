@@ -1,6 +1,7 @@
 import React from 'react';
 import { useBaseWidget } from '../hooks/useBaseWidget';
 import { BaseWidgetConfig } from '../types';
+import { useWidgetTranslation } from '../hooks/useWidgetTranslation';
 
 /**
  * Date input widget
@@ -33,6 +34,8 @@ export const DateInputWidget = ({ config }: DateInputWidgetProps) => {
     config: widgetConfig,
   } = useBaseWidget({ config });
 
+  const { translate, translateConfig } = useWidgetTranslation();
+
   // Convert value to date input format (YYYY-MM-DD)
   const getDateValue = () => {
     if (!value) return '';
@@ -62,9 +65,9 @@ export const DateInputWidget = ({ config }: DateInputWidgetProps) => {
   return (
     <div className="mb-4">
       <label className="block text-sm font-medium text-gray-700 mb-1">
-        {widgetConfig['widget-label']}
+        {translateConfig(widgetConfig['widget-label'])}
         {widgetConfig['widget-required'] && (
-          <span className="text-red-500 ml-1">*</span>
+          <span className="text-red-500 ml-1">{translate('common.required')}</span>
         )}
       </label>
       <input
@@ -82,7 +85,7 @@ export const DateInputWidget = ({ config }: DateInputWidgetProps) => {
             ? 'border-red-500 focus:ring-red-500 focus:border-red-500'
             : 'border-gray-300'
         } ${!isEnabled || widgetConfig['widget-readonly'] ? 'bg-gray-100 cursor-not-allowed' : 'bg-white'}`}
-        title={widgetConfig['widget-data-tooltip']}
+        title={translateConfig(widgetConfig['widget-data-tooltip'])}
       />
       {formattedValue && formattedValue !== value && (
         <p className="text-gray-500 text-sm mt-1">Formatted: {formattedValue}</p>
@@ -92,7 +95,7 @@ export const DateInputWidget = ({ config }: DateInputWidgetProps) => {
       )}
       {widgetConfig['widget-data-helptext'] && (
         <p className="text-gray-500 text-sm mt-1">
-          {widgetConfig['widget-data-helptext']}
+          {translateConfig(widgetConfig['widget-data-helptext'])}
         </p>
       )}
     </div>

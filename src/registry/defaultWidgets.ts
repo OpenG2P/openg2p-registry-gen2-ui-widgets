@@ -10,7 +10,8 @@ import {
   ArrayWidget,
   IterableAccordionWidget,
   PhoneInputWidget,
-  CurrencyInputWidget
+  CurrencyInputWidget,
+  DisplayWidget
 } from '../widgets';
 
 /**
@@ -45,6 +46,9 @@ export const registerDefaultWidgets = () => {
   // Phone and Currency Widgets
   widgetRegistry.register({ widget: 'phone', component: PhoneInputWidget });
   widgetRegistry.register({ widget: 'currency', component: CurrencyInputWidget });
+
+  // Display widget for readonly text display
+  widgetRegistry.register({ widget: 'display', component: DisplayWidget });
 };
 
 // Auto-register on import

@@ -150,6 +150,7 @@ export interface BaseWidgetConfig {
 export interface PanelConfig {
   'panel-id': string;
   'panel-orientation'?: 'horizontal' | 'vertical'; // optional, defaults to "vertical"
+  // Styling fields removed - only panel-orientation remains
   panels?: PanelConfig[]; // Nested panels
   widgets?: BaseWidgetConfig[]; // Widgets within this panel
 }
@@ -159,7 +160,7 @@ export interface PanelConfig {
  */
 export interface SectionConfig {
   'section-id': string;
-  'section-title': string;
+  'section-title'?: string; // Optional - can be empty for card-based layouts
   'section-editable'?: boolean;
   panels: PanelConfig[];
 }

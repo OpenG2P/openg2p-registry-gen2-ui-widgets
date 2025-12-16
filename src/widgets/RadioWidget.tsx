@@ -1,6 +1,7 @@
 import React from 'react';
 import { useBaseWidget } from '../hooks/useBaseWidget';
 import { BaseWidgetConfig } from '../types';
+import { useWidgetTranslation } from '../hooks/useWidgetTranslation';
 
 /**
  * Radio button widget
@@ -38,14 +39,16 @@ export const RadioWidget = ({ config }: RadioWidgetProps) => {
     config: widgetConfig,
   } = useBaseWidget({ config });
 
+  const { translate, translateConfig } = useWidgetTranslation();
+
   const orientation = widgetConfig['widget-orientation'] || 'vertical';
 
   return (
     <div className="mb-4">
       <label className="block text-sm font-medium text-gray-700 mb-2">
-        {widgetConfig['widget-label']}
+        {translateConfig(widgetConfig['widget-label'])}
         {widgetConfig['widget-required'] && (
-          <span className="text-red-500 ml-1">*</span>
+          <span className="text-red-500 ml-1">{translate('common.required')}</span>
         )}
       </label>
       <div
@@ -53,7 +56,7 @@ export const RadioWidget = ({ config }: RadioWidgetProps) => {
         onBlur={onBlur}
       >
         {loading ? (
-          <p className="text-sm text-gray-500">Loading...</p>
+          <p className="text-sm text-gray-500">{translate('common.loading')}</p>
         ) : (
           dataSourceOptions.map((option) => (
             <label
@@ -81,7 +84,7 @@ export const RadioWidget = ({ config }: RadioWidgetProps) => {
       )}
       {widgetConfig['widget-data-helptext'] && (
         <p className="text-gray-500 text-sm mt-1">
-          {widgetConfig['widget-data-helptext']}
+          {translateConfig(widgetConfig['widget-data-helptext'])}
         </p>
       )}
     </div>

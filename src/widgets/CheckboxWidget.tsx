@@ -1,6 +1,7 @@
 import React from 'react';
 import { useBaseWidget } from '../hooks/useBaseWidget';
 import { BaseWidgetConfig } from '../types';
+import { useWidgetTranslation } from '../hooks/useWidgetTranslation';
 
 /**
  * Checkbox widget - supports single checkbox or multiple checkboxes
@@ -47,6 +48,8 @@ export const CheckboxWidget = ({ config }: CheckboxWidgetProps) => {
     config: widgetConfig,
   } = useBaseWidget({ config });
 
+  const { translate, translateConfig } = useWidgetTranslation();
+
   const hasDataSource = !!widgetConfig['widget-data-source'];
   const orientation = widgetConfig['widget-orientation'] || 'vertical';
 
@@ -66,9 +69,9 @@ export const CheckboxWidget = ({ config }: CheckboxWidgetProps) => {
             className="mr-2 h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
           />
           <span className="text-sm font-medium text-gray-700">
-            {widgetConfig['widget-label']}
+            {translateConfig(widgetConfig['widget-label'])}
             {widgetConfig['widget-required'] && (
-              <span className="text-red-500 ml-1">*</span>
+              <span className="text-red-500 ml-1">{translate('common.required')}</span>
             )}
           </span>
         </label>
@@ -77,7 +80,7 @@ export const CheckboxWidget = ({ config }: CheckboxWidgetProps) => {
         )}
         {widgetConfig['widget-data-helptext'] && (
           <p className="text-gray-500 text-sm mt-1">
-            {widgetConfig['widget-data-helptext']}
+            {translateConfig(widgetConfig['widget-data-helptext'])}
           </p>
         )}
       </div>
@@ -98,9 +101,9 @@ export const CheckboxWidget = ({ config }: CheckboxWidgetProps) => {
   return (
     <div className="mb-4">
       <label className="block text-sm font-medium text-gray-700 mb-2">
-        {widgetConfig['widget-label']}
+        {translateConfig(widgetConfig['widget-label'])}
         {widgetConfig['widget-required'] && (
-          <span className="text-red-500 ml-1">*</span>
+          <span className="text-red-500 ml-1">{translate('common.required')}</span>
         )}
       </label>
       <div
@@ -108,7 +111,7 @@ export const CheckboxWidget = ({ config }: CheckboxWidgetProps) => {
         onBlur={onBlur}
       >
         {loading ? (
-          <p className="text-sm text-gray-500">Loading...</p>
+          <p className="text-sm text-gray-500">{translate('common.loading')}</p>
         ) : (
           dataSourceOptions.map((option) => (
             <label
@@ -135,7 +138,7 @@ export const CheckboxWidget = ({ config }: CheckboxWidgetProps) => {
       )}
       {widgetConfig['widget-data-helptext'] && (
         <p className="text-gray-500 text-sm mt-1">
-          {widgetConfig['widget-data-helptext']}
+          {translateConfig(widgetConfig['widget-data-helptext'])}
         </p>
       )}
     </div>

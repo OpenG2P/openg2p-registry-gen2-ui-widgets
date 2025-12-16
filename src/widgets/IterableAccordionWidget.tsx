@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useBaseWidget } from '../hooks/useBaseWidget';
 import { BaseWidgetConfig } from '../types';
 import { WidgetRenderer } from '../components/WidgetRenderer';
+import { useWidgetTranslation } from '../hooks/useWidgetTranslation';
 
 /**
  * Iterable accordion widget - expandable/collapsible container for widgets
@@ -40,10 +41,15 @@ export const IterableAccordionWidget = ({ config }: IterableAccordionWidgetProps
     config: widgetConfig,
   } = useBaseWidget({ config });
 
+  const { translate, translateConfig } = useWidgetTranslation();
+
   const items: any[] = Array.isArray(value) ? value : [];
   const itemConfig = widgetConfig['widget-item'];
   const operations = widgetConfig['widget-data-operations'] || {};
-  const addLabel = widgetConfig['widget-data-add-label'] || 'Add Item';
+  const addLabel = translateConfig(
+    widgetConfig['widget-data-add-label'],
+    translate('common.addItem')
+  );
   const defaultCollapsed = widgetConfig['widget-data-collapsed'] ?? false;
   const isReadonly = widgetConfig['widget-readonly'] || false;
 
@@ -98,9 +104,9 @@ export const IterableAccordionWidget = ({ config }: IterableAccordionWidgetProps
     <div className="mb-4">
       <div className="flex justify-between items-center mb-2">
         <label className="block text-sm font-medium text-gray-700">
-          {widgetConfig['widget-label']}
+          {translateConfig(widgetConfig['widget-label'])}
           {widgetConfig['widget-required'] && (
-            <span className="text-red-500 ml-1">*</span>
+            <span className="text-red-500 ml-1">{translate('common.required')}</span>
           )}
         </label>
         {operations.add && !isReadonly && isEnabled && (
@@ -116,7 +122,7 @@ export const IterableAccordionWidget = ({ config }: IterableAccordionWidgetProps
 
       {items.length === 0 ? (
         <div className="text-gray-500 text-sm py-4 text-center border border-gray-300 rounded">
-          No items. {operations.add && !isReadonly && `Click "${addLabel}" to add one.`}
+          {translate('common.noItems')}. {operations.add && !isReadonly && translate('common.clickToAdd', { label: addLabel })}
         </div>
       ) : (
         <div className="space-y-2">
@@ -142,7 +148,7 @@ export const IterableAccordionWidget = ({ config }: IterableAccordionWidgetProps
                     onClick={() => toggleCollapse(index)}
                   >
                     <span className="font-medium text-sm">
-                      {widgetConfig['widget-label']} #{index + 1}
+                      {translateConfig(widgetConfig['widget-label'])} #{index + 1}
                     </span>
                     <div className="flex items-center gap-2">
                       {operations.remove && !isReadonly && (
@@ -155,7 +161,7 @@ export const IterableAccordionWidget = ({ config }: IterableAccordionWidgetProps
                           disabled={!isEnabled}
                           className="px-2 py-1 text-xs text-red-600 hover:text-red-800 hover:bg-red-50 rounded"
                         >
-                          Remove
+                          {translate('common.remove')}
                         </button>
                       )}
                       <span className="text-gray-500">
@@ -190,7 +196,7 @@ export const IterableAccordionWidget = ({ config }: IterableAccordionWidgetProps
                   onClick={() => toggleCollapse(index)}
                 >
                   <span className="font-medium text-sm">
-                    {itemConfig['widget-label'] || `Item ${index + 1}`}
+                    {translateConfig(itemConfig['widget-label']) || `${translate('common.item')} ${index + 1}`}
                   </span>
                   <div className="flex items-center gap-2">
                     {operations.remove && !isReadonly && (
@@ -203,7 +209,7 @@ export const IterableAccordionWidget = ({ config }: IterableAccordionWidgetProps
                         disabled={!isEnabled}
                         className="px-2 py-1 text-xs text-red-600 hover:text-red-800 hover:bg-red-50 rounded"
                       >
-                        Remove
+                        {translate('common.remove')}
                       </button>
                     )}
                     <span className="text-gray-500">
@@ -232,7 +238,7 @@ export const IterableAccordionWidget = ({ config }: IterableAccordionWidgetProps
       )}
       {widgetConfig['widget-data-helptext'] && (
         <p className="text-gray-500 text-sm mt-1">
-          {widgetConfig['widget-data-helptext']}
+          {translateConfig(widgetConfig['widget-data-helptext'])}
         </p>
       )}
     </div>

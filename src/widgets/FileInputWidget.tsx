@@ -1,6 +1,7 @@
 import React from 'react';
 import { useBaseWidget } from '../hooks/useBaseWidget';
 import { BaseWidgetConfig } from '../types';
+import { useWidgetTranslation } from '../hooks/useWidgetTranslation';
 
 /**
  * File input widget
@@ -33,6 +34,8 @@ export const FileInputWidget = ({ config }: FileInputWidgetProps) => {
     onBlur,
     config: widgetConfig,
   } = useBaseWidget({ config });
+
+  const { translate, translateConfig } = useWidgetTranslation();
 
   const accept = widgetConfig['widget-data-options']?.accept;
   const multiple = widgetConfig['widget-data-options']?.multiple || false;
@@ -76,9 +79,9 @@ export const FileInputWidget = ({ config }: FileInputWidgetProps) => {
   return (
     <div className="mb-4">
       <label className="block text-sm font-medium text-gray-700 mb-1">
-        {widgetConfig['widget-label']}
+        {translateConfig(widgetConfig['widget-label'])}
         {widgetConfig['widget-required'] && (
-          <span className="text-red-500 ml-1">*</span>
+          <span className="text-red-500 ml-1">{translate('common.required')}</span>
         )}
       </label>
       <div className="flex items-center space-x-4">
@@ -89,7 +92,7 @@ export const FileInputWidget = ({ config }: FileInputWidgetProps) => {
               : ''
           }`}
         >
-          <span>Choose File{multiple ? 's' : ''}</span>
+          <span>{multiple ? translate('common.chooseFiles') : translate('common.chooseFile')}</span>
           <input
             type="file"
             accept={accept}
@@ -109,12 +112,12 @@ export const FileInputWidget = ({ config }: FileInputWidgetProps) => {
       )}
       {widgetConfig['widget-data-helptext'] && (
         <p className="text-gray-500 text-sm mt-1">
-          {widgetConfig['widget-data-helptext']}
+          {translateConfig(widgetConfig['widget-data-helptext'])}
         </p>
       )}
       {maxSize && (
         <p className="text-gray-400 text-xs mt-1">
-          Maximum file size: {(maxSize / 1024 / 1024).toFixed(2)} MB
+          {translate('common.maxFileSize', { size: (maxSize / 1024 / 1024).toFixed(2) })}
         </p>
       )}
     </div>

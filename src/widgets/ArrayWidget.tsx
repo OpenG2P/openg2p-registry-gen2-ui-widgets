@@ -2,6 +2,7 @@ import React from 'react';
 import { useBaseWidget } from '../hooks/useBaseWidget';
 import { BaseWidgetConfig } from '../types';
 import { WidgetRenderer } from '../components/WidgetRenderer';
+import { useWidgetTranslation } from '../hooks/useWidgetTranslation';
 
 /**
  * Array widget for simple repeating values
@@ -39,10 +40,15 @@ export const ArrayWidget = ({ config }: ArrayWidgetProps) => {
     config: widgetConfig,
   } = useBaseWidget({ config });
 
+  const { translate, translateConfig } = useWidgetTranslation();
+
   const items: any[] = Array.isArray(value) ? value : [];
   const itemConfig = widgetConfig['widget-item'];
   const operations = widgetConfig['widget-data-operations'] || {};
-  const addLabel = widgetConfig['widget-data-add-label'] || 'Add Item';
+  const addLabel = translateConfig(
+    widgetConfig['widget-data-add-label'],
+    translate('common.addItem')
+  );
   const isReadonly = widgetConfig['widget-readonly'] || false;
 
   if (!itemConfig) {
@@ -70,9 +76,9 @@ export const ArrayWidget = ({ config }: ArrayWidgetProps) => {
     <div className="mb-4">
       <div className="flex justify-between items-center mb-2">
         <label className="block text-sm font-medium text-gray-700">
-          {widgetConfig['widget-label']}
+          {translateConfig(widgetConfig['widget-label'])}
           {widgetConfig['widget-required'] && (
-            <span className="text-red-500 ml-1">*</span>
+            <span className="text-red-500 ml-1">{translate('common.required')}</span>
           )}
         </label>
         {operations.add && !isReadonly && isEnabled && (
@@ -88,7 +94,7 @@ export const ArrayWidget = ({ config }: ArrayWidgetProps) => {
 
       {items.length === 0 ? (
         <div className="text-gray-500 text-sm py-4 text-center border border-gray-300 rounded">
-          No items. {operations.add && !isReadonly && `Click "${addLabel}" to add one.`}
+          {translate('common.noItems')}. {operations.add && !isReadonly && translate('common.clickToAdd', { label: addLabel })}
         </div>
       ) : (
         <div className="space-y-2">
@@ -110,7 +116,7 @@ export const ArrayWidget = ({ config }: ArrayWidgetProps) => {
                     value={itemValue || ''}
                     onChange={(e) => updateItem(index, e.target.value)}
                     disabled={isReadonly || !operations.edit || !isEnabled}
-                    placeholder={itemConfig['widget-data-placeholder'] || itemConfig['widget-label']}
+                    placeholder={translateConfig(itemConfig['widget-data-placeholder']) || translateConfig(itemConfig['widget-label'])}
                     className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
                 </div>
@@ -121,7 +127,7 @@ export const ArrayWidget = ({ config }: ArrayWidgetProps) => {
                     disabled={!isEnabled}
                     className="px-3 py-2 text-red-600 hover:text-red-800 hover:bg-red-50 rounded"
                   >
-                    Remove
+                    {translate('common.remove')}
                   </button>
                 )}
               </div>
@@ -135,7 +141,7 @@ export const ArrayWidget = ({ config }: ArrayWidgetProps) => {
       )}
       {widgetConfig['widget-data-helptext'] && (
         <p className="text-gray-500 text-sm mt-1">
-          {widgetConfig['widget-data-helptext']}
+          {translateConfig(widgetConfig['widget-data-helptext'])}
         </p>
       )}
     </div>

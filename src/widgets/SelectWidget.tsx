@@ -1,6 +1,7 @@
 import React from 'react';
 import { useBaseWidget } from '../hooks/useBaseWidget';
 import { BaseWidgetConfig } from '../types';
+import { useWidgetTranslation } from '../hooks/useWidgetTranslation';
 
 /**
  * Select/Dropdown widget with data source support
@@ -35,12 +36,14 @@ export const SelectWidget = ({ config }: SelectWidgetProps) => {
     config: widgetConfig,
   } = useBaseWidget({ config });
 
+  const { translate, translateConfig } = useWidgetTranslation();
+
   return (
     <div className="mb-4">
       <label className="block text-sm font-medium text-gray-700 mb-1">
-        {widgetConfig['widget-label']}
+        {translateConfig(widgetConfig['widget-label'])}
         {widgetConfig['widget-required'] && (
-          <span className="text-red-500 ml-1">*</span>
+          <span className="text-red-500 ml-1">{translate('common.required')}</span>
         )}
       </label>
       <select
@@ -53,9 +56,9 @@ export const SelectWidget = ({ config }: SelectWidgetProps) => {
             ? 'border-red-500 focus:ring-red-500 focus:border-red-500'
             : 'border-gray-300'
         } ${!isEnabled || loading || widgetConfig['widget-readonly'] ? 'bg-gray-100 cursor-not-allowed' : 'bg-white'}`}
-        title={widgetConfig['widget-data-tooltip']}
+        title={translateConfig(widgetConfig['widget-data-tooltip'])}
       >
-        <option value="">Select...</option>
+        <option value="">{translate('common.select')}</option>
         {dataSourceOptions.map((option) => (
           <option key={option.value} value={option.value}>
             {option.label}
@@ -63,14 +66,14 @@ export const SelectWidget = ({ config }: SelectWidgetProps) => {
         ))}
       </select>
       {loading && (
-        <p className="text-sm text-gray-500 mt-1">Loading options...</p>
+        <p className="text-sm text-gray-500 mt-1">{translate('common.loadingOptions')}</p>
       )}
       {touched && error.length > 0 && (
         <p className="text-red-500 text-sm mt-1">{error[0]}</p>
       )}
       {widgetConfig['widget-data-helptext'] && (
         <p className="text-gray-500 text-sm mt-1">
-          {widgetConfig['widget-data-helptext']}
+          {translateConfig(widgetConfig['widget-data-helptext'])}
         </p>
       )}
     </div>
