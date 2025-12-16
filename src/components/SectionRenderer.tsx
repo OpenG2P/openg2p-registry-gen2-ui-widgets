@@ -9,6 +9,7 @@ export interface SectionRendererProps {
   apiAdapter?: UseBaseWidgetOptions['apiAdapter'];
   schemaData?: UseBaseWidgetOptions['schemaData'];
   onValueChange?: UseBaseWidgetOptions['onValueChange'];
+  gridColumnSpan?: number; // Number of grid columns this section should span
 }
 
 /**
@@ -24,6 +25,7 @@ export const SectionRenderer = ({
   apiAdapter,
   schemaData,
   onValueChange,
+  gridColumnSpan,
 }: SectionRendererProps) => {
   const { translateConfig } = useWidgetTranslation();
 
@@ -31,28 +33,39 @@ export const SectionRenderer = ({
   const gridId = `section-panels-${sectionId}`;
   const sectionClassId = `section-${sectionId}`;
 
+  // Recursively count all vertical panels, especially those nested inside horizontal panels
+  // Typically: horizontal panels at first level contain vertical panels at second level
+  const countVerticalPanels = (panels: SectionConfig['panels']): number => {
+    let count = 0;
+    for (const panel of panels) {
+      const orientation = panel['panel-orientation'] || 'vertical';
+      
+      if (orientation === 'horizontal' && panel.panels) {
+        // For horizontal panels, count all vertical panels nested inside (typically second level)
+        count += countVerticalPanels(panel.panels);
+      } else if (orientation === 'vertical') {
+        // Count this vertical panel
+        count += 1;
+        // Also recursively count vertical panels nested inside this vertical panel
+        if (panel.panels && panel.panels.length > 0) {
+          count += countVerticalPanels(panel.panels);
+        }
+      }
+    }
+    return count;
+  };
+
+  const verticalPanelsCount = countVerticalPanels(section.panels);
+  const columnSpan = gridColumnSpan || verticalPanelsCount;
+
   return (
     <>
       <style>{`
         .${sectionClassId} {
-          /* Section width: sum of max 3 panels (or more on high resolution) */
-          /* Base: full width to accommodate 3 panels */
-          /* On larger screens: can be narrower to allow side-by-side sections */
-          flex: 1 1 100%;
-          min-width: 0;
-        }
-        @media (min-width: 1024px) {
-          .${sectionClassId} {
-            /* Desktop: section width for 3 panels, allows 2 sections side-by-side */
-            flex: 1 1 calc(50% - 0.75rem);
-            min-width: calc(3 * (33.333% - 1rem) + 2rem); /* 3 panels + gaps */
-          }
-        }
-        @media (min-width: 1280px) {
-          .${sectionClassId} {
-            /* Large: can fit 3 sections side-by-side */
-            flex: 1 1 calc(33.333% - 1rem);
-          }
+          /* Section spans grid columns based on vertical panel count */
+          /* This ensures all sections align to the same grid boundaries */
+          grid-column: span ${columnSpan};
+          width: 100%;
         }
         
         #${gridId} {
@@ -91,8 +104,11 @@ export const SectionRenderer = ({
         }
       `}</style>
       <div 
-        className={`section ${sectionClassId} px-4 sm:px-6 lg:px-8`}
+        className={`section ${sectionClassId} px-4 sm:px-6 lg:px-8 border-2 rounded-lg border-gray-300`}
         data-section-id={sectionId}
+        style={{
+          gridColumn: `span ${columnSpan}`,
+        }}
       >
         {section['section-title'] && (
           <h2 className="text-xl font-semibold mb-4">{translateConfig(section['section-title'])}</h2>
