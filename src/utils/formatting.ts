@@ -1,4 +1,5 @@
 import { WidgetFormat } from '../types';
+import { formatNumber } from './numberInput';
 
 /**
  * Format date value
@@ -102,6 +103,11 @@ export const formatValue = (value: any, format: WidgetFormat | undefined, widget
 
   if (format.pattern || widgetType === 'phone') {
     return formatPhone(value, format);
+  }
+
+  // Handle number widget formatting
+  if (widgetType === 'number' || format.numericType || format.decimalPlaces !== undefined) {
+    return formatNumber(value, format);
   }
 
   return value?.toString() || '';

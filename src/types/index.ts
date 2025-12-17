@@ -45,11 +45,41 @@ export interface SchemaDataSource {
 export type DataSource = StaticDataSource | ApiDataSource | SchemaDataSource;
 
 /**
+ * Allowed character types for text input
+ */
+export type CharacterType = 
+  | 'any'           // Any text (default)
+  | 'alphabetic'     // Alphabetic only (a-z, A-Z)
+  | 'alphanumeric'   // Alphanumeric (a-z, A-Z, 0-9)
+  | 'numeric'        // Numeric only (0-9)
+  | 'numeric-decimal' // Numeric with decimals (0-9, .)
+  | 'custom';        // Custom character set
+
+/**
+ * Case control options
+ */
+export type CaseControl = 
+  | 'none'           // No restriction (default)
+  | 'lowercase'      // Force lowercase
+  | 'uppercase'      // Force uppercase
+  | 'capitalize';    // Capitalize words / first letter
+
+/**
+ * Input mask configuration
+ */
+export interface InputMask {
+  pattern: string;   // Mask pattern (e.g., "XXX-XXX-XXXX" or "phone" for dynamic)
+  type?: 'static' | 'phone' | 'national-id' | 'custom'; // Dynamic mask types
+  placeholder?: string; // Placeholder character for mask (default: '_')
+}
+
+/**
  * Validation configuration
  */
 export interface WidgetValidation {
   required?: boolean;
   pattern?: string;
+  patternMessage?: string; // Custom message for pattern validation mismatch
   minLength?: number;
   maxLength?: number;
   min?: number;
@@ -57,6 +87,27 @@ export interface WidgetValidation {
   custom?: string; // Custom validation function name
   zodSchema?: z.ZodSchema; // Zod schema for validation
 }
+
+/**
+ * Numeric type options
+ */
+export type NumericType = 
+  | 'integer'      // Integer only
+  | 'decimal';     // Decimal number
+
+/**
+ * Rounding mode for decimal numbers
+ */
+export type RoundingMode = 
+  | 'round'        // Round to nearest (default)
+  | 'truncate';    // Truncate (floor for positive, ceil for negative)
+
+/**
+ * Text alignment options
+ */
+export type TextAlign = 
+  | 'left'         // Left-aligned
+  | 'right';       // Right-aligned (default for numbers)
 
 /**
  * Format configuration
@@ -68,6 +119,21 @@ export interface WidgetFormat {
   decimals?: number;
   pattern?: string; // For phone, etc.
   inputType?: 'text' | 'email' | 'password' | 'number' | 'tel' | 'url' | 'search' | 'file'; // HTML input type for text widgets
+  // Text input specific format options
+  characterType?: CharacterType; // Allowed character type
+  customCharset?: string; // Custom character set regex pattern (for characterType: 'custom')
+  caseControl?: CaseControl; // Case transformation
+  mask?: InputMask; // Input masking configuration
+  showCharCounter?: boolean; // Show live character counter
+  // Number input specific format options
+  numericType?: NumericType; // Integer or decimal (default: 'decimal')
+  decimalPlaces?: number; // Number of decimal places (0-6, default: 0 for integer, 2 for decimal)
+  roundingMode?: RoundingMode; // Rounding or truncation mode (default: 'round')
+  thousandSeparator?: string; // Thousand separator character (default: ',' or locale-based)
+  decimalSeparator?: string; // Decimal separator character (default: '.' or locale-based)
+  textAlign?: TextAlign; // Text alignment (default: 'right' for numbers)
+  allowSigned?: boolean; // Allow negative numbers (default: true)
+  formatOnBlur?: boolean; // Apply formatting on blur (default: true)
 }
 
 /**

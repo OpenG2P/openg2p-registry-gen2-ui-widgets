@@ -32,6 +32,8 @@ export * from './utils/validation';
 export * from './utils/formatting';
 export * from './utils/conditions';
 export * from './utils/dataSource';
+export * from './utils/textInput';
+export * from './utils/numberInput';
 
 // i18n
 export { initI18n } from './i18n/config';

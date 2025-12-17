@@ -35,7 +35,7 @@ export const validateWidget = (
   if (validation.pattern && typeof value === 'string') {
     const regex = new RegExp(validation.pattern);
     if (!regex.test(value)) {
-      errors.push('Invalid format');
+      errors.push(validation.patternMessage || 'Invalid format');
     }
   }
 

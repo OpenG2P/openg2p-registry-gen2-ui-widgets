@@ -1,6 +1,7 @@
 import { widgetRegistry } from './WidgetRegistry';
 import {
   TextInputWidget,
+  NumberInputWidget,
   DateInputWidget,
   SelectWidget,
   RadioWidget,
@@ -21,6 +22,9 @@ import {
 export const registerDefaultWidgets = () => {
   // Text input widget (supports all text-based inputs via configuration: text, email, tel, number, etc.)
   widgetRegistry.register({ widget: 'text', component: TextInputWidget });
+
+  // Number input widget (specialized for numeric input with formatting, precision, and validation)
+  widgetRegistry.register({ widget: 'number', component: NumberInputWidget });
 
   // Date input widget
   widgetRegistry.register({ widget: 'date', component: DateInputWidget });
@@ -53,3 +57,12 @@ export const registerDefaultWidgets = () => {
 
 // Auto-register on import
 registerDefaultWidgets();
+// Debug: Verify number widget is registered (browser only)
+if (typeof window !== 'undefined') {
+  // Only log in browser environment
+  if (!widgetRegistry.has('number')) {
+    console.error('NumberInputWidget was not registered! Available widgets:', 
+      Array.from(widgetRegistry.getAll().map((w: { widget: string }) => w.widget)));
+  }
+}
+
