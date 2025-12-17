@@ -68,7 +68,7 @@ export const SectionsContainer = ({
           display: grid;
           /* Grid: each column is 200px (one vertical panel) + 1.5rem gap between columns */
           /* Create enough columns for the maximum vertical panels */
-          grid-template-columns: repeat(${maxVerticalPanels}, 200px);
+          grid-template-columns: repeat(${maxVerticalPanels}, 210px);
           gap: 1.5rem;
           width: 100%;
           align-items: start;

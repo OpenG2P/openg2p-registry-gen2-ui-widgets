@@ -1,5 +1,5 @@
-import React from 'react';
-import { SectionConfig } from '../types';
+import React, { useState, useMemo } from 'react';
+import { SectionConfig, PanelConfig } from '../types';
 import { UseBaseWidgetOptions } from '../hooks/useBaseWidget';
 import { PanelRenderer } from './PanelRenderer';
 import { useWidgetTranslation } from '../hooks/useWidgetTranslation';
@@ -58,6 +58,50 @@ export const SectionRenderer = ({
   const verticalPanelsCount = countVerticalPanels(section.panels);
   const columnSpan = gridColumnSpan || verticalPanelsCount;
 
+  // Edit mode state
+  const [isEditMode, setIsEditMode] = useState(false);
+
+  // Recursively modify panels to set readonly based on edit mode
+  const makePanelsEditable = (panels: PanelConfig[], editable: boolean): PanelConfig[] => {
+    return panels.map(panel => {
+      const modifiedPanel: PanelConfig = {
+        ...panel,
+        panels: panel.panels ? makePanelsEditable(panel.panels, editable) : undefined,
+        widgets: panel.widgets?.map(widget => ({
+          ...widget,
+          'widget-readonly': editable ? false : widget['widget-readonly'],
+        })),
+      };
+      return modifiedPanel;
+    });
+  };
+
+  // Create editable version of section when in edit mode
+  const editableSection = useMemo(() => {
+    if (!isEditMode) return section;
+    return {
+      ...section,
+      panels: makePanelsEditable(section.panels, true),
+    };
+  }, [section, isEditMode]);
+
+  // Handle edit button click
+  const handleEdit = () => {
+    setIsEditMode(true);
+  };
+
+  // Handle save button click
+  const handleSave = () => {
+    setIsEditMode(false);
+    // You can add save logic here, e.g., call an API
+  };
+
+  // Handle cancel button click
+  const handleCancel = () => {
+    setIsEditMode(false);
+    // Revert any changes - the original section config will be used
+  };
+
   return (
     <>
       <style>{`
@@ -71,7 +115,7 @@ export const SectionRenderer = ({
         #${gridId} {
           display: flex;
           flex-wrap: wrap;
-          gap: 1.5rem;
+          // gap: 1.5rem;
           width: 100%;
         }
         #${gridId} > .panel-wrapper {
@@ -114,7 +158,7 @@ export const SectionRenderer = ({
           <h2 className="text-xl font-semibold mb-4">{translateConfig(section['section-title'])}</h2>
         )}
         <div id={gridId} className="section-panels">
-          {section.panels.map((panel, index) => (
+          {editableSection.panels.map((panel, index) => (
             <div
               key={panel['panel-id'] || `section-panel-${index}`}
               className="panel-wrapper"
@@ -127,6 +171,33 @@ export const SectionRenderer = ({
               />
             </div>
           ))}
+          <hr className="border-gray-300 my-4 w-full" />
+          <div className="flex justify-center items-center py-4">
+            {!isEditMode ? (
+              <button
+                onClick={handleEdit}
+                className="text-blue-600 hover:text-blue-800 text-sm font-medium inline-flex items-center px-4 py-2 rounded-md hover:bg-blue-50 transition-colors"
+              >
+                Edit details
+                <span className="ml-1">→</span>
+              </button>
+            ) : (
+              <>
+                <button
+                  onClick={handleSave}
+                  className="bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium px-4 py-2 rounded-md transition-colors"
+                >
+                  Save
+                </button>
+                <button
+                  onClick={handleCancel}
+                  className="bg-gray-200 hover:bg-gray-300 text-gray-700 text-sm font-medium px-4 py-2 rounded-md transition-colors"
+                >
+                  Cancel
+                </button>
+              </>
+            )}
+          </div>
         </div>
       </div>
     </>
