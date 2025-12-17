@@ -2,6 +2,7 @@ import { widgetRegistry } from './WidgetRegistry';
 import {
   TextInputWidget,
   NumberInputWidget,
+  BooleanWidget,
   DateInputWidget,
   SelectWidget,
   RadioWidget,
@@ -25,6 +26,9 @@ export const registerDefaultWidgets = () => {
 
   // Number input widget (specialized for numeric input with formatting, precision, and validation)
   widgetRegistry.register({ widget: 'number', component: NumberInputWidget });
+
+  // Boolean widget (supports checkbox, radio, toggle with custom representations)
+  widgetRegistry.register({ widget: 'boolean', component: BooleanWidget });
 
   // Date input widget
   widgetRegistry.register({ widget: 'date', component: DateInputWidget });

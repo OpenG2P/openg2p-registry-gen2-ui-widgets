@@ -17,13 +17,16 @@ export const validateWidget = (
 
   // Check required
   const isRequired = validation?.required ?? required;
-  if (isRequired && (value === null || value === undefined || value === '')) {
+  // For boolean, false is a valid value, so only check for null/undefined/empty string
+  const isEmpty = value === null || value === undefined || value === '';
+  if (isRequired && isEmpty) {
     errors.push('This field is required');
     return errors; // Return early if required field is empty
   }
 
   // Skip other validations if value is empty and not required
-  if (!value && !isRequired) {
+  // Note: For boolean, false is a valid value, so we only skip if truly empty
+  if (isEmpty && !isRequired) {
     return errors;
   }
 

@@ -110,6 +110,23 @@ export type TextAlign =
   | 'right';       // Right-aligned (default for numbers)
 
 /**
+ * Boolean representation options
+ */
+export type BooleanRepresentation = 
+  | 'true-false'   // true / false
+  | 'yes-no'       // yes / no
+  | 'on-off'       // on / off
+  | 'custom';      // Custom labels
+
+/**
+ * Boolean control type options
+ */
+export type BooleanControlType = 
+  | 'checkbox'     // Single checkbox
+  | 'radio'        // Two radio buttons
+  | 'toggle';      // Toggle / switch
+
+/**
  * Format configuration
  */
 export interface WidgetFormat {
@@ -134,6 +151,12 @@ export interface WidgetFormat {
   textAlign?: TextAlign; // Text alignment (default: 'right' for numbers)
   allowSigned?: boolean; // Allow negative numbers (default: true)
   formatOnBlur?: boolean; // Apply formatting on blur (default: true)
+  // Boolean input specific format options
+  booleanRepresentation?: BooleanRepresentation; // How to represent boolean values (default: 'true-false')
+  booleanControlType?: BooleanControlType; // Control type (default: 'checkbox')
+  booleanTrueLabel?: string; // Custom label for true value
+  booleanFalseLabel?: string; // Custom label for false value
+  allowUnset?: boolean; // Allow unset/null value (default: false, unless widget-required is false)
 }
 
 /**

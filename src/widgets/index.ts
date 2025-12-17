@@ -1,6 +1,7 @@
 // Export all widget components
 export { TextInputWidget } from './TextInputWidget';
 export { NumberInputWidget } from './NumberInputWidget';
+export { BooleanWidget } from './BooleanWidget';
 export { DateInputWidget } from './DateInputWidget';
 export { SelectWidget } from './SelectWidget';
 export { RadioWidget } from './RadioWidget';
