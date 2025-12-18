@@ -160,6 +160,12 @@ export interface WidgetFormat {
   // Radio input specific format options
   layout?: 'vertical' | 'horizontal' | 'grid'; // Layout type (default: 'vertical')
   sortOptions?: boolean; // Sort options alphabetically by label (default: false)
+  // Date input specific format options
+  inputMethod?: 'picker' | 'manual' | 'hybrid'; // Input method (default: 'picker' for date, 'picker' for datetime)
+  dateConstraint?: 'any' | 'past-only' | 'future-only'; // Date constraint type (default: 'any')
+  // DateTime input specific format options
+  dateTimeFormat?: string; // DateTime format string (default: 'YYYY-MM-DDTHH:mm')
+  dateTimeConstraint?: 'any' | 'past-only' | 'future-only'; // DateTime constraint type (default: 'any')
 }
 
 /**

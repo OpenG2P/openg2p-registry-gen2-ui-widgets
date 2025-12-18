@@ -3,55 +3,56 @@ import { useBaseWidget } from '../hooks/useBaseWidget';
 import { BaseWidgetConfig } from '../types';
 import { useWidgetTranslation } from '../hooks/useWidgetTranslation';
 import {
-  parseDate,
-  formatDateToISO,
-  formatDateToString,
-  parseDateFromFormat,
-  getMinDate,
-  getMaxDate,
-  validateDateConstraints,
-} from '../utils/dateInput';
+  parseDateTime,
+  formatDateTimeToISO,
+  formatDateTimeToLocalISO,
+  formatDateTimeToString,
+  parseDateTimeFromFormat,
+  getMinDateTime,
+  getMaxDateTime,
+  validateDateTimeConstraints,
+} from '../utils/datetimeInput';
 
 /**
- * Date input widget with advanced features
+ * DateTime input widget with advanced features
  * 
  * Features:
- * - Configurable date format (DD/MM/YYYY, MM/DD/YYYY, YYYY-MM-DD, etc.)
- * - Default value (none / today)
- * - Date constraints (minDate, maxDate, any/past only/future only)
+ * - Configurable datetime format (DD/MM/YYYY HH:mm, MM/DD/YYYY HH:mm:ss, etc.)
+ * - Default value (none / now)
+ * - DateTime constraints (minDateTime, maxDateTime, any/past only/future only)
  * - Required vs optional
- * - Input method (date picker / manual / hybrid)
+ * - Input method (datetime picker / manual / hybrid)
  * - Placeholder text
  * - Read-only & disabled
- * - Canonical stored format (ISO 8601)
+ * - Canonical stored format (ISO 8601 with time)
  * 
  * Usage in schema:
  * {
- *   "widget": "date",
+ *   "widget": "datetime",
  *   "widget-type": "input",
- *   "widget-label": "Date of Birth",
- *   "widget-id": "dob",
- *   "widget-data-path": "person.dob",
- *   "widget-data-default": "today",
+ *   "widget-label": "Appointment Time",
+ *   "widget-id": "appointment",
+ *   "widget-data-path": "appointment.datetime",
+ *   "widget-data-default": "now",
  *   "widget-data-format": {
- *     "dateFormat": "DD/MM/YYYY",
- *     "inputMethod": "hybrid",
- *     "dateConstraint": "past-only"
+ *     "dateTimeFormat": "DD/MM/YYYY HH:mm",
+ *     "inputMethod": "picker",
+ *     "dateTimeConstraint": "future-only"
  *   },
  *   "widget-data-options": {
- *     "minDate": "1900-01-01",
- *     "maxDate": "today"
+ *     "minDateTime": "2024-01-01T00:00",
+ *     "maxDateTime": "now"
  *   },
  *   "widget-data-validation": {},
  *   "widget-required": true,
- *   "widget-data-placeholder": "DD/MM/YYYY"
+ *   "widget-data-placeholder": "DD/MM/YYYY HH:mm"
  * }
  */
-interface DateInputWidgetProps {
+interface DateTimeInputWidgetProps {
   config: BaseWidgetConfig;
 }
 
-export const DateInputWidget = ({ config }: DateInputWidgetProps) => {
+export const DateTimeInputWidget = ({ config }: DateTimeInputWidgetProps) => {
   const {
     value,
     formattedValue,
@@ -67,40 +68,40 @@ export const DateInputWidget = ({ config }: DateInputWidgetProps) => {
 
   const formatConfig = widgetConfig['widget-data-format'];
   const optionsConfig = widgetConfig['widget-data-options'];
-  const dateFormat = formatConfig?.dateFormat || 'YYYY-MM-DD';
+  const dateTimeFormat = formatConfig?.dateTimeFormat || 'YYYY-MM-DDTHH:mm';
   const inputMethod = formatConfig?.inputMethod || 'picker'; // Default to picker for better UX
-  const dateConstraint = formatConfig?.dateConstraint || 'any';
-  const minDate = optionsConfig?.minDate;
-  const maxDate = optionsConfig?.maxDate;
-  const defaultToToday = widgetConfig['widget-data-default'] === 'today';
+  const dateTimeConstraint = formatConfig?.dateTimeConstraint || 'any';
+  const minDateTime = optionsConfig?.minDateTime;
+  const maxDateTime = optionsConfig?.maxDateTime;
+  const defaultToNow = widgetConfig['widget-data-default'] === 'now';
 
   // Track manual input value (for manual/hybrid modes)
   const [manualInputValue, setManualInputValue] = useState<string>('');
   const [isFocused, setIsFocused] = useState<boolean>(false);
 
-  // Initialize default value to today if configured
+  // Initialize default value to now if configured
   useEffect(() => {
-    if (defaultToToday && (value === null || value === undefined || value === '')) {
-      const todayISO = formatDateToISO(new Date());
-      onChange(todayISO);
+    if (defaultToNow && (value === null || value === undefined || value === '')) {
+      const nowISO = formatDateTimeToISO(new Date());
+      onChange(nowISO);
     }
-  }, [defaultToToday, value, onChange]);
+  }, [defaultToNow, value, onChange]);
 
-  // Get effective min/max dates
-  const effectiveMinDate = useMemo(() => {
-    return getMinDate(dateConstraint, minDate);
-  }, [dateConstraint, minDate]);
+  // Get effective min/max datetimes
+  const effectiveMinDateTime = useMemo(() => {
+    return getMinDateTime(dateTimeConstraint, minDateTime);
+  }, [dateTimeConstraint, minDateTime]);
 
-  const effectiveMaxDate = useMemo(() => {
-    return getMaxDate(dateConstraint, maxDate);
-  }, [dateConstraint, maxDate]);
+  const effectiveMaxDateTime = useMemo(() => {
+    return getMaxDateTime(dateTimeConstraint, maxDateTime);
+  }, [dateTimeConstraint, maxDateTime]);
 
   // Convert ISO value to display format
   const getDisplayValue = useCallback((): string => {
-    // For picker mode, always use YYYY-MM-DD
+    // For picker mode, always use YYYY-MM-DDTHH:mm
     if (inputMethod === 'picker') {
       if (!value) return '';
-      return formatDateToISO(value);
+      return formatDateTimeToLocalISO(value);
     }
     
     // For manual/hybrid modes, use custom format
@@ -110,34 +111,34 @@ export const DateInputWidget = ({ config }: DateInputWidgetProps) => {
     
     if (!value) return '';
     
-    if (dateFormat === 'YYYY-MM-DD') {
-      return formatDateToISO(value);
+    if (dateTimeFormat === 'YYYY-MM-DDTHH:mm' || dateTimeFormat === 'YYYY-MM-DDTHH:mm:ss') {
+      return formatDateTimeToLocalISO(value);
     }
     
-    return formatDateToString(value, dateFormat);
-  }, [value, inputMethod, dateFormat, isFocused, manualInputValue]);
+    return formatDateTimeToString(value, dateTimeFormat);
+  }, [value, inputMethod, dateTimeFormat, isFocused, manualInputValue]);
 
   // Initialize manual input value
   useEffect(() => {
     if (!isFocused && value) {
-      if (dateFormat === 'YYYY-MM-DD') {
-        setManualInputValue(formatDateToISO(value));
+      if (dateTimeFormat === 'YYYY-MM-DDTHH:mm' || dateTimeFormat === 'YYYY-MM-DDTHH:mm:ss') {
+        setManualInputValue(formatDateTimeToLocalISO(value));
       } else {
-        setManualInputValue(formatDateToString(value, dateFormat));
+        setManualInputValue(formatDateTimeToString(value, dateTimeFormat));
       }
     }
-  }, [value, dateFormat, isFocused]);
+  }, [value, dateTimeFormat, isFocused]);
 
   // Handle input change
   const handleChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const inputValue = e.target.value;
     
     if (inputMethod === 'picker') {
-      // Picker mode: input is always YYYY-MM-DD
+      // Picker mode: input is always YYYY-MM-DDTHH:mm
       if (inputValue) {
-        const date = parseDate(inputValue);
+        const date = parseDateTime(inputValue);
         if (date) {
-          onChange(formatDateToISO(date));
+          onChange(formatDateTimeToISO(date));
         } else {
           onChange('');
         }
@@ -149,71 +150,71 @@ export const DateInputWidget = ({ config }: DateInputWidgetProps) => {
       setManualInputValue(inputValue);
       
       if (inputValue) {
-        const date = parseDateFromFormat(inputValue, dateFormat);
+        const date = parseDateTimeFromFormat(inputValue, dateTimeFormat);
         if (date) {
           // Validate constraints
-          const constraintError = validateDateConstraints(
+          const constraintError = validateDateTimeConstraints(
             date,
-            minDate,
-            maxDate,
-            dateConstraint
+            minDateTime,
+            maxDateTime,
+            dateTimeConstraint
           );
           
           if (!constraintError) {
-            onChange(formatDateToISO(date));
+            onChange(formatDateTimeToISO(date));
           } else {
             // Still update the value but validation will catch it
-            onChange(formatDateToISO(date));
+            onChange(formatDateTimeToISO(date));
           }
         }
       } else {
         onChange('');
       }
     }
-  }, [inputMethod, dateFormat, onChange, minDate, maxDate, dateConstraint]);
+  }, [inputMethod, dateTimeFormat, onChange, minDateTime, maxDateTime, dateTimeConstraint]);
 
   // Handle blur - validate and format
   const handleBlur = useCallback(() => {
     setIsFocused(false);
     
     if (inputMethod !== 'picker' && manualInputValue) {
-      const date = parseDateFromFormat(manualInputValue, dateFormat);
+      const date = parseDateTimeFromFormat(manualInputValue, dateTimeFormat);
       if (date) {
         // Format the value according to the format
-        const formatted = formatDateToString(date, dateFormat);
+        const formatted = formatDateTimeToString(date, dateTimeFormat);
         setManualInputValue(formatted);
-        onChange(formatDateToISO(date));
+        onChange(formatDateTimeToISO(date));
       } else {
-        // Invalid date, clear it
+        // Invalid datetime, clear it
         setManualInputValue('');
         onChange('');
       }
     }
     
     onBlur();
-  }, [inputMethod, manualInputValue, dateFormat, onChange, onBlur]);
+  }, [inputMethod, manualInputValue, dateTimeFormat, onChange, onBlur]);
 
   // Handle focus
   const handleFocus = useCallback(() => {
     setIsFocused(true);
     if (value) {
-      if (dateFormat === 'YYYY-MM-DD') {
-        setManualInputValue(formatDateToISO(value));
+      if (dateTimeFormat === 'YYYY-MM-DDTHH:mm' || dateTimeFormat === 'YYYY-MM-DDTHH:mm:ss') {
+        setManualInputValue(formatDateTimeToLocalISO(value));
       } else {
-        setManualInputValue(formatDateToString(value, dateFormat));
+        setManualInputValue(formatDateTimeToString(value, dateTimeFormat));
       }
     }
-  }, [value, dateFormat]);
+  }, [value, dateTimeFormat]);
 
   // Determine placeholder
   const placeholder = useMemo(() => {
     const hasValue = getDisplayValue() && getDisplayValue().trim().length > 0;
     const placeholderText = translateConfig(widgetConfig['widget-data-placeholder']);
-    return hasValue ? undefined : (placeholderText || dateFormat);
-  }, [getDisplayValue, widgetConfig, translateConfig, dateFormat]);
+    return hasValue ? undefined : (placeholderText || dateTimeFormat);
+  }, [getDisplayValue, widgetConfig, translateConfig, dateTimeFormat]);
 
   // Determine input type
-  const inputType = inputMethod === 'picker' ? 'date' : 'text';
+  const inputType = inputMethod === 'picker' ? 'datetime-local' : 'text';
 
   // For readonly mode, render as display text
   if (widgetConfig['widget-readonly']) {
@@ -221,17 +222,17 @@ export const DateInputWidget = ({ config }: DateInputWidgetProps) => {
     let displayValue = '';
     
     if (value) {
-      if (dateFormat === 'YYYY-MM-DD') {
-        displayValue = formatDateToISO(value);
+      if (dateTimeFormat === 'YYYY-MM-DDTHH:mm' || dateTimeFormat === 'YYYY-MM-DDTHH:mm:ss') {
+        displayValue = formatDateTimeToLocalISO(value);
       } else {
-        displayValue = formatDateToString(value, dateFormat);
+        displayValue = formatDateTimeToString(value, dateTimeFormat);
       }
     } else {
       displayValue = '-';
     }
 
     return (
-      <div className="mb-3 DateDisplayWidget">
+      <div className="mb-3 DateTimeDisplayWidget">
         {label && (
           <div className="text-sm text-gray-600 mb-1">
             {label}:
@@ -265,8 +266,8 @@ export const DateInputWidget = ({ config }: DateInputWidgetProps) => {
         onFocus={handleFocus}
         disabled={!isEnabled || widgetConfig['widget-readonly']}
         placeholder={placeholder}
-        min={inputMethod === 'picker' ? effectiveMinDate : undefined}
-        max={inputMethod === 'picker' ? effectiveMaxDate : undefined}
+        min={inputMethod === 'picker' ? effectiveMinDateTime : undefined}
+        max={inputMethod === 'picker' ? effectiveMaxDateTime : undefined}
         className={`w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
           touched && error.length > 0
             ? 'border-red-500 focus:ring-red-500 focus:border-red-500'
@@ -285,3 +286,4 @@ export const DateInputWidget = ({ config }: DateInputWidgetProps) => {
     </div>
   );
 };
+
