@@ -157,6 +157,9 @@ export interface WidgetFormat {
   booleanTrueLabel?: string; // Custom label for true value
   booleanFalseLabel?: string; // Custom label for false value
   allowUnset?: boolean; // Allow unset/null value (default: false, unless widget-required is false)
+  // Radio input specific format options
+  layout?: 'vertical' | 'horizontal' | 'grid'; // Layout type (default: 'vertical')
+  sortOptions?: boolean; // Sort options alphabetically by label (default: false)
 }
 
 /**
