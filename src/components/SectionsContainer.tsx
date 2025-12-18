@@ -73,7 +73,7 @@ export const SectionsContainer = ({
           align-items: start;
         }
 
-        /* Responsive fallback for smaller screens */
+        /* Responsive: on smaller screens, use auto-fit for flexibility */
         @media (max-width: 1023px) {
           #${containerId} {
             grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
