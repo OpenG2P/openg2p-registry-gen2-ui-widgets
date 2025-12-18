@@ -1,8 +1,9 @@
-import React, { createContext, useContext, ReactNode, useEffect, useState } from 'react';
+import React, { createContext, useContext, ReactNode, useEffect, useState, useMemo } from 'react';
 import { Provider } from 'react-redux';
 import { I18nextProvider } from 'react-i18next';
 import { ApiAdapter } from '../types';
 import { createWidgetStore, WidgetStore } from '../store';
+import { setValues } from '../store/widgetSlice';
 import { initI18n, default as defaultI18n } from '../i18n/config';
 import type { i18n as I18nType } from 'i18next';
 
@@ -42,7 +43,15 @@ export const WidgetProvider = ({
   i18nConfig,
   children,
 }: WidgetProviderProps) => {
-  const widgetStore = store || createWidgetStore();
+  const widgetStore = useMemo(() => store || createWidgetStore(), [store]);
+
+  // Sync schemaData to Redux store
+  useEffect(() => {
+    if (schemaData) {
+      widgetStore.dispatch(setValues(schemaData));
+    }
+  }, [schemaData, widgetStore]);
+
   const [i18nInstance, setI18nInstance] = useState<I18nType | null>(
     customI18n || (i18nConfig?.resources ? null : defaultI18n)
   );
