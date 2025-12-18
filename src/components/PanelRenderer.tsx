@@ -91,7 +91,7 @@ export const PanelRenderer = ({
         return (
           <div 
             key={nestedPanel['panel-id'] || `panel-${index}`} 
-            className={orientation === 'horizontal' ? 'min-w-200 border-r-2 border-gray-300 float-left' : 'w-full'}
+            className={orientation === 'horizontal' ? 'min-w-200  border-gray-300 float-left' : 'w-full'}
             style={orientation === 'horizontal' ? { width: '200px' ,float:'left'} : {width:'100%'}}
           > 
             <PanelRenderer

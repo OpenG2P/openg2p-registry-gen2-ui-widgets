@@ -126,13 +126,13 @@ export const NumberInputWidget = ({ config }: NumberInputWidgetProps) => {
   // Handle blur - apply formatting and validation
   const handleBlur = useCallback(() => {
     setIsFocused(false);
-    
+
     const numValue = getNumericValue();
-    
+
     if (numValue !== null) {
       // Apply decimal precision
       const precisionApplied = applyDecimalPrecision(numValue, formatConfig);
-      
+
       // Format the value if formatOnBlur is enabled
       if (formatOnBlur) {
         const formatted = formatNumber(precisionApplied, formatConfig);
@@ -196,7 +196,7 @@ export const NumberInputWidget = ({ config }: NumberInputWidgetProps) => {
 
   // Get text alignment class
   const textAlignClass = useMemo(() => {
-    const align = formatConfig?.textAlign || 'right';
+    const align = formatConfig?.textAlign || 'left';
     return align === 'left' ? 'text-left' : 'text-right';
   }, [formatConfig?.textAlign]);
 
@@ -218,7 +218,7 @@ export const NumberInputWidget = ({ config }: NumberInputWidgetProps) => {
     const label = translateConfig(widgetConfig['widget-label']);
     const numValue = getNumericValue();
     const display = numValue !== null ? formatNumber(numValue, formatConfig) : '';
-    
+
     return (
       <div className="mb-3 NumberDisplayWidget" >
         {label && (
@@ -248,11 +248,10 @@ export const NumberInputWidget = ({ config }: NumberInputWidgetProps) => {
           )}
         </label>
         {maxLength && (
-          <span className={`text-xs ${
-            currentLength > maxLength
+          <span className={`text-xs ${currentLength > maxLength
               ? 'text-red-500'
               : 'text-gray-500'
-          }`}>
+            }`}>
             {currentLength} / {maxLength}
           </span>
         )}
@@ -268,11 +267,10 @@ export const NumberInputWidget = ({ config }: NumberInputWidgetProps) => {
         disabled={!isEnabled || widgetConfig['widget-readonly']}
         placeholder={placeholder}
         maxLength={maxLength}
-        className={`w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${textAlignClass} ${
-          touched && error.length > 0
+        className={`px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${textAlignClass} ${touched && error.length > 0
             ? 'border-red-500 focus:ring-red-500 focus:border-red-500'
             : 'border-gray-300'
-        } ${!isEnabled || widgetConfig['widget-readonly'] ? 'bg-gray-100 cursor-not-allowed' : 'bg-white'}`}
+          } ${!isEnabled || widgetConfig['widget-readonly'] ? 'bg-gray-100 cursor-not-allowed' : 'bg-white'}`}
         title={translateConfig(widgetConfig['widget-data-tooltip'])}
       />
       {touched && error.length > 0 && (

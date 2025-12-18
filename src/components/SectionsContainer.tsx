@@ -66,14 +66,13 @@ export const SectionsContainer = ({
       <style>{`
         #${containerId} {
           display: grid;
-          /* Grid: each column is 200px (one vertical panel) + 1.5rem gap between columns */
-          /* Create enough columns for the maximum vertical panels */
-          grid-template-columns: repeat(${maxVerticalPanels}, 210px);
+          /* Flexible columns: minimum 200px, but can grow equally to fill width */
+          grid-template-columns: repeat(${maxVerticalPanels}, minmax(200px, 1fr));
           gap: 1.5rem;
           width: 100%;
           align-items: start;
         }
-        
+
         /* Responsive: on smaller screens, use auto-fit for flexibility */
         @media (max-width: 1023px) {
           #${containerId} {

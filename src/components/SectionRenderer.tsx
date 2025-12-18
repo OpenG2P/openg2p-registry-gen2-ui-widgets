@@ -39,7 +39,7 @@ export const SectionRenderer = ({
     let count = 0;
     for (const panel of panels) {
       const orientation = panel['panel-orientation'] || 'vertical';
-      
+
       if (orientation === 'horizontal' && panel.panels) {
         // For horizontal panels, count all vertical panels nested inside (typically second level)
         count += countVerticalPanels(panel.panels);
@@ -147,7 +147,7 @@ export const SectionRenderer = ({
           }
         }
       `}</style>
-      <div 
+      <div
         className={`section ${sectionClassId} px-4 sm:px-6 lg:px-8 border-2 rounded-lg border-gray-300`}
         data-section-id={sectionId}
         style={{
@@ -155,7 +155,7 @@ export const SectionRenderer = ({
         }}
       >
         {section['section-title'] && (
-          <h2 className="text-xl font-semibold mb-4">{translateConfig(section['section-title'])}</h2>
+          <h2 className="text-xl font-semibold my-4">{translateConfig(section['section-title'])}</h2>
         )}
         <div id={gridId} className="section-panels">
           {editableSection.panels.map((panel, index) => (
@@ -176,13 +176,13 @@ export const SectionRenderer = ({
             {!isEditMode ? (
               <button
                 onClick={handleEdit}
-                className="text-blue-600 hover:text-blue-800 text-sm font-medium inline-flex items-center px-4 py-2 rounded-md hover:bg-blue-50 transition-colors"
+                className="text-blue-600 bg-gray-200 hover:text-blue-800 text-sm font-medium inline-flex items-center px-2 py-2 rounded-md hover:bg-blue-50 transition-colors"
               >
                 Edit details
                 <span className="ml-1">→</span>
               </button>
             ) : (
-              <>
+              <div className="flex gap-2">
                 <button
                   onClick={handleSave}
                   className="bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium px-4 py-2 rounded-md transition-colors"
@@ -195,7 +195,7 @@ export const SectionRenderer = ({
                 >
                   Cancel
                 </button>
-              </>
+              </div>
             )}
           </div>
         </div>
