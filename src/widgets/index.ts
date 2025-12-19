@@ -3,6 +3,7 @@ export { TextInputWidget } from './TextInputWidget';
 export { NumberInputWidget } from './NumberInputWidget';
 export { BooleanWidget } from './BooleanWidget';
 export { DateInputWidget } from './DateInputWidget';
+export { DateTimeInputWidget } from './DateTimeInputWidget';
 export { SelectWidget } from './SelectWidget';
 export { RadioWidget } from './RadioWidget';
 export { CheckboxWidget } from './CheckboxWidget';

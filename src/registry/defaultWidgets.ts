@@ -4,6 +4,7 @@ import {
   NumberInputWidget,
   BooleanWidget,
   DateInputWidget,
+  DateTimeInputWidget,
   SelectWidget,
   RadioWidget,
   CheckboxWidget,
@@ -32,6 +33,9 @@ export const registerDefaultWidgets = () => {
 
   // Date input widget
   widgetRegistry.register({ widget: 'date', component: DateInputWidget });
+
+  // DateTime input widget
+  widgetRegistry.register({ widget: 'datetime', component: DateTimeInputWidget });
 
   // Select/Dropdown widget
   widgetRegistry.register({ widget: 'select', component: SelectWidget });
