@@ -1,8 +1,25 @@
-import React, { useState, useMemo } from 'react';
+import { useState, useMemo, useCallback } from 'react';
+import { useStore, useDispatch } from 'react-redux';
+import { setValues } from '../store/widgetSlice';
 import { SectionConfig, PanelConfig } from '../types';
 import { UseBaseWidgetOptions } from '../hooks/useBaseWidget';
 import { PanelRenderer } from './PanelRenderer';
 import { useWidgetTranslation } from '../hooks/useWidgetTranslation';
+import { getValueByPath, setWidgetValue } from '../utils/pathUtils';
+import { useWidgetContext } from './WidgetProvider';
+
+export interface EditedField {
+  widget_id?: string;
+  data_path: string;
+  old_value: unknown;
+  new_value: unknown;
+}
+
+export interface SectionChanges {
+  section_id: string;
+  section_schema: SectionConfig;
+  edited_fields: EditedField[];
+}
 
 export interface SectionRendererProps {
   section: SectionConfig;
@@ -10,7 +27,9 @@ export interface SectionRendererProps {
   schemaData?: UseBaseWidgetOptions['schemaData'];
   onValueChange?: UseBaseWidgetOptions['onValueChange'];
   gridColumnSpan?: number; // Number of grid columns this section should span
+  onSectionSave?: (changes: SectionChanges) => Promise<void> | void;
 }
+
 
 /**
  * Renders a section with its panels
@@ -26,8 +45,12 @@ export const SectionRenderer = ({
   schemaData,
   onValueChange,
   gridColumnSpan,
+  onSectionSave,
 }: SectionRendererProps) => {
   const { translateConfig } = useWidgetTranslation();
+  const { schemaData: contextSchemaData } = useWidgetContext();
+  const store = useStore();
+  const dispatch = useDispatch();
 
   const sectionId = section['section-id'];
   const gridId = `section-panels-${sectionId}`;
@@ -90,16 +113,98 @@ export const SectionRenderer = ({
     setIsEditMode(true);
   };
 
-  // Handle save button click
-  const handleSave = () => {
-    setIsEditMode(false);
-    // You can add save logic here, e.g., call an API
+  const collectWidgets = (panels: PanelConfig[]): any[] => {
+    let widgets: any[] = [];
+    panels.forEach(panel => {
+      if (panel.widgets) {
+        widgets = [...widgets, ...panel.widgets];
+      }
+      if (panel.panels) {
+        widgets = [...widgets, ...collectWidgets(panel.panels)];
+      }
+    });
+    return widgets;
   };
 
-  // Handle cancel button click
+  // Handle save button click
+  const handleSave = async () => {
+    if (!store || !onSectionSave) {
+      console.warn('Missing store or onSectionSave in SectionRenderer');
+      setIsEditMode(false);
+      return;
+    }
+
+    const sectionWidgets = collectWidgets(section.panels);
+    const currentState = (store.getState() as any).widget as any;
+    const currentSchemaData = currentState.values || {};
+    const oldSchemaData = schemaData || contextSchemaData;
+
+    const editedFields: SectionChanges['edited_fields'] = [];
+
+    sectionWidgets.forEach(widget => {
+      const widgetId = widget['widget-id'];
+      const dataPath = widget['widget-data-path'];
+
+      if (!dataPath) return;
+      const currentValue = getValueByPath(currentSchemaData, dataPath);
+      const oldValue = getValueByPath(oldSchemaData, dataPath);
+
+      if (JSON.stringify(oldValue) !== JSON.stringify(currentValue)) {
+        editedFields.push({
+          widget_id: widgetId,
+          data_path: dataPath,
+          old_value: oldValue,
+          new_value: currentValue,
+        });
+      }
+    });
+
+    if (editedFields.length > 0) {
+      const changes: SectionChanges = {
+        section_id: sectionId,
+        section_schema: section,
+        edited_fields: editedFields,
+      };
+
+      try {
+        await onSectionSave(changes);
+        setIsEditMode(false);
+      } catch (error) {
+        console.error("Section Changes Save failed", error);
+      }
+    } else {
+      setIsEditMode(false);
+    }
+  };
+
+ // Handle cancel button click
   const handleCancel = () => {
+    // Revert values in store to original schema data
+    const sectionWidgets = collectWidgets(section.panels);
+    const oldSchemaData = schemaData || contextSchemaData;
+    const currentStoreValues = (store.getState() as any).widget.values;
+    let newStoreValues = currentStoreValues;
+
+    sectionWidgets.forEach(widget => {
+      const widgetId = widget['widget-id'];
+      const dataPath = widget['widget-data-path'];
+
+      if (widgetId) {
+        let oldValue = getValueByPath(oldSchemaData, dataPath);
+        newStoreValues = setWidgetValue(
+          newStoreValues,
+          dataPath,
+          widgetId,
+          oldValue
+        );
+      }
+    });
+
+    if (newStoreValues !== currentStoreValues) {
+      dispatch(setValues(newStoreValues));
+    }
+
     setIsEditMode(false);
-    // Revert any changes - the original section config will be used
   };
 
   return (
@@ -203,4 +308,3 @@ export const SectionRenderer = ({
     </>
   );
 };
-

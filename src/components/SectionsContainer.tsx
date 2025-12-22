@@ -1,7 +1,6 @@
-import React from 'react';
 import { SectionConfig } from '../types';
 import { UseBaseWidgetOptions } from '../hooks/useBaseWidget';
-import { SectionRenderer } from './SectionRenderer';
+import { SectionRenderer, SectionChanges } from './SectionRenderer';
 
 export interface SectionsContainerProps {
   sections: SectionConfig[];
@@ -9,6 +8,8 @@ export interface SectionsContainerProps {
   schemaData?: UseBaseWidgetOptions['schemaData'];
   onValueChange?: UseBaseWidgetOptions['onValueChange'];
   className?: string;
+  onSectionSave?: (changes: SectionChanges) => Promise<void> | void;
+
 }
 
 /**
@@ -19,7 +20,7 @@ const countVerticalPanels = (panels: SectionConfig['panels']): number => {
   let count = 0;
   for (const panel of panels) {
     const orientation = panel['panel-orientation'] || 'vertical';
-    
+
     if (orientation === 'horizontal' && panel.panels) {
       // For horizontal panels, count all vertical panels nested inside
       count += countVerticalPanels(panel.panels);
@@ -51,6 +52,7 @@ export const SectionsContainer = ({
   schemaData,
   onValueChange,
   className = '',
+  onSectionSave,
 }: SectionsContainerProps) => {
   // Find the maximum number of vertical panels across all sections
   // This determines the grid size (minimum 3 columns)
@@ -80,7 +82,7 @@ export const SectionsContainer = ({
           }
         }
       `}</style>
-      <div 
+      <div
         id={containerId}
         className={`sections-container ${className}`}
       >
@@ -94,6 +96,7 @@ export const SectionsContainer = ({
               schemaData={schemaData}
               onValueChange={onValueChange}
               gridColumnSpan={verticalPanelsCount}
+              onSectionSave={onSectionSave}
             />
           );
         })}
