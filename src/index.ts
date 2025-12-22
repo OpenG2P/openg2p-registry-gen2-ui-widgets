@@ -11,11 +11,13 @@ export { useBaseWidget } from './hooks/useBaseWidget';
 export type { UseBaseWidgetOptions } from './hooks/useBaseWidget';
 
 // Components
+// Components
 export { WidgetRenderer } from './components/WidgetRenderer';
 export { WidgetProvider, useWidgetContext } from './components/WidgetProvider';
-export { SectionRenderer } from './components/SectionRenderer';
-export { SectionsContainer } from './components/SectionsContainer';
 export { PanelRenderer } from './components/PanelRenderer';
+export { SectionRenderer } from './components/SectionRenderer';
+export type { SectionChanges } from './components/SectionRenderer';
+export { SectionsContainer } from './components/SectionsContainer';
 
 // Registry (import defaultWidgets to auto-register widgets)
 import './registry/defaultWidgets';
