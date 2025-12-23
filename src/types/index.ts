@@ -229,7 +229,15 @@ export interface BaseWidgetConfig {
     'widget-label': string;
     widget?: string; // Widget type for column
     'widget-type'?: string;
-    'widget-data-path': string;
+    'widget-data-path'?: string;
+    'widget-data-default'?: any;
+    'widget-data-format'?: WidgetFormat;
+    'widget-data-validation'?: WidgetValidation;
+    'widget-data-source'?: DataSource;
+    'widget-data-placeholder'?: string;
+    'widget-required'?: boolean;
+    'widget-readonly'?: boolean;
+    [key: string]: any; // Allow additional widget-specific properties
   }>;
   'widget-data-operations'?: {
     add?: boolean;
@@ -238,6 +246,7 @@ export interface BaseWidgetConfig {
   };
   'widget-data-add-label'?: string;
   'widget-data-collapsed'?: boolean;
+  'widget-column-span'?: number; // Number of columns to span (1, 2, 3, etc.) - for table widgets and layout control
   _comment?: string; // For schema comments/documentation
   [key: string]: any; // Allow additional widget-specific properties
 }
@@ -248,6 +257,7 @@ export interface BaseWidgetConfig {
 export interface PanelConfig {
   'panel-id': string;
   'panel-orientation'?: 'horizontal' | 'vertical'; // optional, defaults to "vertical"
+  'panel-column-span'?: number; // Number of columns to span (1, 2, 3, etc.) - for layout control
   // Styling fields removed - only panel-orientation remains
   panels?: PanelConfig[]; // Nested panels
   widgets?: BaseWidgetConfig[]; // Widgets within this panel
@@ -260,6 +270,7 @@ export interface SectionConfig {
   'section-id': string;
   'section-title'?: string; // Optional - can be empty for card-based layouts
   'section-editable'?: boolean;
+  'section-column-span'?: number; // Number of columns to span (1, 2, 3, etc.) - for layout control
   panels: PanelConfig[];
 }
 

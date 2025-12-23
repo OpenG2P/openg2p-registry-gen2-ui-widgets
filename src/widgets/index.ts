@@ -14,3 +14,4 @@ export { IterableAccordionWidget } from './IterableAccordionWidget';
 export { PhoneInputWidget } from './PhoneInputWidget';
 export { CurrencyInputWidget } from './CurrencyInputWidget';
 export { DisplayWidget } from './DisplayWidget';
+export { TableWidget } from './TableWidget';
