@@ -13,6 +13,54 @@ export interface SectionsContainerProps {
 }
 
 /**
+ * Recursively check if a panel contains a table widget
+ */
+const hasTableWidget = (panels: SectionConfig['panels']): boolean => {
+  for (const panel of panels) {
+    // Check widgets in this panel
+    if (panel.widgets) {
+      for (const widget of panel.widgets) {
+        if (widget.widget === 'table' || widget['widget-type'] === 'table') {
+          return true;
+        }
+      }
+    }
+    // Recursively check nested panels
+    if (panel.panels) {
+      if (hasTableWidget(panel.panels)) {
+        return true;
+      }
+    }
+  }
+  return false;
+};
+
+/**
+ * Recursively get table widget column span from panels
+ */
+const getTableWidgetColumnSpan = (panels: SectionConfig['panels']): number | null => {
+  for (const panel of panels) {
+    // Check widgets in this panel
+    if (panel.widgets) {
+      for (const widget of panel.widgets) {
+        if (widget.widget === 'table' || widget['widget-type'] === 'table') {
+          // Return the widget's column span if specified, otherwise null
+          return widget['widget-column-span'] || null;
+        }
+      }
+    }
+    // Recursively check nested panels
+    if (panel.panels) {
+      const nestedSpan = getTableWidgetColumnSpan(panel.panels);
+      if (nestedSpan !== null) {
+        return nestedSpan;
+      }
+    }
+  }
+  return null;
+};
+
+/**
  * Recursively count all vertical panels in a section
  * Handles nested structure: horizontal panels containing vertical panels
  */
@@ -56,8 +104,16 @@ export const SectionsContainer = ({
 }: SectionsContainerProps) => {
   // Find the maximum number of vertical panels across all sections
   // This determines the grid size (minimum 3 columns)
+  // Also account for table widgets and their explicit column spans
   const maxVerticalPanels = Math.max(
-    ...sections.map(section => countVerticalPanels(section.panels)),
+    ...sections.map(section => {
+      const panelCount = countVerticalPanels(section.panels);
+      const tableWidgetSpan = getTableWidgetColumnSpan(section.panels);
+      // Use explicit table widget span if specified, otherwise use default logic
+      return tableWidgetSpan !== null 
+        ? Math.max(panelCount, tableWidgetSpan)
+        : (hasTableWidget(section.panels) ? Math.max(panelCount, 2) : panelCount);
+    }),
     3 // Minimum 3 columns
   );
 
@@ -75,6 +131,18 @@ export const SectionsContainer = ({
           align-items: start;
         }
 
+        /* Sections with table widgets should expand to fill available space only if no explicit span */
+        #${containerId} > .section[data-has-table="true"][data-has-explicit-span="false"] {
+          grid-column: 1 / -1; /* Span all columns */
+          width: 100%;
+        }
+        
+        /* Sections with explicit table widget span - inline style will handle grid-column */
+        /* This rule ensures width is 100% but doesn't override grid-column */
+        #${containerId} > .section[data-has-explicit-span="true"] {
+          width: 100%;
+        }
+
         /* Responsive: on smaller screens, use auto-fit for flexibility */
         @media (max-width: 1023px) {
           #${containerId} {
@@ -87,7 +155,30 @@ export const SectionsContainer = ({
         className={`sections-container ${className}`}
       >
         {sections.map((section) => {
+          // Check if section has explicit column span
+          if (section['section-column-span']) {
+            return (
+              <SectionRenderer
+                key={section['section-id']}
+                section={section}
+                apiAdapter={apiAdapter}
+                schemaData={schemaData}
+                onValueChange={onValueChange}
+                gridColumnSpan={section['section-column-span']}
+                onSectionSave={onSectionSave}
+              />
+            );
+          }
+          
           const verticalPanelsCount = countVerticalPanels(section.panels);
+          const tableWidgetColumnSpan = getTableWidgetColumnSpan(section.panels);
+          const containsTable = hasTableWidget(section.panels);
+          // If section contains a table widget with explicit column span, use it
+          // Otherwise, if it has a table widget, ensure it spans at least 2 columns
+          // Otherwise, use the vertical panel count
+          const columnSpan = tableWidgetColumnSpan !== null 
+            ? tableWidgetColumnSpan 
+            : (containsTable ? Math.max(verticalPanelsCount, 2) : verticalPanelsCount);
           return (
             <SectionRenderer
               key={section['section-id']}
@@ -95,7 +186,7 @@ export const SectionsContainer = ({
               apiAdapter={apiAdapter}
               schemaData={schemaData}
               onValueChange={onValueChange}
-              gridColumnSpan={verticalPanelsCount}
+              gridColumnSpan={columnSpan}
               onSectionSave={onSectionSave}
             />
           );

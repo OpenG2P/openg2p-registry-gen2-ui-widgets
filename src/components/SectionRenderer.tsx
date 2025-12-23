@@ -78,8 +78,70 @@ export const SectionRenderer = ({
     return count;
   };
 
+  // Check if section contains a table widget
+  const checkForTableWidget = (panels: PanelConfig[]): boolean => {
+    for (const panel of panels) {
+      if (panel.widgets) {
+        for (const widget of panel.widgets) {
+          if (widget.widget === 'table' || widget['widget-type'] === 'table') {
+            return true;
+          }
+        }
+      }
+      if (panel.panels) {
+        if (checkForTableWidget(panel.panels)) {
+          return true;
+        }
+      }
+    }
+    return false;
+  };
+
+  // Get table widget column span if explicitly set
+  const getTableWidgetColumnSpan = (panels: PanelConfig[]): number | null => {
+    for (const panel of panels) {
+      if (panel.widgets) {
+        for (const widget of panel.widgets) {
+          if (widget.widget === 'table' || widget['widget-type'] === 'table') {
+            // Return the widget's column span if specified, otherwise null
+            return widget['widget-column-span'] || null;
+          }
+        }
+      }
+      if (panel.panels) {
+        const nestedSpan = getTableWidgetColumnSpan(panel.panels);
+        if (nestedSpan !== null) {
+          return nestedSpan;
+        }
+      }
+    }
+    return null;
+  };
+
+  const hasTableWidget = checkForTableWidget(section.panels);
+  const tableWidgetColumnSpan = getTableWidgetColumnSpan(section.panels);
+
   const verticalPanelsCount = countVerticalPanels(section.panels);
-  const columnSpan = gridColumnSpan || verticalPanelsCount;
+  // If section contains a table widget with explicit column span, use it
+  // Otherwise, if it has a table widget, ensure it spans at least 2 columns
+  // Otherwise, use the vertical panel count
+  const columnSpan = gridColumnSpan || 
+    (tableWidgetColumnSpan !== null ? tableWidgetColumnSpan : 
+     (hasTableWidget ? Math.max(verticalPanelsCount, 2) : verticalPanelsCount));
+  
+  // Check if table widget has explicit column span (not default)
+  const hasExplicitTableSpan = tableWidgetColumnSpan !== null;
+  
+  // Debug: Log the column span calculation
+  // console.log('Section column span:', { 
+  //   sectionId, 
+  //   gridColumnSpan, 
+  //   tableWidgetColumnSpan, 
+  //   hasTableWidget, 
+  //   verticalPanelsCount, 
+  //   columnSpan, 
+  //   hasExplicitTableSpan 
+  // });
 
   // Edit mode state
   const [isEditMode, setIsEditMode] = useState(false);
@@ -213,8 +275,12 @@ export const SectionRenderer = ({
         .${sectionClassId} {
           /* Section spans grid columns based on vertical panel count */
           /* This ensures all sections align to the same grid boundaries */
-          grid-column: span ${columnSpan};
           width: 100%;
+        }
+        
+        /* Only set grid-column in CSS if no explicit span (inline style will handle explicit spans) */
+        .${sectionClassId}[data-has-explicit-span="false"] {
+          grid-column: span ${columnSpan};
         }
         
         #${gridId} {
@@ -255,8 +321,12 @@ export const SectionRenderer = ({
       <div
         className={`section ${sectionClassId} px-4 sm:px-6 lg:px-8 border-2 rounded-lg border-gray-300`}
         data-section-id={sectionId}
+        data-has-table={hasTableWidget ? 'true' : 'false'}
+        data-has-explicit-span={hasExplicitTableSpan ? 'true' : 'false'}
+        data-column-span={columnSpan}
         style={{
           gridColumn: `span ${columnSpan}`,
+          width: '100%',
         }}
       >
         {section['section-title'] && (
