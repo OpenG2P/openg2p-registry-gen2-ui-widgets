@@ -29,10 +29,6 @@ export const PanelRenderer = ({
   const nestedPanels = panel.panels || [];
   const widgets = panel.widgets || [];
 
-  // #region agent log
-  fetch('http://127.0.0.1:7242/ingest/e62c6601-d40c-4700-97c4-c232bd6729bc',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'PanelRenderer.tsx:33',message:'PanelRenderer entry',data:{panelId:panel['panel-id'],orientation,nestedPanelsCount:nestedPanels.length,widgetsCount:widgets.length},timestamp:Date.now(),sessionId:'debug-session',runId:'initial',hypothesisId:'B'})}).catch(()=>{});
-  // #endregion
-
   // For horizontal orientation, use grid for equal-width columns
   // Dynamic grid based on number of nested panels
   // For vertical orientation, use flex column
@@ -69,9 +65,6 @@ export const PanelRenderer = ({
 
   const { className: containerClass, style: containerStyle } = getContainerClassAndStyle();
 
-  // #region agent log
-  fetch('http://127.0.0.1:7242/ingest/e62c6601-d40c-4700-97c4-c232bd6729bc',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'PanelRenderer.tsx:68',message:'Container class computed',data:{panelId:panel['panel-id'],orientation,containerClass,containerStyle,nestedPanelsCount:nestedPanels.length},timestamp:Date.now(),sessionId:'debug-session',runId:'initial',hypothesisId:'A'})}).catch(()=>{});
-  // #endregion
 
   const content = (
     <div 
@@ -85,9 +78,6 @@ export const PanelRenderer = ({
     >
       {/* Render nested panels */}
       {nestedPanels.map((nestedPanel, index) => {
-        // #region agent log
-        fetch('http://127.0.0.1:7242/ingest/e62c6601-d40c-4700-97c4-c232bd6729bc',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'PanelRenderer.tsx:87',message:'Rendering nested panel',data:{parentPanelId:panel['panel-id'],nestedPanelId:nestedPanel['panel-id'],index,orientation,nestedPanelOrientation:nestedPanel['panel-orientation']},timestamp:Date.now(),sessionId:'debug-session',runId:'initial',hypothesisId:'D'})}).catch(()=>{});
-        // #endregion
         return (
           <div 
             key={nestedPanel['panel-id'] || `panel-${index}`} 

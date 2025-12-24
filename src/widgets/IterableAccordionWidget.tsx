@@ -128,9 +128,19 @@ export const IterableAccordionWidget = ({ config }: IterableAccordionWidgetProps
         <div className="space-y-2">
           {items.map((itemValue, index) => {
             const isCollapsed = collapsedItems[index] ?? defaultCollapsed;
+            const parentPath = widgetConfig['widget-data-path'];
+            const childPath = itemConfig['widget-data-path'];
+            let itemDataPath: string | undefined;
+
+            if (parentPath) {
+              const indexPath = `${parentPath}.${index}`;
+              itemDataPath = childPath ? `${indexPath}.${childPath}` : indexPath;
+            }
+
             const itemWidgetConfig: BaseWidgetConfig = {
               ...itemConfig,
               'widget-id': `${widgetConfig['widget-id']}-item-${index}`,
+              'widget-data-path': itemDataPath,
               'widget-readonly': isReadonly || !operations.edit,
             };
 
