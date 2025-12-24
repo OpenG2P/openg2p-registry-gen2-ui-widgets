@@ -51,7 +51,7 @@ export const SelectWidget = ({ config }: SelectWidgetProps) => {
         onChange={(e) => onChange(e.target.value)}
         onBlur={onBlur}
         disabled={!isEnabled || loading || widgetConfig['widget-readonly']}
-        className={`w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
+        className={`px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
           touched && error.length > 0
             ? 'border-red-500 focus:ring-red-500 focus:border-red-500'
             : 'border-gray-300'
