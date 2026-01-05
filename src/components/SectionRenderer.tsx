@@ -8,17 +8,12 @@ import { useWidgetTranslation } from '../hooks/useWidgetTranslation';
 import { getValueByPath, setWidgetValue } from '../utils/pathUtils';
 import { useWidgetContext } from './WidgetProvider';
 
-export interface EditedField {
-  widget_id?: string;
-  data_path: string;
-  old_value: unknown;
-  new_value: unknown;
-}
 
 export interface SectionChanges {
   section_id: string;
   section_schema: SectionConfig;
-  edited_fields: EditedField[];
+  old_section_value: unknown;
+  new_section_value: unknown;
 }
 
 export interface SectionRendererProps {
@@ -188,6 +183,16 @@ export const SectionRenderer = ({
     return widgets;
   };
 
+  const buildSectionSnapshot = (widgets: any[], sourceData: any) => {
+    const snapshot: Record<string, any> = {};
+    widgets.forEach(widget => {
+      const dataPath = widget['widget-data-path'];
+      if (!dataPath) return;
+      snapshot[dataPath] = getValueByPath(sourceData, dataPath);
+    });
+    return snapshot;
+ };
+
   // Handle save button click
   const handleSave = async () => {
     if (!store || !onSectionSave) {
@@ -195,48 +200,38 @@ export const SectionRenderer = ({
       setIsEditMode(false);
       return;
     }
+    const sectionWidgets = collectWidgets(section.panels)
+    const currentState = (store.getState() as any).widget
+    const currentSchemaData = currentState.values || {}
+    const oldSchemaData = schemaData || contextSchemaData
 
-    const sectionWidgets = collectWidgets(section.panels);
-    const currentState = (store.getState() as any).widget as any;
-    const currentSchemaData = currentState.values || {};
-    const oldSchemaData = schemaData || contextSchemaData;
+    const oldSectionValue = buildSectionSnapshot(
+      sectionWidgets,
+      oldSchemaData
+    )
 
-    const editedFields: SectionChanges['edited_fields'] = [];
+    const newSectionValue = buildSectionSnapshot(
+      sectionWidgets,
+      currentSchemaData
+    )
 
-    sectionWidgets.forEach(widget => {
-      const widgetId = widget['widget-id'];
-      const dataPath = widget['widget-data-path'];
-
-      if (!dataPath) return;
-      const currentValue = getValueByPath(currentSchemaData, dataPath);
-      const oldValue = getValueByPath(oldSchemaData, dataPath);
-
-      if (JSON.stringify(oldValue) !== JSON.stringify(currentValue)) {
-        editedFields.push({
-          widget_id: widgetId,
-          data_path: dataPath,
-          old_value: oldValue,
-          new_value: currentValue,
-        });
-      }
-    });
-
-    if (editedFields.length > 0) {
+    if (JSON.stringify(oldSectionValue) !== JSON.stringify(newSectionValue)) {
       const changes: SectionChanges = {
         section_id: sectionId,
         section_schema: section,
-        edited_fields: editedFields,
-      };
+        old_section_value: oldSectionValue,
+        new_section_value: newSectionValue,
+      }
 
       try {
-        await onSectionSave(changes);
-        setIsEditMode(false);
+        await onSectionSave(changes)
       } catch (error) {
-        console.error("Section Changes Save failed", error);
+        console.error('Section Changes Save failed', error)
       }
-    } else {
-      setIsEditMode(false);
     }
+
+    setIsEditMode(false)
+
   };
 
  // Handle cancel button click
