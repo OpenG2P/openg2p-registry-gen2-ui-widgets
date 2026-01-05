@@ -1,11 +1,11 @@
-import { useTranslation } from 'react-i18next';
+import { useWidgetContext } from '../components/WidgetProvider';
 
 /**
  * Custom hook for widget translations
  * Provides translation function with widget-specific namespace and fallback support
  */
 export const useWidgetTranslation = () => {
-  const { t, i18n } = useTranslation();
+  const { translate: translateFunction } = useWidgetContext();
 
   /**
    * Translate a key with flexible namespace support
@@ -34,13 +34,13 @@ export const useWidgetTranslation = () => {
       return options?.defaultValue || '';
     }
 
-    // Always try to translate - i18next will return the key if translation not found
-    // This allows flat translation structure where "Name" is looked up directly
-    const translated = t(keyOrString, { ...options, defaultValue: keyOrString });
+    // Use the provided translation function or fallback to the key
+    if (translateFunction) {
+      return translateFunction(keyOrString, options) || options?.defaultValue || keyOrString;
+    }
     
-    // If translation returned the key itself (meaning no translation found),
-    // return it as-is (fallback to original string)
-    return translated;
+    // Fallback to key if no translation function available
+    return options?.defaultValue || keyOrString;
   };
 
   /**
@@ -57,26 +57,28 @@ export const useWidgetTranslation = () => {
     return translate(value, { defaultValue: fallback || value });
   };
 
+  // No need of this getLanguage and changeLanguage functions
+
   /**
    * Get current language
    */
-  const getLanguage = (): string => {
-    return i18n.language || 'en';
-  };
+  // const getLanguage = (): string => {
+  //   return i18n.language || 'en';
+  // };
 
   /**
    * Change language
    */
-  const changeLanguage = (lng: string): Promise<void> => {
-    return i18n.changeLanguage(lng).then(() => undefined);
-  };
+  // const changeLanguage = (lng: string): Promise<void> => {
+  //   return i18n.changeLanguage(lng).then(() => undefined);
+  // };
 
   return {
     t: translate,
     translate,
     translateConfig,
-    getLanguage,
-    changeLanguage,
-    i18n,
+    // getLanguage,
+    // changeLanguage,
+    // i18n: null,
   };
 };
