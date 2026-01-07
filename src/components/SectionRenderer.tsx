@@ -328,7 +328,18 @@ export const SectionRenderer = ({
     widgets.forEach(widget => {
       const dataPath = widget['widget-data-path'];
       if (!dataPath) return;
-      snapshot[dataPath] = getValueByPath(sourceData, dataPath);
+      
+      // Handle multi-path (object) or single path (string)
+      if (typeof dataPath === 'object') {
+        // Multi-path: store each path separately
+        Object.entries(dataPath).forEach(([key, path]) => {
+          if (typeof path === 'string') {
+            snapshot[path] = getValueByPath(sourceData, path);
+          }
+        });
+      } else if (typeof dataPath === 'string') {
+        snapshot[dataPath] = getValueByPath(sourceData, dataPath);
+      }
     });
     return snapshot;
  };
@@ -398,14 +409,29 @@ export const SectionRenderer = ({
       const widgetId = widget['widget-id'];
       const dataPath = widget['widget-data-path'];
 
-      if (widgetId) {
-        let oldValue = getValueByPath(oldSchemaData, dataPath);
-        newStoreValues = setWidgetValue(
-          newStoreValues,
-          dataPath,
-          widgetId,
-          oldValue
-        );
+      if (widgetId && dataPath) {
+        // Handle multi-path (object) or single path (string)
+        let oldValue: any;
+        if (typeof dataPath === 'object') {
+          // Multi-path: get values for each path
+          oldValue = {};
+          Object.entries(dataPath).forEach(([key, path]) => {
+            if (typeof path === 'string') {
+              oldValue[key] = getValueByPath(oldSchemaData, path);
+            }
+          });
+        } else if (typeof dataPath === 'string') {
+          oldValue = getValueByPath(oldSchemaData, dataPath);
+        }
+        
+        if (oldValue !== undefined) {
+          newStoreValues = setWidgetValue(
+            newStoreValues,
+            dataPath,
+            widgetId,
+            oldValue
+          );
+        }
       }
     });
 
