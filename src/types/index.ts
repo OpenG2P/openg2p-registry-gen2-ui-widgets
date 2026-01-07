@@ -264,6 +264,18 @@ export interface PanelConfig {
 }
 
 /**
+ * Supporting document configuration
+ */
+export interface SupportingDocumentConfig {
+  'document-data-path': string;
+  'document-type'?: string; // e.g., "image", "pdf", etc.
+  'document-required'?: boolean;
+  'document-label'?: string; // Optional label for the document
+  'document-accept'?: string; // File accept types (e.g., ".pdf,.doc,.docx")
+  'document-max-size'?: number; // Maximum file size in bytes
+}
+
+/**
  * Section configuration
  */
 export interface SectionConfig {
@@ -271,6 +283,7 @@ export interface SectionConfig {
   'section-title'?: string; // Optional - can be empty for card-based layouts
   'section-editable'?: boolean;
   'section-column-span'?: number; // Number of columns to span (1, 2, 3, etc.) - for layout control
+  'section-supporting-documents'?: SupportingDocumentConfig[];
   panels: PanelConfig[];
 }
 

@@ -9,8 +9,11 @@ export const createWidgetStore = () => {
     middleware: (getDefaultMiddleware) =>
       getDefaultMiddleware({
         serializableCheck: {
-          // Ignore these action types
-          ignoredActions: ['widget/setValue', 'widget/setValues'],
+          // Ignore these action types - File objects should be serialized before reaching Redux
+          // The FileInputWidget handles serialization before dispatching
+          ignoredActions: ['widget/setValue', 'widget/setValues', 'widget/setError'],
+          // Also ignore the values path to prevent warnings for serialized file structures
+          ignoredPaths: ['widget.values'],
         },
       }),
   });

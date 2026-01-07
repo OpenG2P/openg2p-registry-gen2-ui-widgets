@@ -1,12 +1,14 @@
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useMemo, useCallback, useRef, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { useStore, useDispatch } from 'react-redux';
 import { setValues } from '../store/widgetSlice';
-import { SectionConfig, PanelConfig } from '../types';
+import { SectionConfig, PanelConfig, SupportingDocumentConfig } from '../types';
 import { UseBaseWidgetOptions } from '../hooks/useBaseWidget';
 import { PanelRenderer } from './PanelRenderer';
 import { useWidgetTranslation } from '../hooks/useWidgetTranslation';
 import { getValueByPath, setWidgetValue } from '../utils/pathUtils';
 import { useWidgetContext } from './WidgetProvider';
+import { FileInputWidget } from '../widgets/FileInputWidget';
 
 
 export interface SectionChanges {
@@ -127,19 +129,48 @@ export const SectionRenderer = ({
   // Check if table widget has explicit column span (not default)
   const hasExplicitTableSpan = tableWidgetColumnSpan !== null;
   
-  // Debug: Log the column span calculation
-  // console.log('Section column span:', { 
-  //   sectionId, 
-  //   gridColumnSpan, 
-  //   tableWidgetColumnSpan, 
-  //   hasTableWidget, 
-  //   verticalPanelsCount, 
-  //   columnSpan, 
-  //   hasExplicitTableSpan 
-  // });
-
+  // Supporting documents configuration
+  const supportingDocuments = section['section-supporting-documents'] || [];
+  const hasSupportingDocuments = supportingDocuments.length > 0;
+  
   // Edit mode state
   const [isEditMode, setIsEditMode] = useState(false);
+  const sectionRef = useRef<HTMLDivElement>(null);
+  const [editSectionPosition, setEditSectionPosition] = useState<{
+    top: number;
+    left: number;
+    width: number;
+  } | null>(null);
+  
+  // Capture section position when entering edit mode and update on scroll
+  useEffect(() => {
+    if (isEditMode && sectionRef.current) {
+      const updatePosition = () => {
+        if (sectionRef.current) {
+          const rect = sectionRef.current.getBoundingClientRect();
+          setEditSectionPosition({
+            top: rect.top + window.scrollY,
+            left: rect.left + window.scrollX,
+            width: rect.width,
+          });
+        }
+      };
+      
+      // Initial position calculation
+      requestAnimationFrame(updatePosition);
+      
+      // Update position on scroll to keep it aligned with original section
+      window.addEventListener('scroll', updatePosition, { passive: true });
+      window.addEventListener('resize', updatePosition, { passive: true });
+      
+      return () => {
+        window.removeEventListener('scroll', updatePosition);
+        window.removeEventListener('resize', updatePosition);
+      };
+    } else if (!isEditMode) {
+      setEditSectionPosition(null);
+    }
+  }, [isEditMode]);
 
   // Recursively modify panels to set readonly based on edit mode
   const makePanelsEditable = (panels: PanelConfig[], editable: boolean): PanelConfig[] => {
@@ -168,6 +199,115 @@ export const SectionRenderer = ({
   // Handle edit button click
   const handleEdit = () => {
     setIsEditMode(true);
+  };
+  
+  // Render the edit section (absolutely positioned duplicate via portal)
+  const renderEditSection = () => {
+    if (!isEditMode || !editSectionPosition) return null;
+    
+    const editGridId = `${gridId}-edit`;
+    
+    return createPortal(
+      <>
+        <style>{`
+          #${editGridId} {
+            display: flex;
+            flex-wrap: wrap;
+            width: 100%;
+          }
+          #${editGridId} > .panel-wrapper {
+            flex: 1 1 100%;
+            min-width: 0;
+          }
+          @media (min-width: 640px) {
+            #${editGridId} > .panel-wrapper {
+              flex: 1 1 calc(50% - 0.75rem);
+            }
+          }
+          @media (min-width: 1024px) {
+            #${editGridId} > .panel-wrapper {
+              flex: 1 1 calc(33.333% - 1rem);
+            }
+          }
+          @media (min-width: 1280px) {
+            #${editGridId} > .panel-wrapper {
+              flex: 1 1 calc(25% - 1.125rem);
+            }
+          }
+          @media (min-width: 1536px) {
+            #${editGridId} > .panel-wrapper {
+              flex: 1 1 calc(20% - 1.2rem);
+            }
+          }
+        `}</style>
+        <div
+          className={`section ${sectionClassId} ${sectionClassId}-edit px-4 sm:px-6 lg:px-8 border-2 rounded-lg`}
+          data-section-id={`${sectionId}-edit`}
+          style={{
+            position: 'absolute',
+            top: `${editSectionPosition.top}px`,
+            left: `${editSectionPosition.left}px`,
+            width: `${editSectionPosition.width}px`,
+            maxHeight: '90vh',
+            overflowY: 'auto',
+          }}
+        >
+          {section['section-title'] && (
+            <h2 className="text-xl font-semibold my-4">{translateConfig(section['section-title'])}</h2>
+          )}
+          <div id={editGridId} className="section-panels">
+            {editableSection.panels.map((panel, index) => (
+              <div
+                key={panel['panel-id'] || `section-panel-${index}`}
+                className="panel-wrapper"
+              >
+                <PanelRenderer
+                  panel={panel}
+                  apiAdapter={apiAdapter}
+                  schemaData={schemaData}
+                  onValueChange={onValueChange}
+                />
+              </div>
+            ))}
+            <hr className="border-gray-300 my-4 w-full" />
+            <div className="edit-controls-container">
+              {hasSupportingDocuments && (
+                <div className="supporting-documents-container">
+                  <div className="supporting-documents-title">
+                    {translateConfig('Upload Supporting Documents') || 'Upload Supporting Documents'}
+                  </div>
+                  <div className="supporting-documents-grid">
+                    {supportingDocuments.map((doc, index) => {
+                      const docConfig = createDocumentWidgetConfig(doc, sectionId, index);
+                      return (
+                        <div key={`${sectionId}-doc-${index}`} className="supporting-document-item">
+                          <FileInputWidget config={docConfig} />
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+              <div className="edit-controls-buttons">
+                <button
+                  onClick={handleSave}
+                  className="bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium px-4 py-2 rounded-md transition-colors"
+                >
+                  Save
+                </button>
+                <button
+                  onClick={handleCancel}
+                  className="bg-gray-200 hover:bg-gray-300 text-gray-700 text-sm font-medium px-4 py-2 rounded-md transition-colors"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </>,
+      document.body
+    );
   };
 
   const collectWidgets = (panels: PanelConfig[]): any[] => {
@@ -215,6 +355,18 @@ export const SectionRenderer = ({
       currentSchemaData
     )
 
+    // Include supporting documents in the snapshot if they exist
+    if (hasSupportingDocuments) {
+      supportingDocuments.forEach((doc, index) => {
+        const widgetId = `supporting-doc-${sectionId}-${index}`;
+        const dataPath = doc['document-data-path'];
+        const oldValue = getValueByPath(oldSchemaData, dataPath);
+        const newValue = getValueByPath(currentSchemaData, dataPath);
+        oldSectionValue[dataPath] = oldValue;
+        newSectionValue[dataPath] = newValue;
+      });
+    }
+
     if (JSON.stringify(oldSectionValue) !== JSON.stringify(newSectionValue)) {
       const changes: SectionChanges = {
         section_id: sectionId,
@@ -257,6 +409,21 @@ export const SectionRenderer = ({
       }
     });
 
+    // Also revert supporting documents if any
+    if (hasSupportingDocuments) {
+      supportingDocuments.forEach((doc, index) => {
+        const widgetId = `supporting-doc-${sectionId}-${index}`;
+        const dataPath = doc['document-data-path'];
+        const oldValue = getValueByPath(oldSchemaData, dataPath);
+        newStoreValues = setWidgetValue(
+          newStoreValues,
+          dataPath,
+          widgetId,
+          oldValue
+        );
+      });
+    }
+
     if (newStoreValues !== currentStoreValues) {
       dispatch(setValues(newStoreValues));
     }
@@ -264,13 +431,61 @@ export const SectionRenderer = ({
     setIsEditMode(false);
   };
 
+  // Create widget config for supporting document
+  const createDocumentWidgetConfig = (
+    doc: SupportingDocumentConfig,
+    sectionId: string,
+    index: number
+  ) => {
+    const documentType = doc['document-type'] || 'file';
+    const accept = doc['document-accept'] || 
+      (documentType === 'image' ? 'image/*' : 
+       documentType === 'pdf' ? '.pdf' : 
+       '*/*');
+    
+    return {
+      widget: 'file',
+      'widget-type': 'input' as const,
+      'widget-label': doc['document-label'] || doc['document-data-path'] || `Document ${index + 1}`,
+      'widget-id': `supporting-doc-${sectionId}-${index}`,
+      'widget-data-path': doc['document-data-path'],
+      'widget-required': doc['document-required'] || false,
+      'widget-readonly': false,
+      'widget-data-options': {
+        accept,
+        multiple: false,
+        maxSize: doc['document-max-size'],
+      },
+    };
+  };
+
   return (
     <>
+      {renderEditSection()}
       <style>{`
         .${sectionClassId} {
           /* Section spans grid columns based on vertical panel count */
           /* This ensures all sections align to the same grid boundaries */
           width: 100%;
+          position: relative;
+          transition: box-shadow 0.3s ease-in-out, border-color 0.3s ease-in-out;
+        }
+        
+        /* Hide original section content when in edit mode */
+        .${sectionClassId}[data-edit-mode="true"] {
+          visibility: hidden;
+        }
+        
+        /* Edit section styles (rendered via portal, absolutely positioned) */
+        .${sectionClassId}-edit {
+          box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.2), 
+                      0 8px 10px -6px rgba(0, 0, 0, 0.1),
+                      0 0 0 3px rgba(59, 130, 246, 0.3);
+          border-color: #ED7C22;
+          border-style: dashed;
+          background-color: #F3E6BC;
+          z-index: 1000;
+          position: absolute;
         }
         
         /* Only set grid-column in CSS if no explicit span (inline style will handle explicit spans) */
@@ -312,12 +527,54 @@ export const SectionRenderer = ({
             flex: 1 1 calc(20% - 1.2rem);
           }
         }
+        
+        /* Supporting documents container */
+        .${sectionClassId} .supporting-documents-container {
+          width: 100%;
+          margin-top: 1rem;
+          padding-top: 1rem;
+          border-top: 1px solid #e5e7eb;
+        }
+        
+        .${sectionClassId} .supporting-documents-title {
+          font-size: 0.875rem;
+          font-weight: 600;
+          color: #374151;
+          margin-bottom: 0.75rem;
+        }
+        
+        .${sectionClassId} .supporting-documents-grid {
+          display: flex;
+          flex-direction: column;
+          gap: 1rem;
+          margin-bottom: 1rem;
+        }
+        
+        .${sectionClassId} .supporting-document-item {
+          width: 100%;
+        }
+        
+        .${sectionClassId} .edit-controls-container {
+          display: flex;
+          flex-direction: column;
+          gap: 1rem;
+          width: 100%;
+        }
+        
+        .${sectionClassId} .edit-controls-buttons {
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          gap: 0.5rem;
+        }
       `}</style>
       <div
+        ref={sectionRef}
         className={`section ${sectionClassId} px-4 sm:px-6 lg:px-8 border-2 rounded-lg border-gray-300`}
         data-section-id={sectionId}
         data-has-table={hasTableWidget ? 'true' : 'false'}
         data-has-explicit-span={hasExplicitTableSpan ? 'true' : 'false'}
+        data-edit-mode={isEditMode ? 'true' : 'false'}
         data-column-span={columnSpan}
         style={{
           gridColumn: `span ${columnSpan}`,
@@ -342,8 +599,8 @@ export const SectionRenderer = ({
             </div>
           ))}
           <hr className="border-gray-300 my-4 w-full" />
-          <div className="flex justify-center items-center py-4">
-            {!isEditMode ? (
+          {!isEditMode && (
+            <div className="flex justify-center items-center py-4">
               <button
                 onClick={handleEdit}
                 className="text-blue-600 bg-gray-200 hover:text-blue-800 text-sm font-medium inline-flex items-center px-2 py-2 rounded-md hover:bg-blue-50 transition-colors"
@@ -351,23 +608,8 @@ export const SectionRenderer = ({
                 Edit details
                 <span className="ml-1">→</span>
               </button>
-            ) : (
-              <div className="flex gap-2">
-                <button
-                  onClick={handleSave}
-                  className="bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium px-4 py-2 rounded-md transition-colors"
-                >
-                  Save
-                </button>
-                <button
-                  onClick={handleCancel}
-                  className="bg-gray-200 hover:bg-gray-300 text-gray-700 text-sm font-medium px-4 py-2 rounded-md transition-colors"
-                >
-                  Cancel
-                </button>
-              </div>
-            )}
-          </div>
+            </div>
+          )}
         </div>
       </div>
     </>

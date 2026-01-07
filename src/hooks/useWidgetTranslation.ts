@@ -45,7 +45,14 @@ export const useWidgetTranslation = () => {
 
   /**
    * Translate widget config property
-   * Checks if the value is a translation key or direct string
+   * Attempts to translate the value, but if translation is not found,
+   * returns the original value as-is (graceful fallback)
+   * 
+   * This function will:
+   * - Try to translate any string value
+   * - If translation exists, use the translated value
+   * - If translation doesn't exist (returns same value or throws), use original value
+   * - This prevents errors when literal strings like "XXXX-XXXX-XXXX" are used
    */
   const translateConfig = (
     value: string | undefined | null,
@@ -54,7 +61,29 @@ export const useWidgetTranslation = () => {
     if (!value) {
       return fallback || '';
     }
-    return translate(value, { defaultValue: fallback || value });
+    
+    // Try to translate the value
+    if (translateFunction) {
+      try {
+        // Pass defaultValue to ensure we get the original value if translation fails
+        const translated = translateFunction(value, { defaultValue: value });
+        
+        // If translation returns empty, null, undefined, or the exact same value,
+        // it means no translation was found - return the original value
+        if (!translated || translated === value) {
+          return value;
+        }
+        
+        // Translation found, return it
+        return translated;
+      } catch (error) {
+        // If translation throws an error (e.g., missing key warning), return original value
+        return value;
+      }
+    }
+    
+    // No translation function available, return value as-is
+    return value;
   };
 
   // No need of this getLanguage and changeLanguage functions
