@@ -508,14 +508,8 @@ export const TableWidget = ({ config }: TableWidgetProps) => {
       )}
 
       {/* Table Header */}
-      <div className="flex justify-between items-center mb-2">
-        <label className="block text-sm font-medium text-gray-700">
-          {translateConfig(widgetConfig['widget-label'])}
-          {widgetConfig['widget-required'] && (
-            <span className="text-red-500 ml-1">{translate('common.required')}</span>
-          )}
-        </label>
-        {operations.add && !isReadonly && isEnabled && (
+      {operations.add && !isReadonly && isEnabled && (
+        <div className="flex justify-end mb-2">
           <button
             type="button"
             onClick={startAdd}
@@ -524,8 +518,8 @@ export const TableWidget = ({ config }: TableWidgetProps) => {
           >
             {translate('table.addRecord') || 'Add New Record'}
           </button>
-        )}
-      </div>
+        </div>
+      )}
 
       {rows.length === 0 && !isAdding ? (
         <div className="text-gray-500 text-sm py-4 text-center border border-gray-300 rounded">

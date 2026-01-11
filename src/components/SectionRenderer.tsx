@@ -44,7 +44,7 @@ export const SectionRenderer = ({
   gridColumnSpan,
   onSectionSave,
 }: SectionRendererProps) => {
-  const { translateConfig } = useWidgetTranslation();
+  const { translateConfig, translate } = useWidgetTranslation();
   const { schemaData: contextSchemaData } = useWidgetContext();
   const store = useStore();
   const dispatch = useDispatch();
@@ -135,7 +135,9 @@ export const SectionRenderer = ({
   
   // Edit mode state
   const [isEditMode, setIsEditMode] = useState(false);
+  const [isDocumentsExpanded, setIsDocumentsExpanded] = useState(true);
   const sectionRef = useRef<HTMLDivElement>(null);
+  const [sectionHeight, setSectionHeight] = useState<number | null>(null);
   const [editSectionPosition, setEditSectionPosition] = useState<{
     top: number;
     left: number;
@@ -169,6 +171,7 @@ export const SectionRenderer = ({
       };
     } else if (!isEditMode) {
       setEditSectionPosition(null);
+      setSectionHeight(null);
     }
   }, [isEditMode]);
 
@@ -198,6 +201,11 @@ export const SectionRenderer = ({
 
   // Handle edit button click
   const handleEdit = () => {
+    // Capture height BEFORE entering edit mode to preserve space
+    if (sectionRef.current) {
+      const height = sectionRef.current.offsetHeight;
+      setSectionHeight(height);
+    }
     setIsEditMode(true);
   };
   
@@ -241,7 +249,7 @@ export const SectionRenderer = ({
           }
         `}</style>
         <div
-          className={`section ${sectionClassId} ${sectionClassId}-edit px-4 sm:px-6 lg:px-8 border-2 rounded-lg`}
+          className={`section ${sectionClassId} ${sectionClassId}-edit px-4 sm:px-6 lg:px-8`}
           data-section-id={`${sectionId}-edit`}
           style={{
             position: 'absolute',
@@ -253,7 +261,7 @@ export const SectionRenderer = ({
           }}
         >
           {section['section-title'] && (
-            <h2 className="text-xl font-semibold my-4">{translateConfig(section['section-title'])}</h2>
+            <h2 className="text-xl font-semibold my-4" style={{ fontFamily: 'Roboto, sans-serif' }}>{translateConfig(section['section-title'])}</h2>
           )}
           <div id={editGridId} className="section-panels">
             {editableSection.panels.map((panel, index) => (
@@ -269,37 +277,58 @@ export const SectionRenderer = ({
                 />
               </div>
             ))}
-            <hr className="border-gray-300 my-4 w-full" />
-            <div className="edit-controls-container">
-              {hasSupportingDocuments && (
+            {hasSupportingDocuments && (
+              <>
+                <hr className="border-[#ED7C22] my-4 w-full" style={{ borderWidth: '1px' }} />
                 <div className="supporting-documents-container">
-                  <div className="supporting-documents-title">
-                    {translateConfig('Upload Supporting Documents') || 'Upload Supporting Documents'}
-                  </div>
-                  <div className="supporting-documents-grid">
-                    {supportingDocuments.map((doc, index) => {
-                      const docConfig = createDocumentWidgetConfig(doc, sectionId, index);
-                      return (
-                        <div key={`${sectionId}-doc-${index}`} className="supporting-document-item">
-                          <FileInputWidget config={docConfig} />
-                        </div>
-                      );
-                    })}
-                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setIsDocumentsExpanded(!isDocumentsExpanded)}
+                    className="supporting-documents-title-button w-full flex items-center justify-between text-left"
+                  >
+                    <span className="text-base font-semibold" style={{ fontFamily: 'Roboto, sans-serif' }}>
+                      {translate('common.supportedDocuments') || 'Supported Documents'}
+                    </span>
+                    <svg
+                      className={`w-5 h-5 text-[#ED7C22] transition-transform ${isDocumentsExpanded ? 'rotate-180' : ''}`}
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </button>
+                  {isDocumentsExpanded && (
+                    <div className="supporting-documents-grid mt-4">
+                      {supportingDocuments.map((doc, index) => {
+                        const docConfig = createDocumentWidgetConfig(doc, sectionId, index);
+                        return (
+                          <div key={`${sectionId}-doc-${index}`} className="supporting-document-item">
+                            <FileInputWidget config={docConfig} />
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
                 </div>
-              )}
+              </>
+            )}
+            <hr className="border-[#ED7C22] my-4 w-full" style={{ borderWidth: '1px' }} />
+            <div className="edit-controls-container">
               <div className="edit-controls-buttons">
                 <button
-                  onClick={handleSave}
-                  className="bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium px-4 py-2 rounded-md transition-colors"
+                  onClick={handleCancel}
+                  className="bg-white hover:bg-gray-50 text-gray-900 text-sm font-medium px-6 py-2 rounded-md transition-colors border border-gray-300"
+                  style={{ fontFamily: 'Roboto, sans-serif' }}
                 >
-                  Save
+                  {translate('common.cancel') || 'Cancel'}
                 </button>
                 <button
-                  onClick={handleCancel}
-                  className="bg-gray-200 hover:bg-gray-300 text-gray-700 text-sm font-medium px-4 py-2 rounded-md transition-colors"
+                  onClick={handleSave}
+                  className="bg-gray-900 hover:bg-gray-800 text-white text-sm font-medium px-6 py-2 rounded-md transition-colors"
+                  style={{ fontFamily: 'Roboto, sans-serif' }}
                 >
-                  Cancel
+                  {translate('common.save') || 'Save'}
                 </button>
               </div>
             </div>
@@ -497,22 +526,30 @@ export const SectionRenderer = ({
           transition: box-shadow 0.3s ease-in-out, border-color 0.3s ease-in-out;
         }
         
-        /* Hide original section content when in edit mode */
+        /* Hide original section content when in edit mode but maintain space */
         .${sectionClassId}[data-edit-mode="true"] {
+          visibility: hidden;
+          position: relative;
+        }
+        
+        /* Ensure all children are also hidden but maintain their space */
+        .${sectionClassId}[data-edit-mode="true"] * {
           visibility: hidden;
         }
         
         /* Edit section styles (rendered via portal, absolutely positioned) */
         .${sectionClassId}-edit {
           box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.2), 
-                      0 8px 10px -6px rgba(0, 0, 0, 0.1),
-                      0 0 0 3px rgba(59, 130, 246, 0.3);
+                      0 8px 10px -6px rgba(0, 0, 0, 0.1);
           border-color: #ED7C22;
-          border-style: dashed;
+          border-style: solid;
+          border-width: 2px;
           background-color: #F3E6BC;
+          border-radius: 30px;
           z-index: 1000;
           position: absolute;
         }
+        
         
         /* Only set grid-column in CSS if no explicit span (inline style will handle explicit spans) */
         .${sectionClassId}[data-has-explicit-span="false"] {
@@ -557,23 +594,23 @@ export const SectionRenderer = ({
         /* Supporting documents container */
         .${sectionClassId} .supporting-documents-container {
           width: 100%;
-          margin-top: 1rem;
-          padding-top: 1rem;
-          border-top: 1px solid #e5e7eb;
         }
         
-        .${sectionClassId} .supporting-documents-title {
-          font-size: 0.875rem;
-          font-weight: 600;
-          color: #374151;
-          margin-bottom: 0.75rem;
+        .${sectionClassId} .supporting-documents-title-button {
+          background: none;
+          border: none;
+          padding: 0;
+          cursor: pointer;
+        }
+        
+        .${sectionClassId} .supporting-documents-title-button:hover {
+          opacity: 0.8;
         }
         
         .${sectionClassId} .supporting-documents-grid {
           display: flex;
           flex-direction: column;
           gap: 1rem;
-          margin-bottom: 1rem;
         }
         
         .${sectionClassId} .supporting-document-item {
@@ -596,7 +633,7 @@ export const SectionRenderer = ({
       `}</style>
       <div
         ref={sectionRef}
-        className={`section ${sectionClassId} px-4 sm:px-6 lg:px-8 border-2 rounded-lg border-gray-300`}
+        className={`section ${sectionClassId} px-4 sm:px-6 lg:px-8 border-2 border-gray-300`}
         data-section-id={sectionId}
         data-has-table={hasTableWidget ? 'true' : 'false'}
         data-has-explicit-span={hasExplicitTableSpan ? 'true' : 'false'}
@@ -605,6 +642,12 @@ export const SectionRenderer = ({
         style={{
           gridColumn: `span ${columnSpan}`,
           width: '100%',
+          borderRadius: '30px',
+          backgroundColor: '#FFFFFF',
+          ...(isEditMode && sectionHeight ? { 
+            height: `${sectionHeight}px`,
+            minHeight: `${sectionHeight}px`
+          } : {}),
         }}
       >
         {section['section-title'] && (

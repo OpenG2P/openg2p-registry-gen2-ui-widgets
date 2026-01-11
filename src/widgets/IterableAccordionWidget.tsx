@@ -101,23 +101,26 @@ export const IterableAccordionWidget = ({ config }: IterableAccordionWidgetProps
   };
 
   return (
-    <div className="mb-4">
-      <div className="flex justify-between items-center mb-2">
-        <label className="block text-sm font-medium text-gray-700">
+    <div className="mb-[10px]">
+      <div className="flex items-start mb-2">
+        <label className="text-base font-medium text-gray-700 min-w-[150px] pr-4 pt-1" style={{ fontFamily: 'Roboto, sans-serif' }}>
           {translateConfig(widgetConfig['widget-label'])}
           {widgetConfig['widget-required'] && (
-            <span className="text-red-500 ml-1">{translate('common.required')}</span>
+            <span className="text-red-500 ml-1">*</span>
           )}
         </label>
-        {operations.add && !isReadonly && isEnabled && (
-          <button
-            type="button"
-            onClick={addItem}
-            className="px-3 py-1 text-sm bg-blue-500 text-white rounded hover:bg-blue-600"
-          >
-            {addLabel}
-          </button>
-        )}
+        <div className="flex-1 flex justify-between items-center">
+          <div className="flex-1"></div>
+          {operations.add && !isReadonly && isEnabled && (
+            <button
+              type="button"
+              onClick={addItem}
+              className="px-3 py-1 text-sm bg-blue-500 text-white rounded hover:bg-blue-600"
+            >
+              {addLabel}
+            </button>
+          )}
+        </div>
       </div>
 
       {items.length === 0 ? (
