@@ -327,24 +327,61 @@ export const FileInputWidget = ({ config }: FileInputWidgetProps) => {
   }
 
   return (
-    <div className="mb-[10px]">
-      <div className="flex items-start">
-        <label className="text-base font-medium text-gray-700 min-w-[150px] pr-4 pt-1" style={{ fontFamily: 'Roboto, sans-serif' }}>
+    <div className="mb-0">
+      <div className="flex items-center">
+        <label className="font-medium pr-4" style={{ 
+          fontFamily: 'Roboto, sans-serif',
+          width: '166px',
+          color: 'rgba(0, 0, 0, 0.5)',
+          fontSize: '16px',
+          lineHeight: '40px'
+        }}>
           {translateConfig(widgetConfig['widget-label'])}
           {widgetConfig['widget-required'] && (
             <span className="text-red-500 ml-1">*</span>
           )}
         </label>
         <div className="flex-1">
-          <div className="flex items-center space-x-4">
+          <div className="flex items-center gap-2">
             <label
-              className={`cursor-pointer inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 ${
+              className={`cursor-pointer inline-flex items-center justify-between gap-2 border border-gray-300 shadow-sm text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 ${
                 !isEnabled
                   ? 'opacity-50 cursor-not-allowed'
                   : ''
               }`}
+              style={{
+                width: '180px',
+                height: '30px',
+                borderRadius: '10px',
+                background: '#FFF',
+                paddingLeft: '12px',
+                paddingRight: '12px'
+              }}
             >
-              <span>{multiple ? translate('common.chooseFiles') : translate('common.chooseFile')}</span>
+              <span style={{
+                color: 'rgba(0, 0, 0, 0.50)',
+                fontFamily: 'Roboto',
+                fontSize: '14px',
+                fontStyle: 'normal',
+                fontWeight: 400,
+                lineHeight: '40px',
+                textAlign: 'left'
+              }}>{translate('common.uploadFile') || 'Upload File'}</span>
+              <svg 
+                style={{
+                  width: '18px',
+                  height: '18px',
+                  aspectRatio: '1/1',
+                  display: 'block',
+                  flexShrink: 0
+                }}
+                fill="currentColor" 
+                viewBox="0 0 18 18"
+                preserveAspectRatio="xMidYMid meet"
+              >
+                <path d="M9 0L3 6h3v7h6V6h3L9 0z"/>
+                <path d="M1 15h16v2H1v-2z"/>
+              </svg>
               <input
                 type="file"
                 accept={accept}
@@ -356,8 +393,11 @@ export const FileInputWidget = ({ config }: FileInputWidgetProps) => {
               />
             </label>
             {displayValue && (
-              <div className="flex-1">
-                {renderFileDisplay()}
+              <div className="flex items-center gap-2 text-sm text-gray-900">
+                <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+                <span>{displayValue}</span>
               </div>
             )}
           </div>

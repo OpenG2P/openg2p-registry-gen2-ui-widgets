@@ -274,28 +274,29 @@ export const SectionRenderer = ({
                   apiAdapter={apiAdapter}
                   schemaData={schemaData}
                   onValueChange={onValueChange}
+                  isEditMode={true}
                 />
               </div>
             ))}
             {hasSupportingDocuments && (
               <>
-                <hr className="border-[#ED7C22] my-4 w-full" style={{ borderWidth: '1px' }} />
+                <hr className="border-0 my-4 w-full" style={{ height: '1px', backgroundColor: '#F2BA1A' }} />
                 <div className="supporting-documents-container">
                   <button
                     type="button"
                     onClick={() => setIsDocumentsExpanded(!isDocumentsExpanded)}
-                    className="supporting-documents-title-button w-full flex items-center justify-between text-left"
+                    className="supporting-documents-title-button w-full flex items-center text-left"
                   >
                     <span className="text-base font-semibold" style={{ fontFamily: 'Roboto, sans-serif' }}>
                       {translate('common.supportedDocuments') || 'Supported Documents'}
                     </span>
                     <svg
-                      className={`w-5 h-5 text-[#ED7C22] transition-transform ${isDocumentsExpanded ? 'rotate-180' : ''}`}
+                      className={`w-5 h-5 text-[#ED7C22] transition-transform ml-2 ${isDocumentsExpanded ? 'rotate-90' : ''}`}
                       fill="none"
                       stroke="currentColor"
                       viewBox="0 0 24 24"
                     >
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                     </svg>
                   </button>
                   {isDocumentsExpanded && (
@@ -313,20 +314,30 @@ export const SectionRenderer = ({
                 </div>
               </>
             )}
-            <hr className="border-[#ED7C22] my-4 w-full" style={{ borderWidth: '1px' }} />
+            <hr className="border-0 my-4 w-full" style={{ height: '1px', backgroundColor: '#F2BA1A' }} />
             <div className="edit-controls-container">
               <div className="edit-controls-buttons">
                 <button
                   onClick={handleCancel}
-                  className="bg-white hover:bg-gray-50 text-gray-900 text-sm font-medium px-6 py-2 rounded-md transition-colors border border-gray-300"
-                  style={{ fontFamily: 'Roboto, sans-serif' }}
+                  className="bg-white hover:bg-gray-50 text-gray-900 text-sm font-medium transition-colors border border-gray-300"
+                  style={{ 
+                    fontFamily: 'Roboto, sans-serif',
+                    width: '70px',
+                    height: '30px',
+                    borderRadius: '15px'
+                  }}
                 >
                   {translate('common.cancel') || 'Cancel'}
                 </button>
                 <button
                   onClick={handleSave}
-                  className="bg-gray-900 hover:bg-gray-800 text-white text-sm font-medium px-6 py-2 rounded-md transition-colors"
-                  style={{ fontFamily: 'Roboto, sans-serif' }}
+                  className="bg-gray-900 hover:bg-gray-800 text-white text-sm font-medium transition-colors"
+                  style={{ 
+                    fontFamily: 'Roboto, sans-serif',
+                    width: '70px',
+                    height: '30px',
+                    borderRadius: '15px'
+                  }}
                 >
                   {translate('common.save') || 'Save'}
                 </button>
@@ -542,8 +553,8 @@ export const SectionRenderer = ({
           box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.2), 
                       0 8px 10px -6px rgba(0, 0, 0, 0.1);
           border-color: #ED7C22;
-          border-style: solid;
-          border-width: 2px;
+          border-style: dashed;
+          border-width: 1px;
           background-color: #F3E6BC;
           border-radius: 30px;
           z-index: 1000;
@@ -626,7 +637,7 @@ export const SectionRenderer = ({
         
         .${sectionClassId} .edit-controls-buttons {
           display: flex;
-          justify-content: center;
+          justify-content: flex-start;
           align-items: center;
           gap: 0.5rem;
         }
@@ -664,6 +675,7 @@ export const SectionRenderer = ({
                 apiAdapter={apiAdapter}
                 schemaData={schemaData}
                 onValueChange={onValueChange}
+                isEditMode={false}
               />
             </div>
           ))}

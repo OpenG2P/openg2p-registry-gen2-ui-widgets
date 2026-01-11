@@ -22,6 +22,7 @@
   "common.select": "Select...",
   "common.chooseFile": "Choose File",
   "common.chooseFiles": "Choose Files",
+  "common.uploadFile": "Upload File",
   "common.maxFileSize": "Maximum file size: {{size}} MB",
   "common.edit": "Edit",
   "common.save": "Save",
