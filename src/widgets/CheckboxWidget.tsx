@@ -96,11 +96,11 @@ export const CheckboxWidget = ({ config }: CheckboxWidgetProps) => {
             <div className="text-base text-gray-900 font-medium">
               {displayValue}
             </div>
-            {widgetConfig['widget-data-helptext'] && (
+            {/* {widgetConfig['widget-data-helptext'] && (
               <p className="text-gray-500 text-sm mt-1">
                 {translateConfig(widgetConfig['widget-data-helptext'])}
               </p>
-            )}
+            )} */}
           </div>
         </div>
       );
@@ -132,11 +132,11 @@ export const CheckboxWidget = ({ config }: CheckboxWidgetProps) => {
             {touched && error.length > 0 && (
               <p className="text-red-500 text-sm mt-1">{error[0]}</p>
             )}
-            {widgetConfig['widget-data-helptext'] && (
+            {/* {widgetConfig['widget-data-helptext'] && (
               <p className="text-gray-500 text-sm mt-1">
                 {translateConfig(widgetConfig['widget-data-helptext'])}
               </p>
-            )}
+            )} */}
           </div>
         </div>
       </div>
@@ -226,11 +226,11 @@ export const CheckboxWidget = ({ config }: CheckboxWidgetProps) => {
           <div className="text-base text-gray-900 font-medium">
             {displayValue}
           </div>
-          {widgetConfig['widget-data-helptext'] && (
+          {/* {widgetConfig['widget-data-helptext'] && (
             <p className="text-gray-500 text-sm mt-1">
               {translateConfig(widgetConfig['widget-data-helptext'])}
             </p>
-          )}
+          )} */}
         </div>
       </div>
     );
@@ -273,11 +273,11 @@ export const CheckboxWidget = ({ config }: CheckboxWidgetProps) => {
           {touched && error.length > 0 && (
             <p className="text-red-500 text-sm mt-1">{error[0]}</p>
           )}
-          {widgetConfig['widget-data-helptext'] && (
+          {/* {widgetConfig['widget-data-helptext'] && (
             <p className="text-gray-500 text-sm mt-1">
               {translateConfig(widgetConfig['widget-data-helptext'])}
             </p>
-          )}
+          )} */}
         </div>
       </div>
     </div>

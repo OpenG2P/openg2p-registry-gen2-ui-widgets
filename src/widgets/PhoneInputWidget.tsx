@@ -55,11 +55,11 @@ export const PhoneInputWidget = ({ config }: PhoneInputWidgetProps) => {
           <div className="text-base text-gray-900 font-medium">
             {displayValue || '-'}
           </div>
-          {widgetConfig['widget-data-helptext'] && (
+          {/* {widgetConfig['widget-data-helptext'] && (
             <p className="text-gray-500 text-sm mt-1">
               {translateConfig(widgetConfig['widget-data-helptext'])}
             </p>
-          )}
+          )} */}
         </div>
       </div>
     );
@@ -82,21 +82,22 @@ export const PhoneInputWidget = ({ config }: PhoneInputWidgetProps) => {
             onBlur={onBlur}
             disabled={!isEnabled || widgetConfig['widget-readonly']}
             placeholder={translateConfig(widgetConfig['widget-data-placeholder'])}
-            className={`w-[180px] h-[30px] px-3 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
+            className={`w-[180px] h-[30px] px-3 border shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
               (touched && error.length > 0) || (widgetConfig['widget-required'] && (!value || value === ''))
                 ? 'border-red-500 focus:ring-red-500 focus:border-red-500'
                 : 'border-gray-300'
             } ${!isEnabled || widgetConfig['widget-readonly'] ? 'bg-gray-100 cursor-not-allowed' : 'bg-white'}`}
+            style={{ borderRadius: '10px' }}
             title={translateConfig(widgetConfig['widget-data-tooltip'])}
           />
           {touched && error.length > 0 && (
             <p className="text-red-500 text-sm mt-1">{error[0]}</p>
           )}
-          {widgetConfig['widget-data-helptext'] && (
+          {/* {widgetConfig['widget-data-helptext'] && (
             <p className="text-gray-500 text-sm mt-1">
               {translateConfig(widgetConfig['widget-data-helptext'])}
             </p>
-          )}
+          )} */}
         </div>
       </div>
     </div>

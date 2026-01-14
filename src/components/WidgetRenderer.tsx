@@ -35,7 +35,7 @@ export const WidgetRenderer = ({
 
   // Render widget using registry
   return (
-    <div className="widget-container" data-widget-id={widgetContext.widgetId}>
+    <div className="widget-container" data-widget-id={widgetContext.widgetId} style={{ marginBottom: 0 }}>
       {widgetRegistry.render(config, widgetContext, defaultComponent)}
     </div>
   );

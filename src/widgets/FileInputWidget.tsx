@@ -5,6 +5,8 @@ import { useWidgetTranslation } from '../hooks/useWidgetTranslation';
 import { FilePreviewModal } from '../components/FilePreviewModal';
 import { canPreviewInWeb } from '../utils/filePreview';
 import { serializeValue, deserializeValue, isSerializedFile, isFile, deserializeFile } from '../utils/fileSerialization';
+import uploadIcon from '../assets/upload-icon.png';
+import fileIcon from '../assets/file-icon.png';
 
 /**
  * File input widget
@@ -43,6 +45,9 @@ export const FileInputWidget = ({ config }: FileInputWidgetProps) => {
   const accept = widgetConfig['widget-data-options']?.accept;
   const multiple = widgetConfig['widget-data-options']?.multiple || false;
   const maxSize = widgetConfig['widget-data-options']?.maxSize;
+  
+  // Check if this is a supporting document widget
+  const isSupportingDocument = widgetConfig['widget-id']?.startsWith('supporting-doc-') || false;
 
   // State for preview modal
   const [previewFile, setPreviewFile] = useState<File | string | null>(null);
@@ -243,22 +248,47 @@ export const FileInputWidget = ({ config }: FileInputWidgetProps) => {
       
       console.log('Single file:', fileName, 'canPreview:', canPreview);
 
+      const fileIconElement = (
+        <img 
+          src={fileIcon} 
+          alt="File icon" 
+          style={{ 
+            width: '15px', 
+            height: '18px', 
+            aspectRatio: '5/6',
+            marginRight: '8px', 
+            flexShrink: 0 
+          }} 
+        />
+      );
+      
       if (canPreview) {
         return (
-          <button
-            type="button"
-            onClick={(e) => {
-              console.log('Button clicked!', file);
-              handleFileClick(file, e);
-            }}
-            className="text-sm text-blue-600 hover:text-blue-800 hover:underline focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1 rounded cursor-pointer"
-            title="Click to preview"
-          >
-            {fileName}
-          </button>
+          <div style={{ display: 'flex', alignItems: 'center' }}>
+            {fileIconElement}
+            <button
+              type="button"
+              onClick={(e) => {
+                console.log('Button clicked!', file);
+                handleFileClick(file, e);
+              }}
+              className="text-sm hover:underline focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1 rounded cursor-pointer"
+              style={{ color: isSupportingDocument ? '#000000' : '#2563eb' }}
+              title="Click to preview"
+            >
+              {fileName}
+            </button>
+          </div>
         );
       } else {
-        return <span className="text-sm text-gray-600">{fileName}</span>;
+        return (
+          <div style={{ display: 'flex', alignItems: 'center' }}>
+            {fileIconElement}
+            <span className="text-sm" style={{ color: isSupportingDocument ? '#000000' : '#4b5563' }}>
+              {fileName}
+            </span>
+          </div>
+        );
       }
     } else {
       // Multiple files
@@ -268,23 +298,43 @@ export const FileInputWidget = ({ config }: FileInputWidgetProps) => {
             const fileName = file instanceof File ? file.name : file.split('/').pop() || file;
             const canPreview = canPreviewInWeb(file);
 
+            const fileIconElement = (
+              <img 
+                src={fileIcon} 
+                alt="File icon" 
+                style={{ 
+                  width: '15px', 
+                  height: '18px', 
+                  aspectRatio: '5/6',
+                  marginRight: '8px', 
+                  flexShrink: 0 
+                }} 
+              />
+            );
+            
             if (canPreview) {
               return (
-                <button
-                  key={index}
-                  type="button"
-                  onClick={(e) => handleFileClick(file, e)}
-                  className="text-sm text-blue-600 hover:text-blue-800 hover:underline focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1 rounded cursor-pointer"
-                  title="Click to preview"
-                >
-                  {fileName}
-                </button>
+                <div key={index} style={{ display: 'flex', alignItems: 'center' }}>
+                  {fileIconElement}
+                  <button
+                    type="button"
+                    onClick={(e) => handleFileClick(file, e)}
+                    className="text-sm hover:underline focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1 rounded cursor-pointer"
+                    style={{ color: isSupportingDocument ? '#000000' : '#2563eb' }}
+                    title="Click to preview"
+                  >
+                    {fileName}
+                  </button>
+                </div>
               );
             } else {
               return (
-                <span key={index} className="text-sm text-gray-600">
-                  {fileName}
-                </span>
+                <div key={index} style={{ display: 'flex', alignItems: 'center' }}>
+                  {fileIconElement}
+                  <span className="text-sm" style={{ color: isSupportingDocument ? '#000000' : '#4b5563' }}>
+                    {fileName}
+                  </span>
+                </div>
               );
             }
           })}
@@ -299,17 +349,17 @@ export const FileInputWidget = ({ config }: FileInputWidgetProps) => {
     return (
       <div className="mb-[10px] FileDisplayWidget flex items-start">
         {label && (
-          <div className="text-base text-gray-600 font-medium min-w-[150px] pr-4" style={{ fontFamily: 'Roboto, sans-serif' }}>
+          <div className="text-base text-gray-600 font-medium pr-4" style={{ fontFamily: 'Roboto, sans-serif', width: '166px', maxWidth: '166px' }}>
             {label}:
           </div>
         )}
         <div className="flex-1">
           {displayValue ? renderFileDisplay() : <span className="text-base text-gray-900 font-medium">-</span>}
-          {widgetConfig['widget-data-helptext'] && (
+          {/* {widgetConfig['widget-data-helptext'] && (
             <p className="text-gray-500 text-sm mt-1">
               {translateConfig(widgetConfig['widget-data-helptext'])}
             </p>
-          )}
+          )} */}
         </div>
         
         {/* Preview Modal - Always render, let modal handle visibility */}
@@ -327,24 +377,18 @@ export const FileInputWidget = ({ config }: FileInputWidgetProps) => {
   }
 
   return (
-    <div className="mb-0">
-      <div className="flex items-center">
-        <label className="font-medium pr-4" style={{ 
-          fontFamily: 'Roboto, sans-serif',
-          width: '166px',
-          color: 'rgba(0, 0, 0, 0.5)',
-          fontSize: '16px',
-          lineHeight: '40px'
-        }}>
+    <div className="mb-[10px]">
+      <div className="flex items-start">
+        <label className="text-base font-medium text-gray-700 pr-4 pt-1" style={{ fontFamily: 'Roboto, sans-serif', width: '166px', maxWidth: '166px' }}>
           {translateConfig(widgetConfig['widget-label'])}
           {widgetConfig['widget-required'] && (
             <span className="text-red-500 ml-1">*</span>
           )}
         </label>
         <div className="flex-1">
-          <div className="flex items-center gap-2">
+          <div className="flex items-center space-x-4">
             <label
-              className={`cursor-pointer inline-flex items-center justify-between gap-2 border border-gray-300 shadow-sm text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 ${
+              className={`cursor-pointer inline-flex items-center justify-between gap-2 border border-gray-300 shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 ${
                 !isEnabled
                   ? 'opacity-50 cursor-not-allowed'
                   : ''
@@ -352,22 +396,23 @@ export const FileInputWidget = ({ config }: FileInputWidgetProps) => {
               style={{
                 width: '180px',
                 height: '30px',
-                borderRadius: '10px',
-                background: '#FFF',
                 paddingLeft: '12px',
-                paddingRight: '12px'
+                paddingRight: '12px',
+                borderRadius: '10px'
               }}
             >
               <span style={{
-                color: 'rgba(0, 0, 0, 0.50)',
+                color: isSupportingDocument ? 'rgba(0, 0, 0, 0.50)' : 'rgba(0, 0, 0, 0.50)',
                 fontFamily: 'Roboto',
-                fontSize: '14px',
+                fontSize: '16px',
                 fontStyle: 'normal',
                 fontWeight: 400,
-                lineHeight: '40px',
+                lineHeight: '24px',
                 textAlign: 'left'
               }}>{translate('common.uploadFile') || 'Upload File'}</span>
-              <svg 
+              <img 
+                src={uploadIcon}
+                alt="Upload"
                 style={{
                   width: '18px',
                   height: '18px',
@@ -375,13 +420,7 @@ export const FileInputWidget = ({ config }: FileInputWidgetProps) => {
                   display: 'block',
                   flexShrink: 0
                 }}
-                fill="currentColor" 
-                viewBox="0 0 18 18"
-                preserveAspectRatio="xMidYMid meet"
-              >
-                <path d="M9 0L3 6h3v7h6V6h3L9 0z"/>
-                <path d="M1 15h16v2H1v-2z"/>
-              </svg>
+              />
               <input
                 type="file"
                 accept={accept}
@@ -393,22 +432,19 @@ export const FileInputWidget = ({ config }: FileInputWidgetProps) => {
               />
             </label>
             {displayValue && (
-              <div className="flex items-center gap-2 text-sm text-gray-900">
-                <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                </svg>
-                <span>{displayValue}</span>
+              <div className="flex-1">
+                {renderFileDisplay()}
               </div>
             )}
           </div>
           {touched && error.length > 0 && (
             <p className="text-red-500 text-sm mt-1">{error[0]}</p>
           )}
-          {widgetConfig['widget-data-helptext'] && (
+          {/* {widgetConfig['widget-data-helptext'] && (
             <p className="text-gray-500 text-sm mt-1">
               {translateConfig(widgetConfig['widget-data-helptext'])}
             </p>
-          )}
+          )} */}
           {maxSize && (
             <p className="text-gray-400 text-xs mt-1">
               {translate('common.maxFileSize', { size: (maxSize / 1024 / 1024).toFixed(2) })}

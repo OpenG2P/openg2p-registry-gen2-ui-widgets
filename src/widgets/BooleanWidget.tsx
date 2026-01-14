@@ -128,11 +128,11 @@ export const BooleanWidget = ({ config }: BooleanWidgetProps) => {
           <div className="text-base text-gray-900 font-medium">
             {displayValue}
           </div>
-          {widgetConfig['widget-data-helptext'] && (
+          {/* {widgetConfig['widget-data-helptext'] && (
             <p className="text-gray-500 text-sm mt-1">
               {translateConfig(widgetConfig['widget-data-helptext'])}
             </p>
-          )}
+          )} */}
         </div>
       </div>
     );
@@ -166,11 +166,11 @@ export const BooleanWidget = ({ config }: BooleanWidgetProps) => {
             {touched && error.length > 0 && (
               <p className="text-red-500 text-sm mt-1">{error[0]}</p>
             )}
-            {widgetConfig['widget-data-helptext'] && (
+            {/* {widgetConfig['widget-data-helptext'] && (
               <p className="text-gray-500 text-sm mt-1">
                 {translateConfig(widgetConfig['widget-data-helptext'])}
               </p>
-            )}
+            )} */}
           </div>
         </div>
       </div>
@@ -238,11 +238,11 @@ export const BooleanWidget = ({ config }: BooleanWidgetProps) => {
             {touched && error.length > 0 && (
               <p className="text-red-500 text-sm mt-1">{error[0]}</p>
             )}
-            {widgetConfig['widget-data-helptext'] && (
+            {/* {widgetConfig['widget-data-helptext'] && (
               <p className="text-gray-500 text-sm mt-1">
                 {translateConfig(widgetConfig['widget-data-helptext'])}
               </p>
-            )}
+            )} */}
           </div>
         </div>
       </div>
@@ -266,11 +266,12 @@ export const BooleanWidget = ({ config }: BooleanWidgetProps) => {
                 type="button"
                 onClick={() => handleChange(null)}
                 disabled={!isEnabled || widgetConfig['widget-readonly']}
-                className={`px-3 py-1 text-sm rounded border ${
+                className={`px-3 py-1 text-sm border ${
                   currentValue === null
                     ? 'bg-blue-600 text-white border-blue-600'
                     : 'bg-white text-gray-700 border-gray-300'
                 } ${!isEnabled || widgetConfig['widget-readonly'] ? 'opacity-50 cursor-not-allowed' : 'hover:bg-gray-50'}`}
+                style={{ borderRadius: '15px' }}
               >
                 -
               </button>
@@ -279,11 +280,12 @@ export const BooleanWidget = ({ config }: BooleanWidgetProps) => {
               type="button"
               onClick={() => handleChange(true)}
               disabled={!isEnabled || widgetConfig['widget-readonly']}
-              className={`px-3 py-1 text-sm rounded border ${
+              className={`px-3 py-1 text-sm border ${
                 currentValue === true
                   ? 'bg-blue-600 text-white border-blue-600'
                   : 'bg-white text-gray-700 border-gray-300'
               } ${!isEnabled || widgetConfig['widget-readonly'] ? 'opacity-50 cursor-not-allowed' : 'hover:bg-gray-50'}`}
+              style={{ borderRadius: '15px' }}
             >
               {trueLabel}
             </button>
@@ -291,11 +293,12 @@ export const BooleanWidget = ({ config }: BooleanWidgetProps) => {
               type="button"
               onClick={() => handleChange(false)}
               disabled={!isEnabled || widgetConfig['widget-readonly']}
-              className={`px-3 py-1 text-sm rounded border ${
+              className={`px-3 py-1 text-sm border ${
                 currentValue === false
                   ? 'bg-blue-600 text-white border-blue-600'
                   : 'bg-white text-gray-700 border-gray-300'
               } ${!isEnabled || widgetConfig['widget-readonly'] ? 'opacity-50 cursor-not-allowed' : 'hover:bg-gray-50'}`}
+              style={{ borderRadius: '15px' }}
             >
               {falseLabel}
             </button>
@@ -303,11 +306,11 @@ export const BooleanWidget = ({ config }: BooleanWidgetProps) => {
           {touched && error.length > 0 && (
             <p className="text-red-500 text-sm mt-1">{error[0]}</p>
           )}
-          {widgetConfig['widget-data-helptext'] && (
+          {/* {widgetConfig['widget-data-helptext'] && (
             <p className="text-gray-500 text-sm mt-1">
               {translateConfig(widgetConfig['widget-data-helptext'])}
             </p>
-          )}
+          )} */}
         </div>
       </div>
     </div>

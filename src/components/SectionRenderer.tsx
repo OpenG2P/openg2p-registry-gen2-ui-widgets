@@ -247,6 +247,21 @@ export const SectionRenderer = ({
               flex: 1 1 calc(20% - 1.2rem);
             }
           }
+          
+          /* Vertical dividers between vertical panels in edit mode */
+          #${editGridId} > .panel-wrapper {
+            position: relative;
+          }
+          /* Only add divider between panels, not after the last one */
+          #${editGridId} > .panel-wrapper:not(.last-panel-wrapper)::after {
+            content: '';
+            position: absolute;
+            right: 0;
+            top: 0;
+            bottom: 0;
+            width: 1px;
+            background-color: #F2BA1A;
+          }
         `}</style>
         <div
           className={`section ${sectionClassId} ${sectionClassId}-edit px-4 sm:px-6 lg:px-8`}
@@ -261,13 +276,15 @@ export const SectionRenderer = ({
           }}
         >
           {section['section-title'] && (
-            <h2 className="text-xl font-semibold my-4" style={{ fontFamily: 'Roboto, sans-serif' }}>{translateConfig(section['section-title'])}</h2>
+            <h2 className="text-xl font-semibold mb-4" style={{ fontFamily: 'Roboto, sans-serif', marginTop: '35px' }}>{translateConfig(section['section-title'])}</h2>
           )}
           <div id={editGridId} className="section-panels">
-            {editableSection.panels.map((panel, index) => (
+            {editableSection.panels.map((panel, index) => {
+              const isLastPanel = index === editableSection.panels.length - 1;
+              return (
               <div
                 key={panel['panel-id'] || `section-panel-${index}`}
-                className="panel-wrapper"
+                className={`panel-wrapper ${isLastPanel ? 'last-panel-wrapper' : ''}`}
               >
                 <PanelRenderer
                   panel={panel}
@@ -277,26 +294,27 @@ export const SectionRenderer = ({
                   isEditMode={true}
                 />
               </div>
-            ))}
+              );
+            })}
             {hasSupportingDocuments && (
               <>
-                <hr className="border-0 my-4 w-full" style={{ height: '1px', backgroundColor: '#F2BA1A' }} />
+                <hr className="my-4 w-full" style={{ height: '1px', backgroundColor: '#F2BA1A', border: 'none' }} />
                 <div className="supporting-documents-container">
                   <button
                     type="button"
                     onClick={() => setIsDocumentsExpanded(!isDocumentsExpanded)}
                     className="supporting-documents-title-button w-full flex items-center text-left"
                   >
-                    <span className="text-base font-semibold" style={{ fontFamily: 'Roboto, sans-serif' }}>
+                    <span className="font-semibold" style={{ fontFamily: 'Roboto, sans-serif', fontSize: '16px' }}>
                       {translate('common.supportedDocuments') || 'Supported Documents'}
                     </span>
                     <svg
-                      className={`w-5 h-5 text-[#ED7C22] transition-transform ml-2 ${isDocumentsExpanded ? 'rotate-90' : ''}`}
+                      className={`w-5 h-5 text-[#ED7C22] transition-transform ml-2 ${isDocumentsExpanded ? 'rotate-180' : ''}`}
                       fill="none"
                       stroke="currentColor"
                       viewBox="0 0 24 24"
                     >
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                     </svg>
                   </button>
                   {isDocumentsExpanded && (
@@ -314,30 +332,20 @@ export const SectionRenderer = ({
                 </div>
               </>
             )}
-            <hr className="border-0 my-4 w-full" style={{ height: '1px', backgroundColor: '#F2BA1A' }} />
-            <div className="edit-controls-container">
+            <hr className="w-full" style={{ height: '1px', backgroundColor: '#F2BA1A', border: 'none', marginTop: hasSupportingDocuments ? '20px' : 0, marginBottom: '20px' }} />
+            <div className="edit-controls-container" style={{ marginBottom: '20px' }}>
               <div className="edit-controls-buttons">
                 <button
                   onClick={handleCancel}
-                  className="bg-white hover:bg-gray-50 text-gray-900 text-sm font-medium transition-colors border border-gray-300"
-                  style={{ 
-                    fontFamily: 'Roboto, sans-serif',
-                    width: '70px',
-                    height: '30px',
-                    borderRadius: '15px'
-                  }}
+                  className="bg-white hover:bg-gray-50 text-gray-900 text-sm font-medium px-6 py-2 transition-colors border border-gray-300"
+                  style={{ fontFamily: 'Roboto, sans-serif', borderRadius: '15px' }}
                 >
                   {translate('common.cancel') || 'Cancel'}
                 </button>
                 <button
                   onClick={handleSave}
-                  className="bg-gray-900 hover:bg-gray-800 text-white text-sm font-medium transition-colors"
-                  style={{ 
-                    fontFamily: 'Roboto, sans-serif',
-                    width: '70px',
-                    height: '30px',
-                    borderRadius: '15px'
-                  }}
+                  className="bg-gray-900 hover:bg-gray-800 text-white text-sm font-medium px-6 py-2 transition-colors"
+                  style={{ fontFamily: 'Roboto, sans-serif', borderRadius: '15px' }}
                 >
                   {translate('common.save') || 'Save'}
                 </button>
@@ -561,6 +569,11 @@ export const SectionRenderer = ({
           position: absolute;
         }
         
+        /* Ensure widget containers in edit section have no margin bottom */
+        .${sectionClassId}-edit .widget-container {
+          margin-bottom: 0 !important;
+        }
+        
         
         /* Only set grid-column in CSS if no explicit span (inline style will handle explicit spans) */
         .${sectionClassId}[data-has-explicit-span="false"] {
@@ -576,6 +589,7 @@ export const SectionRenderer = ({
         #${gridId} > .panel-wrapper {
           flex: 1 1 100%;
           min-width: 0;
+          position: relative;
         }
         /* Mobile: 1 panel per row */
         @media (min-width: 640px) {
@@ -602,6 +616,7 @@ export const SectionRenderer = ({
           }
         }
         
+        
         /* Supporting documents container */
         .${sectionClassId} .supporting-documents-container {
           width: 100%;
@@ -626,6 +641,10 @@ export const SectionRenderer = ({
         
         .${sectionClassId} .supporting-document-item {
           width: 100%;
+        }
+        
+        .${sectionClassId} .supporting-document-item > div {
+          margin-bottom: 0 !important;
         }
         
         .${sectionClassId} .edit-controls-container {
@@ -662,7 +681,7 @@ export const SectionRenderer = ({
         }}
       >
         {section['section-title'] && (
-          <h2 className="text-xl font-semibold my-4">{translateConfig(section['section-title'])}</h2>
+          <h2 className="text-xl font-semibold mb-4" style={{ marginTop: '35px' }}>{translateConfig(section['section-title'])}</h2>
         )}
         <div id={gridId} className="section-panels">
           {editableSection.panels.map((panel, index) => (
@@ -675,19 +694,23 @@ export const SectionRenderer = ({
                 apiAdapter={apiAdapter}
                 schemaData={schemaData}
                 onValueChange={onValueChange}
-                isEditMode={false}
               />
             </div>
           ))}
-          <hr className="border-gray-300 my-4 w-full" />
+          <hr className="border-gray-300 w-full" style={{ height: '1px', marginTop: !isEditMode ? '20px' : 0, marginBottom: '14px' }} />
           {!isEditMode && (
-            <div className="flex justify-center items-center py-4">
+            <div className="flex justify-center items-center" style={{ marginBottom: '20px' }}>
               <button
                 onClick={handleEdit}
-                className="text-blue-600 bg-gray-200 hover:text-blue-800 text-sm font-medium inline-flex items-center px-2 py-2 rounded-md hover:bg-blue-50 transition-colors"
+                className="font-normal inline-flex items-center gap-2 bg-transparent border-0 p-0 cursor-pointer hover:opacity-80"
+                style={{ 
+                  fontFamily: 'Roboto, sans-serif',
+                  fontSize: '16px',
+                  color: 'rgba(0, 0, 0, 0.50)'
+                }}
               >
-                Edit details
-                <span className="ml-1">→</span>
+                Edit Details
+                <span>→</span>
               </button>
             </div>
           )}

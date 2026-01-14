@@ -492,13 +492,15 @@ export const TableWidget = ({ config }: TableWidgetProps) => {
             <div className="flex justify-end gap-3">
               <button
                 onClick={confirmationState.onCancel}
-                className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-200 rounded hover:bg-gray-300"
+                className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-200 hover:bg-gray-300"
+                style={{ borderRadius: '15px' }}
               >
                 {translate('common.cancel') || 'Cancel'}
               </button>
               <button
                 onClick={confirmationState.onConfirm}
-                className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded hover:bg-blue-700"
+                className="px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700"
+                style={{ borderRadius: '15px' }}
               >
                 {translate('table.discard') || 'Discard & Continue'}
               </button>
@@ -514,7 +516,8 @@ export const TableWidget = ({ config }: TableWidgetProps) => {
             type="button"
             onClick={startAdd}
             disabled={loadingRowIndex !== null}
-            className="px-3 py-1 text-sm bg-blue-500 text-white rounded hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="px-3 py-1 text-sm bg-blue-500 text-white hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed"
+            style={{ borderRadius: '15px' }}
           >
             {translate('table.addRecord') || 'Add New Record'}
           </button>
@@ -568,13 +571,14 @@ export const TableWidget = ({ config }: TableWidgetProps) => {
                               type="button"
                               onClick={saveEdit}
                               disabled={isLoading}
-                              className="px-3 py-1 text-xs font-medium rounded hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap flex-shrink-0"
+                              className="px-3 py-1 text-xs font-medium hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap flex-shrink-0"
                               style={{ 
                                 display: 'inline-block', 
                                 minWidth: '60px',
                                 backgroundColor: '#16a34a', // green-600
                                 color: '#ffffff', // white text
-                                border: 'none'
+                                border: 'none',
+                                borderRadius: '15px'
                               }}
                             >
                               Save
@@ -583,8 +587,8 @@ export const TableWidget = ({ config }: TableWidgetProps) => {
                               type="button"
                               onClick={cancelEdit}
                               disabled={isLoading}
-                              className="px-3 py-1 text-xs font-medium bg-gray-200 text-gray-700 rounded hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap flex-shrink-0"
-                              style={{ display: 'inline-block', minWidth: '60px' }}
+                              className="px-3 py-1 text-xs font-medium bg-gray-200 text-gray-700 hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap flex-shrink-0"
+                              style={{ display: 'inline-block', minWidth: '60px', borderRadius: '15px' }}
                             >
                               Cancel
                             </button>
@@ -596,7 +600,8 @@ export const TableWidget = ({ config }: TableWidgetProps) => {
                                 type="button"
                                 onClick={() => startEdit(rowIndex)}
                                 disabled={isAnyRowEditing || isLoading}
-                                className="px-3 py-1 text-xs text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded disabled:opacity-50 disabled:cursor-not-allowed"
+                                className="px-3 py-1 text-xs text-blue-600 hover:text-blue-800 hover:bg-blue-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                                style={{ borderRadius: '15px' }}
                               >
                                 {translate('common.edit') || 'Edit'}
                               </button>
@@ -606,7 +611,8 @@ export const TableWidget = ({ config }: TableWidgetProps) => {
                                 type="button"
                                 onClick={() => deleteRow(rowIndex)}
                                 disabled={isAnyRowEditing || isLoading}
-                                className="px-3 py-1 text-xs text-red-600 hover:text-red-800 hover:bg-red-50 rounded disabled:opacity-50 disabled:cursor-not-allowed"
+                                className="px-3 py-1 text-xs text-red-600 hover:text-red-800 hover:bg-red-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                                style={{ borderRadius: '15px' }}
                               >
                                 {translate('common.remove') || 'Delete'}
                               </button>
@@ -633,7 +639,8 @@ export const TableWidget = ({ config }: TableWidgetProps) => {
                         type="button"
                         onClick={saveAdd}
                         disabled={loadingRowIndex === -1}
-                        className="px-3 py-1 text-xs bg-green-600 text-white rounded hover:bg-green-700 disabled:opacity-50"
+                        className="px-3 py-1 text-xs bg-green-600 text-white hover:bg-green-700 disabled:opacity-50"
+                        style={{ borderRadius: '15px' }}
                       >
                         {translate('common.save') || 'Save'}
                       </button>
@@ -644,7 +651,8 @@ export const TableWidget = ({ config }: TableWidgetProps) => {
                           setNewRowData(null);
                         }}
                         disabled={loadingRowIndex === -1}
-                        className="px-3 py-1 text-xs bg-gray-200 text-gray-700 rounded hover:bg-gray-300 disabled:opacity-50"
+                        className="px-3 py-1 text-xs bg-gray-200 text-gray-700 hover:bg-gray-300 disabled:opacity-50"
+                        style={{ borderRadius: '15px' }}
                       >
                         {translate('common.cancel') || 'Cancel'}
                       </button>
@@ -661,11 +669,11 @@ export const TableWidget = ({ config }: TableWidgetProps) => {
       {touched && error.length > 0 && (
         <p className="text-red-500 text-sm mt-1">{error[0]}</p>
       )}
-      {widgetConfig['widget-data-helptext'] && (
+      {/* {widgetConfig['widget-data-helptext'] && (
         <p className="text-gray-500 text-sm mt-1">
           {translateConfig(widgetConfig['widget-data-helptext'])}
         </p>
-      )}
+      )} */}
       </div>
     </>
   );

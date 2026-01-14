@@ -89,7 +89,8 @@ export const SimpleTableWidget = ({ config }: SimpleTableWidgetProps) => {
           <button
             type="button"
             onClick={addRow}
-            className="px-3 py-1 text-sm bg-blue-500 text-white rounded hover:bg-blue-600"
+            className="px-3 py-1 text-sm bg-blue-500 text-white hover:bg-blue-600"
+            style={{ borderRadius: '15px' }}
           >
             {translate('common.addRow')}
           </button>
@@ -177,11 +178,11 @@ export const SimpleTableWidget = ({ config }: SimpleTableWidgetProps) => {
       {touched && error.length > 0 && (
         <p className="text-red-500 text-sm mt-1">{error[0]}</p>
       )}
-      {widgetConfig['widget-data-helptext'] && (
+      {/* {widgetConfig['widget-data-helptext'] && (
         <p className="text-gray-500 text-sm mt-1">
           {translateConfig(widgetConfig['widget-data-helptext'])}
         </p>
-      )}
+      )} */}
     </div>
   );
 };

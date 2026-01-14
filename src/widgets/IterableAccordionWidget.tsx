@@ -115,7 +115,8 @@ export const IterableAccordionWidget = ({ config }: IterableAccordionWidgetProps
             <button
               type="button"
               onClick={addItem}
-              className="px-3 py-1 text-sm bg-blue-500 text-white rounded hover:bg-blue-600"
+              className="px-3 py-1 text-sm bg-blue-500 text-white hover:bg-blue-600"
+              style={{ borderRadius: '15px' }}
             >
               {addLabel}
             </button>
@@ -172,7 +173,8 @@ export const IterableAccordionWidget = ({ config }: IterableAccordionWidgetProps
                             removeItem(index);
                           }}
                           disabled={!isEnabled}
-                          className="px-2 py-1 text-xs text-red-600 hover:text-red-800 hover:bg-red-50 rounded"
+                          className="px-2 py-1 text-xs text-red-600 hover:text-red-800 hover:bg-red-50"
+                          style={{ borderRadius: '15px' }}
                         >
                           {translate('common.remove')}
                         </button>
@@ -249,11 +251,11 @@ export const IterableAccordionWidget = ({ config }: IterableAccordionWidgetProps
       {touched && error.length > 0 && (
         <p className="text-red-500 text-sm mt-1">{error[0]}</p>
       )}
-      {widgetConfig['widget-data-helptext'] && (
+      {/* {widgetConfig['widget-data-helptext'] && (
         <p className="text-gray-500 text-sm mt-1">
           {translateConfig(widgetConfig['widget-data-helptext'])}
         </p>
-      )}
+      )} */}
     </div>
   );
 };
