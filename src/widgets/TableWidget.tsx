@@ -9,6 +9,121 @@ import { formatValue } from '../utils/formatting';
 import { getValueByPath, setValueByPath } from '../utils/pathUtils';
 import { setValue, resetWidget } from '../store/widgetSlice';
 
+// Lightweight table cell components (no labels, compact styling)
+
+interface TableCellSelectProps {
+  config: BaseWidgetConfig;
+  value: any;
+  onValueChange: (value: any) => void;
+}
+
+const TableCellSelect = ({ config, value, onValueChange }: TableCellSelectProps) => {
+  const { translate } = useWidgetTranslation();
+  // Use useBaseWidget to get data source options (it handles loading)
+  const {
+    dataSourceOptions,
+    loading,
+    config: widgetConfig,
+  } = useBaseWidget({ config });
+  const isReadonly = config['widget-readonly'] || false;
+
+  return (
+    <select
+      value={value || ''}
+      onChange={(e) => onValueChange(e.target.value)}
+      disabled={isReadonly || loading}
+      className={`w-full h-[28px] px-2 text-sm border focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 ${
+        isReadonly || loading ? 'bg-gray-100 cursor-not-allowed' : 'bg-white'
+      } border-gray-300`}
+      style={{ borderRadius: '10px' }}
+    >
+      <option value="">{translate('common.select') || 'Select'}</option>
+      {dataSourceOptions.map((option: any) => (
+        <option key={option.value} value={option.value}>
+          {option.label}
+        </option>
+      ))}
+    </select>
+  );
+};
+
+interface TableCellTextProps {
+  config: BaseWidgetConfig;
+  value: any;
+  onValueChange: (value: any) => void;
+}
+
+const TableCellText = ({ config, value, onValueChange }: TableCellTextProps) => {
+  const isReadonly = config['widget-readonly'] || false;
+  const placeholder = config['widget-data-placeholder'] || '';
+  const formatConfig = config['widget-data-format'];
+  const maxLength = config['widget-data-validation']?.maxLength;
+
+  const displayValue = value !== null && value !== undefined ? String(value) : '';
+
+  return (
+    <input
+      type="text"
+      value={displayValue}
+      onChange={(e) => onValueChange(e.target.value)}
+      disabled={isReadonly}
+      placeholder={placeholder}
+      maxLength={maxLength}
+      className={`w-full h-[28px] px-2 text-sm border focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 ${
+        isReadonly ? 'bg-gray-100 cursor-not-allowed' : 'bg-white'
+      } border-gray-300`}
+      style={{ borderRadius: '10px' }}
+    />
+  );
+};
+
+interface TableCellNumberProps {
+  config: BaseWidgetConfig;
+  value: any;
+  onValueChange: (value: any) => void;
+}
+
+const TableCellNumber = ({ config, value, onValueChange }: TableCellNumberProps) => {
+  const isReadonly = config['widget-readonly'] || false;
+  const placeholder = config['widget-data-placeholder'] || '';
+  const formatConfig = config['widget-data-format'];
+  const validationConfig = config['widget-data-validation'];
+
+  const displayValue = value !== null && value !== undefined ? String(value) : '';
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const inputValue = e.target.value;
+    if (inputValue === '') {
+      onValueChange('');
+      return;
+    }
+    const numValue = parseFloat(inputValue);
+    if (!isNaN(numValue)) {
+      onValueChange(numValue);
+    } else {
+      // Allow partial input (e.g., "-", ".")
+      onValueChange(inputValue);
+    }
+  };
+
+  return (
+    <input
+      type="number"
+      value={displayValue}
+      onChange={handleChange}
+      disabled={isReadonly}
+      placeholder={placeholder}
+      min={validationConfig?.min}
+      max={validationConfig?.max}
+      step={formatConfig?.decimalPlaces ? Math.pow(0.1, formatConfig.decimalPlaces) : undefined}
+      className={`w-full h-[28px] px-2 text-sm border focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 text-right ${
+        isReadonly ? 'bg-gray-100 cursor-not-allowed' : 'bg-white'
+      } border-gray-300`}
+      style={{ borderRadius: '10px' }}
+    />
+  );
+};
+
 /**
  * Table widget with record-level inline editing
  * 
@@ -92,8 +207,11 @@ export const TableWidget = ({ config }: TableWidgetProps) => {
   const [isAdding, setIsAdding] = useState(false);
   const [newRowData, setNewRowData] = useState<any>(null);
 
-  // Check if any row is being edited
-  const isAnyRowEditing = editingState !== null || isAdding;
+  // When section is in edit mode (isReadonly is false), all rows are automatically editable
+  const isSectionEditMode = !isReadonly && operations.edit;
+  
+  // Check if any row is being edited (either manually or via section edit mode)
+  const isAnyRowEditing = editingState !== null || isAdding || isSectionEditMode;
 
   // Show confirmation dialog
   const showConfirmation = useCallback((message: string, onConfirm: () => void, onCancel: () => void) => {
@@ -166,8 +284,19 @@ export const TableWidget = ({ config }: TableWidgetProps) => {
   }, [isAnyRowEditing, rows, showConfirmation, cancelEdit, translate]);
 
   // Update cell value during edit
-  const updateCellValue = useCallback((columnKey: string, newValue: any) => {
-    if (editingState) {
+  const updateCellValue = useCallback((columnKey: string, newValue: any, rowIndex?: number) => {
+    if (isSectionEditMode && rowIndex !== undefined) {
+      // When section is in edit mode, update the row directly
+      const newRows = [...rows];
+      if (!newRows[rowIndex]) {
+        newRows[rowIndex] = {};
+      }
+      newRows[rowIndex] = {
+        ...newRows[rowIndex],
+        [columnKey]: newValue,
+      };
+      onChange(newRows);
+    } else if (editingState) {
       setEditingState({
         ...editingState,
         currentValue: {
@@ -181,7 +310,7 @@ export const TableWidget = ({ config }: TableWidgetProps) => {
         [columnKey]: newValue,
       });
     }
-  }, [editingState, isAdding, newRowData]);
+  }, [editingState, isAdding, newRowData, isSectionEditMode, rows, onChange]);
 
   // Save edited row
   const saveEdit = useCallback(async () => {
@@ -226,31 +355,17 @@ export const TableWidget = ({ config }: TableWidgetProps) => {
 
   // Add new row
   const startAdd = useCallback(() => {
+    // If there's an unsaved edit, cancel it first (no confirmation needed)
     if (isAnyRowEditing) {
-      showConfirmation(
-        translate('table.unsavedChanges') || 'You have unsaved changes. Do you want to discard them?',
-        () => {
-          cancelEdit();
-          const emptyRow: any = {};
-          columns.forEach((col) => {
-            emptyRow[col['column-key']] = col['widget-data-default'] || '';
-          });
-          setIsAdding(true);
-          setNewRowData(emptyRow);
-        },
-        () => {
-          // Do nothing, keep current edit
-        }
-      );
-    } else {
-      const emptyRow: any = {};
-      columns.forEach((col) => {
-        emptyRow[col['column-key']] = col['widget-data-default'] || '';
-      });
-      setIsAdding(true);
-      setNewRowData(emptyRow);
+      cancelEdit();
     }
-  }, [isAnyRowEditing, columns, showConfirmation, cancelEdit, translate]);
+    const emptyRow: any = {};
+    columns.forEach((col) => {
+      emptyRow[col['column-key']] = col['widget-data-default'] || '';
+    });
+    setIsAdding(true);
+    setNewRowData(emptyRow);
+  }, [isAnyRowEditing, columns, cancelEdit]);
 
   // Save new row
   const saveAdd = useCallback(async () => {
@@ -341,6 +456,10 @@ export const TableWidget = ({ config }: TableWidgetProps) => {
 
   // Get cell value (from editing state or row data)
   const getCellValue = useCallback((rowIndex: number, columnKey: string) => {
+    // When section is in edit mode, use row data directly
+    if (isSectionEditMode) {
+      return rows[rowIndex]?.[columnKey];
+    }
     if (editingState && editingState.rowIndex === rowIndex) {
       return editingState.currentValue[columnKey];
     }
@@ -348,7 +467,7 @@ export const TableWidget = ({ config }: TableWidgetProps) => {
       return newRowData?.[columnKey];
     }
     return rows[rowIndex]?.[columnKey];
-  }, [editingState, isAdding, rows, newRowData]);
+  }, [editingState, isAdding, rows, newRowData, isSectionEditMode]);
 
   // Get formatted display value for a cell
   const getDisplayValue = useCallback((rowIndex: number, column: any) => {
@@ -368,13 +487,29 @@ export const TableWidget = ({ config }: TableWidgetProps) => {
   }, [getCellValue]);
 
   // Check if row is being edited
+  // When section is in edit mode, all rows are editable
   const isRowEditing = useCallback((rowIndex: number) => {
+    if (isSectionEditMode) {
+      return true; // All rows are editable when section is in edit mode
+    }
     return editingState?.rowIndex === rowIndex || (isAdding && rowIndex === rows.length);
-  }, [editingState, isAdding, rows.length]);
+  }, [editingState, isAdding, rows.length, isSectionEditMode]);
 
   // Set cell widget value in Redux when entering edit mode
   useEffect(() => {
-    if (editingState) {
+    if (isSectionEditMode) {
+      // When section is in edit mode, set values for all rows
+      rows.forEach((row, rowIndex) => {
+        columns.forEach((col) => {
+          const columnKey = col['column-key'];
+          const cellWidgetId = `${widgetConfig['widget-id']}-row-${rowIndex}-col-${columnKey}`;
+          const cellValue = row[columnKey];
+          const defaultValue = cellValue !== undefined ? cellValue : (col['widget-data-default'] ?? '');
+          // Set value in Redux store
+          dispatch(setValue({ widgetId: cellWidgetId, value: defaultValue }));
+        });
+      });
+    } else if (editingState) {
       columns.forEach((col) => {
         const columnKey = col['column-key'];
         const cellWidgetId = `${widgetConfig['widget-id']}-row-${editingState.rowIndex}-col-${columnKey}`;
@@ -384,7 +519,7 @@ export const TableWidget = ({ config }: TableWidgetProps) => {
         dispatch(setValue({ widgetId: cellWidgetId, value: defaultValue }));
       });
     }
-  }, [editingState, columns, widgetConfig, dispatch]);
+  }, [isSectionEditMode, editingState, columns, widgetConfig, dispatch, rows]);
 
   useEffect(() => {
     if (isAdding && newRowData) {
@@ -399,39 +534,71 @@ export const TableWidget = ({ config }: TableWidgetProps) => {
     }
   }, [isAdding, newRowData, columns, widgetConfig, rows.length, dispatch]);
 
+  // Lightweight cell renderer for table cells (no labels, compact)
+  const renderTableCell = useCallback((rowIndex: number, column: any, cellValue: any, isReadonly: boolean) => {
+    const columnKey = column['column-key'];
+    const widgetType = column.widget || 'text';
+    const cellWidgetId = `${widgetConfig['widget-id']}-row-${rowIndex}-col-${columnKey}`;
+    
+    // Use lightweight cell config (no label, minimal styling)
+    const cellConfig: BaseWidgetConfig = {
+      ...column,
+      'widget-id': cellWidgetId,
+      'widget-label': '', // No label in table cells
+      'widget-readonly': isReadonly,
+      'widget-data-path': undefined,
+      'widget-data-default': cellValue !== undefined ? cellValue : (column['widget-data-default'] ?? ''),
+      widget: widgetType,
+      'widget-type': column['widget-type'] || 'input',
+    };
+
+    // For common widget types, render lightweight versions directly
+    if (widgetType === 'select') {
+      return <TableCellSelect 
+        config={cellConfig} 
+        value={cellValue}
+        onValueChange={(newValue) => updateCellValue(columnKey, newValue, rowIndex)}
+      />;
+    } else if (widgetType === 'text') {
+      return <TableCellText 
+        config={cellConfig}
+        value={cellValue}
+        onValueChange={(newValue) => updateCellValue(columnKey, newValue, rowIndex)}
+      />;
+    } else if (widgetType === 'number') {
+      return <TableCellNumber 
+        config={cellConfig}
+        value={cellValue}
+        onValueChange={(newValue) => updateCellValue(columnKey, newValue, rowIndex)}
+      />;
+    }
+
+    // For other widget types, use WidgetRenderer but with compact styling
+    return (
+      <div className="table-cell-widget" style={{ margin: 0, padding: 0 }}>
+        <WidgetRenderer
+          config={cellConfig}
+          schemaData={{
+            [cellWidgetId]: cellValue !== undefined ? cellValue : (column['widget-data-default'] ?? ''),
+          }}
+          onValueChange={(widgetId, newValue) => {
+            updateCellValue(columnKey, newValue, rowIndex);
+          }}
+        />
+      </div>
+    );
+  }, [widgetConfig, updateCellValue]);
+
   // Render cell content (widget in edit mode, formatted value in view mode)
   const renderCell = useCallback((rowIndex: number, column: any) => {
     const columnKey = column['column-key'];
     const isEditing = isRowEditing(rowIndex);
     const cellValue = getCellValue(rowIndex, columnKey);
+    const columnReadonly = column['widget-readonly'] === true;
+    
     if (isEditing) {
-      // Render widget in edit mode
-      // Use widget-id as the storage key (no data-path) so it stores in Redux by widget-id
-      const cellWidgetId = `${widgetConfig['widget-id']}-row-${rowIndex}-col-${columnKey}`;
-      const cellConfig: BaseWidgetConfig = {
-        ...column,
-        'widget-id': cellWidgetId,
-        'widget-readonly': false,
-        'widget-data-path': undefined, // No data path - widget will use widget-id as key
-        'widget-data-default': cellValue !== undefined ? cellValue : (column['widget-data-default'] ?? ''),
-        // Ensure widget and widget-type are set
-        widget: column.widget || 'text',
-        'widget-type': column['widget-type'] || 'input',
-      };
-
-      return (
-        <div className="min-w-[120px]">
-          <WidgetRenderer
-            config={cellConfig}
-            schemaData={{
-              [cellWidgetId]: cellValue !== undefined ? cellValue : (column['widget-data-default'] ?? ''),
-            }}
-            onValueChange={(widgetId, newValue) => {
-              updateCellValue(columnKey, newValue);
-            }}
-          />
-        </div>
-      );
+      // Use lightweight cell renderer
+      return renderTableCell(rowIndex, column, cellValue, columnReadonly);
     } else {
       // Display formatted value in view mode
       return (
@@ -440,7 +607,7 @@ export const TableWidget = ({ config }: TableWidgetProps) => {
         </div>
       );
     }
-  }, [isRowEditing, getCellValue, getDisplayValue, widgetConfig, updateCellValue]);
+  }, [isRowEditing, getCellValue, getDisplayValue, renderTableCell]);
 
   const tableWidgetId = `table-widget-${widgetConfig['widget-id']}`;
   // Get column span from config (1, 2, 3, etc.) - defaults to 2 if not specified
@@ -454,14 +621,14 @@ export const TableWidget = ({ config }: TableWidgetProps) => {
         .${tableWidgetId} {
           width: 100%;
           min-width: ${minWidth}px;
-          flex: 1 1 ${minWidth}px; /* Grow to fill available space in flex layout */
         }
         
         /* Target the widget-container parent when it contains a table widget */
         .widget-container[data-widget-id="${widgetConfig['widget-id']}"] {
           min-width: ${minWidth}px;
-          flex: 1 1 ${minWidth}px;
           width: 100%;
+          /* Remove flex properties to avoid height issues */
+          flex: none;
         }
         
         /* In horizontal panels, make table widget span specified columns */
@@ -477,8 +644,33 @@ export const TableWidget = ({ config }: TableWidgetProps) => {
           width: 100%;
           flex: 1 1 100%;
         }
+        
+        /* Compact styling for widgets inside table cells - hide labels and reduce margins */
+        .${tableWidgetId} .table-cell-widget,
+        .${tableWidgetId} .table-cell-widget * {
+          margin: 0 !important;
+          margin-bottom: 0 !important;
+        }
+        
+        .${tableWidgetId} .table-cell-widget label,
+        .${tableWidgetId} .table-cell-widget .text-base.font-medium {
+          display: none !important;
+        }
+        
+        .${tableWidgetId} .table-cell-widget .mb-\\[10px\\],
+        .${tableWidgetId} .table-cell-widget .mb-4 {
+          margin-bottom: 0 !important;
+        }
+        
+        /* 10px border radius for all controls in table cells */
+        .${tableWidgetId} input,
+        .${tableWidgetId} select,
+        .${tableWidgetId} textarea,
+        .${tableWidgetId} button {
+          border-radius: 10px !important;
+        }
       `}</style>
-      <div className={`mb-4 table-widget-container ${tableWidgetId}`}>
+      <div className={`table-widget-container ${tableWidgetId}`}>
         {/* Confirmation Dialog */}
       {confirmationState?.show && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
@@ -525,12 +717,12 @@ export const TableWidget = ({ config }: TableWidgetProps) => {
       )}
 
       {rows.length === 0 && !isAdding ? (
-        <div className="text-gray-500 text-sm py-4 text-center border border-gray-300 rounded">
+        <div className="text-gray-500 text-sm py-4 text-center border border-gray-300" style={{ borderRadius: '15px' }}>
           {translate('table.noData') || 'No records available.'}
           {operations.add && !isReadonly && ` ${translate('table.clickToAdd') || 'Click "Add New Record" to add one.'}`}
         </div>
       ) : (
-        <div className="overflow-x-auto border border-gray-300 rounded">
+        <div className="overflow-x-auto border border-gray-300" style={{ borderRadius: '15px' }}>
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
               <tr>
@@ -565,7 +757,8 @@ export const TableWidget = ({ config }: TableWidgetProps) => {
                     ))}
                     {((operations.edit || operations.remove) && !isReadonly) || isEditing ? (
                       <td className="px-4 py-3 whitespace-nowrap" style={{ minWidth: '120px' }}>
-                        {isEditing ? (
+                        {isEditing && !isSectionEditMode ? (
+                          // Show Save/Cancel buttons only for manual row editing (not section edit mode)
                           <div className="flex flex-row gap-2 items-center" style={{ width: '100%' }}>
                             <button
                               type="button"
@@ -593,7 +786,8 @@ export const TableWidget = ({ config }: TableWidgetProps) => {
                               Cancel
                             </button>
                           </div>
-                        ) : (
+                        ) : !isSectionEditMode ? (
+                          // Show Edit/Delete buttons only when not in section edit mode
                           <div className="flex gap-2">
                             {operations.edit && (
                               <button
@@ -618,6 +812,21 @@ export const TableWidget = ({ config }: TableWidgetProps) => {
                               </button>
                             )}
                           </div>
+                        ) : (
+                          // In section edit mode, show only Delete button if remove is enabled
+                          operations.remove && (
+                            <div className="flex gap-2">
+                              <button
+                                type="button"
+                                onClick={() => deleteRow(rowIndex)}
+                                disabled={isLoading}
+                                className="px-3 py-1 text-xs text-red-600 hover:text-red-800 hover:bg-red-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                                style={{ borderRadius: '15px' }}
+                              >
+                                {translate('common.remove') || 'Delete'}
+                              </button>
+                            </div>
+                          )
                         )}
                       </td>
                     ) : null}

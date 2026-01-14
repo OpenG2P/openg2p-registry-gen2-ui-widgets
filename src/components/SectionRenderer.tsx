@@ -205,6 +205,7 @@ export const SectionRenderer = ({
 
   // Recursively modify panels to set readonly based on edit mode
   const makePanelsEditable = (panels: PanelConfig[], editable: boolean): PanelConfig[] => {
+    const sectionEditable = section['section-editable'] === true;
     return panels.map(panel => {
       const modifiedPanel: PanelConfig = {
         ...panel,
@@ -212,8 +213,12 @@ export const SectionRenderer = ({
         widgets: panel.widgets?.map(widget => ({
           ...widget,
           // When NOT in edit mode (editable = false), set all widgets to readonly
-          // When in edit mode (editable = true), respect original readonly setting or make editable
-          'widget-readonly': editable ? (widget['widget-readonly'] || false) : true,
+          // When in edit mode (editable = true):
+          //   - If section-editable is true, force widgets to be editable (override widget-readonly)
+          //   - Otherwise, respect original readonly setting
+          'widget-readonly': editable 
+            ? (sectionEditable ? false : (widget['widget-readonly'] || false))
+            : true,
         })),
       };
       return modifiedPanel;
@@ -573,6 +578,13 @@ export const SectionRenderer = ({
           width: 100%;
           position: relative;
           transition: box-shadow 0.3s ease-in-out, border-color 0.3s ease-in-out;
+          min-height: auto !important;
+          height: auto !important;
+        }
+        
+        /* Only apply fixed height when in edit mode */
+        .${sectionClassId}[data-edit-mode="true"] {
+          min-height: auto;
         }
         
         /* Hide original section content when in edit mode but maintain space */
@@ -615,6 +627,7 @@ export const SectionRenderer = ({
           flex-wrap: wrap;
           // gap: 1.5rem;
           width: 100%;
+          ${hasTableWidget ? 'margin-bottom: 20px;' : ''}
         }
         #${gridId} > .panel-wrapper {
           flex: 1 1 100%;
@@ -707,7 +720,11 @@ export const SectionRenderer = ({
           ...(isEditMode && sectionHeight ? { 
             height: `${sectionHeight}px`,
             minHeight: `${sectionHeight}px`
-          } : {}),
+          } : {
+            // Ensure no min-height when not in edit mode
+            minHeight: 'auto',
+            height: 'auto'
+          }),
         }}
       >
         {section['section-title'] && (
