@@ -25,6 +25,7 @@ export interface SectionRendererProps {
   onValueChange?: UseBaseWidgetOptions['onValueChange'];
   gridColumnSpan?: number; // Number of grid columns this section should span
   onSectionSave?: (changes: SectionChanges) => Promise<void> | void;
+  hideEditButton?: boolean; // Hide the edit button band below the section
 }
 
 
@@ -43,6 +44,7 @@ export const SectionRenderer = ({
   onValueChange,
   gridColumnSpan,
   onSectionSave,
+  hideEditButton = false,
 }: SectionRendererProps) => {
   const { translateConfig, translate } = useWidgetTranslation();
   const { schemaData: contextSchemaData } = useWidgetContext();
@@ -683,7 +685,11 @@ export const SectionRenderer = ({
         {section['section-title'] && (
           <h2 className="text-xl font-semibold mb-4" style={{ marginTop: '35px' }}>{translateConfig(section['section-title'])}</h2>
         )}
-        <div id={gridId} className="section-panels">
+        <div 
+          id={gridId} 
+          className="section-panels"
+          style={hideEditButton ? { paddingBottom: '40px' } : {}}
+        >
           {editableSection.panels.map((panel, index) => (
             <div
               key={panel['panel-id'] || `section-panel-${index}`}
@@ -697,8 +703,10 @@ export const SectionRenderer = ({
               />
             </div>
           ))}
-          <hr className="border-gray-300 w-full" style={{ height: '1px', marginTop: !isEditMode ? '20px' : 0, marginBottom: '14px' }} />
-          {!isEditMode && (
+          {!hideEditButton && (
+            <hr className="border-gray-300 w-full" style={{ height: '1px', marginTop: !isEditMode ? '20px' : 0, marginBottom: '14px' }} />
+          )}
+          {!isEditMode && !hideEditButton && (
             <div className="flex justify-center items-center" style={{ marginBottom: '20px' }}>
               <button
                 onClick={handleEdit}

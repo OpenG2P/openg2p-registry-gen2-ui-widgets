@@ -9,7 +9,7 @@ export interface SectionsContainerProps {
   onValueChange?: UseBaseWidgetOptions['onValueChange'];
   className?: string;
   onSectionSave?: (changes: SectionChanges) => Promise<void> | void;
-
+  hideEditButton?: boolean; // Hide the edit button band below sections
 }
 
 /**
@@ -101,6 +101,7 @@ export const SectionsContainer = ({
   onValueChange,
   className = '',
   onSectionSave,
+  hideEditButton = false,
 }: SectionsContainerProps) => {
   // Find the maximum number of vertical panels across all sections
   // This determines the grid size (minimum 3 columns)
@@ -166,6 +167,7 @@ export const SectionsContainer = ({
                 onValueChange={onValueChange}
                 gridColumnSpan={section['section-column-span']}
                 onSectionSave={onSectionSave}
+                hideEditButton={hideEditButton}
               />
             );
           }
@@ -188,6 +190,7 @@ export const SectionsContainer = ({
               onValueChange={onValueChange}
               gridColumnSpan={columnSpan}
               onSectionSave={onSectionSave}
+              hideEditButton={hideEditButton}
             />
           );
         })}
