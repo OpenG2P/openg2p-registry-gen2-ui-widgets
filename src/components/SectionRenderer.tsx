@@ -1,7 +1,8 @@
 import { useState, useMemo, useCallback, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { useStore, useDispatch } from 'react-redux';
+import { useStore, useDispatch, useSelector } from 'react-redux';
 import { setValues } from '../store/widgetSlice';
+import { WidgetRootState } from '../store';
 import { SectionConfig, PanelConfig, SupportingDocumentConfig } from '../types';
 import { UseBaseWidgetOptions } from '../hooks/useBaseWidget';
 import { PanelRenderer } from './PanelRenderer';
@@ -9,6 +10,7 @@ import { useWidgetTranslation } from '../hooks/useWidgetTranslation';
 import { getValueByPath, setWidgetValue } from '../utils/pathUtils';
 import { useWidgetContext } from './WidgetProvider';
 import { FileInputWidget } from '../widgets/FileInputWidget';
+import { SectionMode } from './SectionsContainer';
 
 
 export interface SectionChanges {
@@ -26,6 +28,8 @@ export interface SectionRendererProps {
   gridColumnSpan?: number; // Number of grid columns this section should span
   onSectionSave?: (changes: SectionChanges) => Promise<void> | void;
   hideEditButton?: boolean; // Hide the edit button band below the section
+  mode?: SectionMode; // Display mode: 'RegistryView' (default) or 'CRView'
+  // CRView data is read from schemaData with keys: createdBy, createdDate, approvedBy, approvedDate
 }
 
 
@@ -45,11 +49,33 @@ export const SectionRenderer = ({
   gridColumnSpan,
   onSectionSave,
   hideEditButton = false,
+  mode = 'RegistryView',
 }: SectionRendererProps) => {
   const { translateConfig, translate } = useWidgetTranslation();
   const { schemaData: contextSchemaData } = useWidgetContext();
   const store = useStore();
   const dispatch = useDispatch();
+
+  // Get CRView data from schemaData (prefer prop over context, then Redux store)
+  const currentSchemaData = schemaData || contextSchemaData || {};
+  const storeValues = useSelector((state: WidgetRootState) => state.widget?.values || {});
+  const crViewData = useMemo(() => {
+    if (mode !== 'CRView') return null;
+    // Try to get from schemaData first, then from Redux store
+    // Merge both sources to ensure we get the data
+    const dataSource = { ...storeValues, ...currentSchemaData };
+    const result = {
+      createdBy: getValueByPath(dataSource, 'createdBy') || getValueByPath(dataSource, 'created_by'),
+      createdDate: getValueByPath(dataSource, 'createdDate') || getValueByPath(dataSource, 'created_date'),
+      approvedBy: getValueByPath(dataSource, 'approvedBy') || getValueByPath(dataSource, 'approved_by'),
+      approvedDate: getValueByPath(dataSource, 'approvedDate') || getValueByPath(dataSource, 'approved_date'),
+    };
+    // Debug logging (can be removed in production)
+    if (mode === 'CRView') {
+      console.log('CRView Data Source:', { dataSource, result, currentSchemaData, storeValues });
+    }
+    return result;
+  }, [mode, currentSchemaData, storeValues]);
 
   const sectionId = section['section-id'];
   const gridId = `section-panels-${sectionId}`;
@@ -688,7 +714,7 @@ export const SectionRenderer = ({
         <div 
           id={gridId} 
           className="section-panels"
-          style={hideEditButton ? { paddingBottom: '40px' } : {}}
+          style={mode === 'RegistryView' && hideEditButton ? { paddingBottom: '40px' } : {}}
         >
           {editableSection.panels.map((panel, index) => (
             <div
@@ -703,10 +729,118 @@ export const SectionRenderer = ({
               />
             </div>
           ))}
-          {!hideEditButton && (
+          {/* CRView Mode - Show Created by / Approved by information */}
+          {mode === 'CRView' && crViewData && (
+            <>
+              <hr className="border-gray-300 w-full" style={{ height: '1px', marginTop: '20px', marginBottom: '0px' }} />
+              <div className="cr-view-container" style={{ 
+              marginTop: '20px',
+              paddingBottom: '30px',
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              width: '100%',
+            }}>
+              {/* Created by section - Left aligned */}
+              <div className="created-by-section" style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                flex: 1,
+              }}>
+                <span style={{
+                  fontFamily: 'Roboto, sans-serif',
+                  fontSize: '14px',
+                  color: '#000000',
+                  fontWeight: 'normal',
+                }}>
+                  Created by
+                </span>
+                {/* Person icon */}
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M8 8C9.47276 8 10.6667 6.80609 10.6667 5.33333C10.6667 3.86058 9.47276 2.66667 8 2.66667C6.52724 2.66667 5.33333 3.86058 5.33333 5.33333C5.33333 6.80609 6.52724 8 8 8Z" fill="#ED7C22"/>
+                  <path d="M8 9.33333C5.42267 9.33333 3.33333 11.4227 3.33333 14H12.6667C12.6667 11.4227 10.5773 9.33333 8 9.33333Z" fill="#ED7C22"/>
+                </svg>
+                {crViewData?.createdBy && (
+                  <span style={{
+                    fontFamily: 'Roboto, sans-serif',
+                    fontSize: '14px',
+                    color: '#000000',
+                    fontWeight: 'normal',
+                  }}>
+                    {crViewData.createdBy}
+                  </span>
+                )}
+                {/* Calendar icon */}
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ marginLeft: '6px' }}>
+                  <path d="M12.6667 2.66667H12V2C12 1.63181 11.7015 1.33333 11.3333 1.33333C10.9651 1.33333 10.6667 1.63181 10.6667 2V2.66667H5.33333V2C5.33333 1.63181 5.03486 1.33333 4.66667 1.33333C4.29848 1.33333 4 1.63181 4 2V2.66667H3.33333C2.59695 2.66667 2 3.26362 2 4V13.3333C2 14.0697 2.59695 14.6667 3.33333 14.6667H12.6667C13.403 14.6667 14 14.0697 14 13.3333V4C14 3.26362 13.403 2.66667 12.6667 2.66667ZM12.6667 13.3333H3.33333V6.66667H12.6667V13.3333Z" fill="#ED7C22"/>
+                </svg>
+                {crViewData?.createdDate && (
+                  <span style={{
+                    fontFamily: 'Roboto, sans-serif',
+                    fontSize: '14px',
+                    color: '#000000',
+                    fontWeight: 'normal',
+                  }}>
+                    {crViewData.createdDate}
+                  </span>
+                )}
+              </div>
+
+              {/* Approved by section - Right aligned */}
+              <div className="approved-by-section" style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                flex: 1,
+                justifyContent: 'flex-end',
+              }}>
+                <span style={{
+                  fontFamily: 'Roboto, sans-serif',
+                  fontSize: '14px',
+                  color: '#000000',
+                  fontWeight: 'normal',
+                }}>
+                  Approved by
+                </span>
+                {/* Person icon */}
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M8 8C9.47276 8 10.6667 6.80609 10.6667 5.33333C10.6667 3.86058 9.47276 2.66667 8 2.66667C6.52724 2.66667 5.33333 3.86058 5.33333 5.33333C5.33333 6.80609 6.52724 8 8 8Z" fill="#ED7C22"/>
+                  <path d="M8 9.33333C5.42267 9.33333 3.33333 11.4227 3.33333 14H12.6667C12.6667 11.4227 10.5773 9.33333 8 9.33333Z" fill="#ED7C22"/>
+                </svg>
+                {crViewData?.approvedBy && (
+                  <span style={{
+                    fontFamily: 'Roboto, sans-serif',
+                    fontSize: '14px',
+                    color: '#000000',
+                    fontWeight: 'normal',
+                  }}>
+                    {crViewData.approvedBy}
+                  </span>
+                )}
+                {/* Calendar icon */}
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ marginLeft: '6px' }}>
+                  <path d="M12.6667 2.66667H12V2C12 1.63181 11.7015 1.33333 11.3333 1.33333C10.9651 1.33333 10.6667 1.63181 10.6667 2V2.66667H5.33333V2C5.33333 1.63181 5.03486 1.33333 4.66667 1.33333C4.29848 1.33333 4 1.63181 4 2V2.66667H3.33333C2.59695 2.66667 2 3.26362 2 4V13.3333C2 14.0697 2.59695 14.6667 3.33333 14.6667H12.6667C13.403 14.6667 14 14.0697 14 13.3333V4C14 3.26362 13.403 2.66667 12.6667 2.66667ZM12.6667 13.3333H3.33333V6.66667H12.6667V13.3333Z" fill="#ED7C22"/>
+                </svg>
+                {crViewData?.approvedDate && (
+                  <span style={{
+                    fontFamily: 'Roboto, sans-serif',
+                    fontSize: '14px',
+                    color: '#000000',
+                    fontWeight: 'normal',
+                  }}>
+                    {crViewData.approvedDate}
+                  </span>
+                )}
+              </div>
+            </div>
+            </>
+          )}
+          {/* RegistryView Mode - Show edit button (if not hidden) */}
+          {mode === 'RegistryView' && !hideEditButton && (
             <hr className="border-gray-300 w-full" style={{ height: '1px', marginTop: !isEditMode ? '20px' : 0, marginBottom: '14px' }} />
           )}
-          {!isEditMode && !hideEditButton && (
+          {mode === 'RegistryView' && !isEditMode && !hideEditButton && (
             <div className="flex justify-center items-center" style={{ marginBottom: '20px' }}>
               <button
                 onClick={handleEdit}

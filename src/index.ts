@@ -18,6 +18,7 @@ export { PanelRenderer } from './components/PanelRenderer';
 export { SectionRenderer } from './components/SectionRenderer';
 export type { SectionChanges } from './components/SectionRenderer';
 export { SectionsContainer } from './components/SectionsContainer';
+export type { SectionMode, SectionsContainerProps } from './components/SectionsContainer';
 
 // Registry (import defaultWidgets to auto-register widgets)
 import './registry/defaultWidgets';

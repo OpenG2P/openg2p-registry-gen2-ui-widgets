@@ -10,6 +10,7 @@ import {
   createWidgetStore,
 } from '@openg2p/react-widgets';
 import { SectionConfig } from '../src/types';
+import type { SectionMode } from '../src/components/SectionsContainer';
 
 // Example section schema (same for both old and new)
 const exampleSectionSchema: SectionConfig = {
@@ -344,4 +345,34 @@ export const CRDetailPageExample = () => {
  * 6. **Hide Edit Button**: Use `hideEditButton={true}` prop on `SectionsContainer` to
  *    hide the edit button band below sections. This is useful for comparison views
  *    where you don't want editing functionality.
+ * 
+ * 7. **Mode Selection**: Use `mode` prop to switch between 'RegistryView' (default)
+ *    and 'CRView'. CRView displays "Created by", "Created Date", "Approved by", and
+ *    "Approved Date" information at the bottom of sections.
  */
+
+/**
+ * Example: Using CRView mode
+ * CRView data is read from schemaData with keys: createdBy, createdDate, approvedBy, approvedDate
+ */
+export const CRViewExample = () => {
+  const store = React.useMemo(() => createWidgetStore(), []);
+
+  // Include CRView data in schemaData
+  const schemaDataWithCRView = {
+    ...oldRecordData,
+    createdBy: 'Ryan David',
+    createdDate: '25/10/2025',
+    approvedBy: 'Laura Angela',
+    approvedDate: '30/10/2025',
+  };
+
+  return (
+    <WidgetProvider store={store} schemaData={schemaDataWithCRView}>
+      <SectionsContainer 
+        sections={[exampleSectionSchema]} 
+        mode="CRView"
+      />
+    </WidgetProvider>
+  );
+};
