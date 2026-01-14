@@ -2,6 +2,8 @@ import { SectionConfig } from '../types';
 import { UseBaseWidgetOptions } from '../hooks/useBaseWidget';
 import { SectionRenderer, SectionChanges } from './SectionRenderer';
 
+export type SectionMode = 'RegistryView' | 'CRView';
+
 export interface SectionsContainerProps {
   sections: SectionConfig[];
   apiAdapter?: UseBaseWidgetOptions['apiAdapter'];
@@ -9,7 +11,9 @@ export interface SectionsContainerProps {
   onValueChange?: UseBaseWidgetOptions['onValueChange'];
   className?: string;
   onSectionSave?: (changes: SectionChanges) => Promise<void> | void;
-
+  hideEditButton?: boolean; // Hide the edit button band below sections
+  mode?: SectionMode; // Display mode: 'RegistryView' (default) or 'CRView'
+  // CRView data is read from schemaData with keys: createdBy, createdDate, approvedBy, approvedDate
 }
 
 /**
@@ -101,6 +105,8 @@ export const SectionsContainer = ({
   onValueChange,
   className = '',
   onSectionSave,
+  hideEditButton = false,
+  mode = 'RegistryView',
 }: SectionsContainerProps) => {
   // Find the maximum number of vertical panels across all sections
   // This determines the grid size (minimum 3 columns)
@@ -166,6 +172,8 @@ export const SectionsContainer = ({
                 onValueChange={onValueChange}
                 gridColumnSpan={section['section-column-span']}
                 onSectionSave={onSectionSave}
+                hideEditButton={hideEditButton}
+                mode={mode}
               />
             );
           }
@@ -188,6 +196,8 @@ export const SectionsContainer = ({
               onValueChange={onValueChange}
               gridColumnSpan={columnSpan}
               onSectionSave={onSectionSave}
+              hideEditButton={hideEditButton}
+              mode={mode}
             />
           );
         })}

@@ -73,23 +73,27 @@ export const ArrayWidget = ({ config }: ArrayWidgetProps) => {
   };
 
   return (
-    <div className="mb-4">
-      <div className="flex justify-between items-center mb-2">
-        <label className="block text-sm font-medium text-gray-700">
+    <div className="mb-[10px]">
+      <div className="flex items-start mb-2">
+        <label className="text-base font-medium text-gray-700 min-w-[150px] pr-4 pt-1" style={{ fontFamily: 'Roboto, sans-serif' }}>
           {translateConfig(widgetConfig['widget-label'])}
           {widgetConfig['widget-required'] && (
-            <span className="text-red-500 ml-1">{translate('common.required')}</span>
+            <span className="text-red-500 ml-1">*</span>
           )}
         </label>
-        {operations.add && !isReadonly && isEnabled && (
-          <button
-            type="button"
-            onClick={addItem}
-            className="px-3 py-1 text-sm bg-blue-500 text-white rounded hover:bg-blue-600"
-          >
-            {addLabel}
-          </button>
-        )}
+        <div className="flex-1 flex justify-between items-center">
+          <div className="flex-1"></div>
+          {operations.add && !isReadonly && isEnabled && (
+            <button
+              type="button"
+              onClick={addItem}
+              className="px-3 py-1 text-sm bg-blue-500 text-white hover:bg-blue-600"
+              style={{ borderRadius: '15px' }}
+            >
+              {addLabel}
+            </button>
+          )}
+        </div>
       </div>
 
       {items.length === 0 ? (
@@ -125,7 +129,8 @@ export const ArrayWidget = ({ config }: ArrayWidgetProps) => {
                     type="button"
                     onClick={() => removeItem(index)}
                     disabled={!isEnabled}
-                    className="px-3 py-2 text-red-600 hover:text-red-800 hover:bg-red-50 rounded"
+                    className="px-3 py-2 text-red-600 hover:text-red-800 hover:bg-red-50"
+                    style={{ borderRadius: '15px' }}
                   >
                     {translate('common.remove')}
                   </button>
@@ -139,11 +144,11 @@ export const ArrayWidget = ({ config }: ArrayWidgetProps) => {
       {touched && error.length > 0 && (
         <p className="text-red-500 text-sm mt-1">{error[0]}</p>
       )}
-      {widgetConfig['widget-data-helptext'] && (
+      {/* {widgetConfig['widget-data-helptext'] && (
         <p className="text-gray-500 text-sm mt-1">
           {translateConfig(widgetConfig['widget-data-helptext'])}
         </p>
-      )}
+      )} */}
     </div>
   );
 };

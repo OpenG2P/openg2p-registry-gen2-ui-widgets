@@ -84,23 +84,18 @@ export const SimpleTableWidget = ({ config }: SimpleTableWidgetProps) => {
 
   return (
     <div className="mb-4">
-      <div className="flex justify-between items-center mb-2">
-        <label className="block text-sm font-medium text-gray-700">
-          {translateConfig(widgetConfig['widget-label'])}
-          {widgetConfig['widget-required'] && (
-            <span className="text-red-500 ml-1">{translate('common.required')}</span>
-          )}
-        </label>
-        {operations.add && !isReadonly && isEnabled && (
+      {operations.add && !isReadonly && isEnabled && (
+        <div className="flex justify-end mb-2">
           <button
             type="button"
             onClick={addRow}
-            className="px-3 py-1 text-sm bg-blue-500 text-white rounded hover:bg-blue-600"
+            className="px-3 py-1 text-sm bg-blue-500 text-white hover:bg-blue-600"
+            style={{ borderRadius: '15px' }}
           >
             {translate('common.addRow')}
           </button>
-        )}
-      </div>
+        </div>
+      )}
       
       {rows.length === 0 ? (
         <div className="text-gray-500 text-sm py-4 text-center border border-gray-300 rounded">
@@ -183,11 +178,11 @@ export const SimpleTableWidget = ({ config }: SimpleTableWidgetProps) => {
       {touched && error.length > 0 && (
         <p className="text-red-500 text-sm mt-1">{error[0]}</p>
       )}
-      {widgetConfig['widget-data-helptext'] && (
+      {/* {widgetConfig['widget-data-helptext'] && (
         <p className="text-gray-500 text-sm mt-1">
           {translateConfig(widgetConfig['widget-data-helptext'])}
         </p>
-      )}
+      )} */}
     </div>
   );
 };

@@ -131,86 +131,92 @@ export const RadioWidget = ({ config }: RadioWidgetProps) => {
     const displayValue = selectedOption ? selectedOption.label : (allowUnset && currentValue === null ? '-' : '');
 
     return (
-      <div className="mb-3 RadioDisplayWidget">
+      <div className="mb-[10px] RadioDisplayWidget flex items-start">
         {label && (
-          <div className="text-sm text-gray-600 mb-1">
+          <div className="text-base text-gray-600 font-medium min-w-[150px] pr-4" style={{ fontFamily: 'Roboto, sans-serif' }}>
             {label}:
           </div>
         )}
-        <div className="text-base text-gray-900 font-medium">
-          {displayValue}
+        <div className="flex-1">
+          <div className="text-base text-gray-900 font-medium">
+            {displayValue}
+          </div>
+          {/* {widgetConfig['widget-data-helptext'] && (
+            <p className="text-gray-500 text-sm mt-1">
+              {translateConfig(widgetConfig['widget-data-helptext'])}
+            </p>
+          )} */}
         </div>
-        {widgetConfig['widget-data-helptext'] && (
-          <p className="text-gray-500 text-sm mt-1">
-            {translateConfig(widgetConfig['widget-data-helptext'])}
-          </p>
-        )}
       </div>
     );
   }
 
   return (
-    <div className="mb-4">
-      <label className="block text-sm font-medium text-gray-700 mb-2">
-        {translateConfig(widgetConfig['widget-label'])}
-        {widgetConfig['widget-required'] && (
-          <span className="text-red-500 ml-1">{translate('common.required')}</span>
-        )}
-      </label>
-      <div className={layoutConfig.className} style={layoutConfig.style} onBlur={onBlur}>
-        {loading ? (
-          <p className="text-sm text-gray-500">{translate('common.loading')}</p>
-        ) : (
-          <>
-            {/* Unset option (only if optional) */}
-            {allowUnset && (
-              <label
-                className={`flex items-center cursor-pointer ${
-                  !isEnabled || widgetConfig['widget-readonly'] ? 'opacity-50 cursor-not-allowed' : ''
-                }`}
-              >
-                <input
-                  type="radio"
-                  name={widgetConfig['widget-id']}
-                  checked={currentValue === null}
-                  onChange={handleUnset}
-                  disabled={!isEnabled || widgetConfig['widget-readonly']}
-                  className="mr-2 h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
-                />
-                <span className="text-sm text-gray-700">-</span>
-              </label>
+    <div className="mb-[10px]">
+      <div className="flex items-start">
+        <label className="text-base font-medium text-gray-700 min-w-[150px] pr-4 pt-1" style={{ fontFamily: 'Roboto, sans-serif' }}>
+          {translateConfig(widgetConfig['widget-label'])}
+          {widgetConfig['widget-required'] && (
+            <span className="text-red-500 ml-1">*</span>
+          )}
+        </label>
+        <div className="flex-1">
+          <div className={layoutConfig.className} style={layoutConfig.style} onBlur={onBlur}>
+            {loading ? (
+              <p className="text-sm text-gray-500">{translate('common.loading')}</p>
+            ) : (
+              <>
+                {/* Unset option (only if optional) */}
+                {allowUnset && (
+                  <label
+                    className={`flex items-center cursor-pointer ${
+                      !isEnabled || widgetConfig['widget-readonly'] ? 'opacity-50 cursor-not-allowed' : ''
+                    }`}
+                  >
+                    <input
+                      type="radio"
+                      name={widgetConfig['widget-id']}
+                      checked={currentValue === null}
+                      onChange={handleUnset}
+                      disabled={!isEnabled || widgetConfig['widget-readonly']}
+                      className="mr-2 h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
+                    />
+                    <span className="text-sm text-gray-700">-</span>
+                  </label>
+                )}
+                {/* Options */}
+                {processedOptions.map((option) => (
+                  <label
+                    key={option.value}
+                    className={`flex items-center cursor-pointer ${
+                      !isEnabled || widgetConfig['widget-readonly'] ? 'opacity-50 cursor-not-allowed' : ''
+                    }`}
+                  >
+                    <input
+                      type="radio"
+                      name={widgetConfig['widget-id']}
+                      value={option.value}
+                      checked={currentValue === option.value}
+                      onChange={(e) => handleChange(option.value)}
+                      disabled={!isEnabled || widgetConfig['widget-readonly']}
+                      className="mr-2 h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
+                    />
+                    <span className="text-sm text-gray-700">{translateConfig(option.label)}</span>
+                  </label>
+                ))}
+              </>
             )}
-            {/* Options */}
-            {processedOptions.map((option) => (
-              <label
-                key={option.value}
-                className={`flex items-center cursor-pointer ${
-                  !isEnabled || widgetConfig['widget-readonly'] ? 'opacity-50 cursor-not-allowed' : ''
-                }`}
-              >
-                <input
-                  type="radio"
-                  name={widgetConfig['widget-id']}
-                  value={option.value}
-                  checked={currentValue === option.value}
-                  onChange={(e) => handleChange(option.value)}
-                  disabled={!isEnabled || widgetConfig['widget-readonly']}
-                  className="mr-2 h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
-                />
-                <span className="text-sm text-gray-700">{translateConfig(option.label)}</span>
-              </label>
-            ))}
-          </>
-        )}
+          </div>
+          {touched && error.length > 0 && (
+            <p className="text-red-500 text-sm mt-1">{error[0]}</p>
+          )}
+          {/* {widgetConfig['widget-data-helptext'] && (
+            <p className="text-gray-500 text-sm mt-1">
+              {translateConfig(widgetConfig['widget-data-helptext'])}
+            </p>
+          )} */}
+        </div>
       </div>
-      {touched && error.length > 0 && (
-        <p className="text-red-500 text-sm mt-1">{error[0]}</p>
-      )}
-      {widgetConfig['widget-data-helptext'] && (
-        <p className="text-gray-500 text-sm mt-1">
-          {translateConfig(widgetConfig['widget-data-helptext'])}
-        </p>
-      )}
     </div>
   );
 };

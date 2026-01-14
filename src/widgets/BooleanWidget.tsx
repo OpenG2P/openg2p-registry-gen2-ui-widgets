@@ -118,20 +118,22 @@ export const BooleanWidget = ({ config }: BooleanWidgetProps) => {
     }
 
     return (
-      <div className="mb-3 BooleanDisplayWidget">
+      <div className="mb-[10px] BooleanDisplayWidget flex items-start">
         {label && (
-          <div className="text-sm text-gray-600 mb-1">
+          <div className="text-base text-gray-600 font-medium min-w-[150px] pr-4" style={{ fontFamily: 'Roboto, sans-serif' }}>
             {label}:
           </div>
         )}
-        <div className="text-base text-gray-900 font-medium">
-          {displayValue}
+        <div className="flex-1">
+          <div className="text-base text-gray-900 font-medium">
+            {displayValue}
+          </div>
+          {/* {widgetConfig['widget-data-helptext'] && (
+            <p className="text-gray-500 text-sm mt-1">
+              {translateConfig(widgetConfig['widget-data-helptext'])}
+            </p>
+          )} */}
         </div>
-        {widgetConfig['widget-data-helptext'] && (
-          <p className="text-gray-500 text-sm mt-1">
-            {translateConfig(widgetConfig['widget-data-helptext'])}
-          </p>
-        )}
       </div>
     );
   }
@@ -139,31 +141,38 @@ export const BooleanWidget = ({ config }: BooleanWidgetProps) => {
   // Render based on control type
   if (controlType === 'checkbox') {
     return (
-      <div className="mb-4">
-        <label className="flex items-center cursor-pointer">
-          <input
-            type="checkbox"
-            checked={currentValue === true}
-            onChange={handleCheckboxChange}
-            onBlur={onBlur}
-            disabled={!isEnabled || widgetConfig['widget-readonly']}
-            className="mr-2 h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-          />
-          <span className="text-sm font-medium text-gray-700">
+      <div className="mb-[10px]">
+        <div className="flex items-start">
+          <label className="text-base font-medium text-gray-700 min-w-[150px] pr-4 pt-1" style={{ fontFamily: 'Roboto, sans-serif' }}>
             {translateConfig(widgetConfig['widget-label'])}
             {widgetConfig['widget-required'] && (
-              <span className="text-red-500 ml-1">{translate('common.required')}</span>
+              <span className="text-red-500 ml-1">*</span>
             )}
-          </span>
-        </label>
-        {touched && error.length > 0 && (
-          <p className="text-red-500 text-sm mt-1">{error[0]}</p>
-        )}
-        {widgetConfig['widget-data-helptext'] && (
-          <p className="text-gray-500 text-sm mt-1">
-            {translateConfig(widgetConfig['widget-data-helptext'])}
-          </p>
-        )}
+          </label>
+          <div className="flex-1">
+            <label className="flex items-center cursor-pointer">
+              <input
+                type="checkbox"
+                checked={currentValue === true}
+                onChange={handleCheckboxChange}
+                onBlur={onBlur}
+                disabled={!isEnabled || widgetConfig['widget-readonly']}
+                className="mr-2 h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+              />
+              <span className="text-sm text-gray-700">
+                {currentValue === true ? trueLabel : (currentValue === false ? falseLabel : '-')}
+              </span>
+            </label>
+            {touched && error.length > 0 && (
+              <p className="text-red-500 text-sm mt-1">{error[0]}</p>
+            )}
+            {/* {widgetConfig['widget-data-helptext'] && (
+              <p className="text-gray-500 text-sm mt-1">
+                {translateConfig(widgetConfig['widget-data-helptext'])}
+              </p>
+            )} */}
+          </div>
+        </div>
       </div>
     );
   }
@@ -174,125 +183,136 @@ export const BooleanWidget = ({ config }: BooleanWidgetProps) => {
       : 'flex flex-col space-y-2';
 
     return (
-      <div className="mb-4">
-        <label className="block text-sm font-medium text-gray-700 mb-2">
-          {translateConfig(widgetConfig['widget-label'])}
-          {widgetConfig['widget-required'] && (
-            <span className="text-red-500 ml-1">{translate('common.required')}</span>
-          )}
-        </label>
-        <div className={containerClass} onBlur={onBlur}>
-          {allowUnset && (
-            <label className={`flex items-center cursor-pointer ${
-              !isEnabled || widgetConfig['widget-readonly'] ? 'opacity-50 cursor-not-allowed' : ''
-            }`}>
-              <input
-                type="radio"
-                name={widgetConfig['widget-id']}
-                checked={currentValue === null}
-                onChange={() => handleRadioChange(null)}
-                disabled={!isEnabled || widgetConfig['widget-readonly']}
-                className="mr-2 h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
-              />
-              <span className="text-sm text-gray-700">-</span>
-            </label>
-          )}
-          <label className={`flex items-center cursor-pointer ${
-            !isEnabled || widgetConfig['widget-readonly'] ? 'opacity-50 cursor-not-allowed' : ''
-          }`}>
-            <input
-              type="radio"
-              name={widgetConfig['widget-id']}
-              checked={currentValue === true}
-              onChange={() => handleRadioChange(true)}
-              disabled={!isEnabled || widgetConfig['widget-readonly']}
-              className="mr-2 h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
-            />
-            <span className="text-sm text-gray-700">{trueLabel}</span>
+      <div className="mb-[10px]">
+        <div className="flex items-start">
+          <label className="text-base font-medium text-gray-700 min-w-[150px] pr-4 pt-1" style={{ fontFamily: 'Roboto, sans-serif' }}>
+            {translateConfig(widgetConfig['widget-label'])}
+            {widgetConfig['widget-required'] && (
+              <span className="text-red-500 ml-1">*</span>
+            )}
           </label>
-          <label className={`flex items-center cursor-pointer ${
-            !isEnabled || widgetConfig['widget-readonly'] ? 'opacity-50 cursor-not-allowed' : ''
-          }`}>
-            <input
-              type="radio"
-              name={widgetConfig['widget-id']}
-              checked={currentValue === false}
-              onChange={() => handleRadioChange(false)}
-              disabled={!isEnabled || widgetConfig['widget-readonly']}
-              className="mr-2 h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
-            />
-            <span className="text-sm text-gray-700">{falseLabel}</span>
-          </label>
+          <div className="flex-1">
+            <div className={containerClass} onBlur={onBlur}>
+              {allowUnset && (
+                <label className={`flex items-center cursor-pointer ${
+                  !isEnabled || widgetConfig['widget-readonly'] ? 'opacity-50 cursor-not-allowed' : ''
+                }`}>
+                  <input
+                    type="radio"
+                    name={widgetConfig['widget-id']}
+                    checked={currentValue === null}
+                    onChange={() => handleRadioChange(null)}
+                    disabled={!isEnabled || widgetConfig['widget-readonly']}
+                    className="mr-2 h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
+                  />
+                  <span className="text-sm text-gray-700">-</span>
+                </label>
+              )}
+              <label className={`flex items-center cursor-pointer ${
+                !isEnabled || widgetConfig['widget-readonly'] ? 'opacity-50 cursor-not-allowed' : ''
+              }`}>
+                <input
+                  type="radio"
+                  name={widgetConfig['widget-id']}
+                  checked={currentValue === true}
+                  onChange={() => handleRadioChange(true)}
+                  disabled={!isEnabled || widgetConfig['widget-readonly']}
+                  className="mr-2 h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
+                />
+                <span className="text-sm text-gray-700">{trueLabel}</span>
+              </label>
+              <label className={`flex items-center cursor-pointer ${
+                !isEnabled || widgetConfig['widget-readonly'] ? 'opacity-50 cursor-not-allowed' : ''
+              }`}>
+                <input
+                  type="radio"
+                  name={widgetConfig['widget-id']}
+                  checked={currentValue === false}
+                  onChange={() => handleRadioChange(false)}
+                  disabled={!isEnabled || widgetConfig['widget-readonly']}
+                  className="mr-2 h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
+                />
+                <span className="text-sm text-gray-700">{falseLabel}</span>
+              </label>
+            </div>
+            {touched && error.length > 0 && (
+              <p className="text-red-500 text-sm mt-1">{error[0]}</p>
+            )}
+            {/* {widgetConfig['widget-data-helptext'] && (
+              <p className="text-gray-500 text-sm mt-1">
+                {translateConfig(widgetConfig['widget-data-helptext'])}
+              </p>
+            )} */}
+          </div>
         </div>
-        {touched && error.length > 0 && (
-          <p className="text-red-500 text-sm mt-1">{error[0]}</p>
-        )}
-        {widgetConfig['widget-data-helptext'] && (
-          <p className="text-gray-500 text-sm mt-1">
-            {translateConfig(widgetConfig['widget-data-helptext'])}
-          </p>
-        )}
       </div>
     );
   }
 
   // Toggle/switch control type
   return (
-    <div className="mb-4">
-      <label className="block text-sm font-medium text-gray-700 mb-2">
-        {translateConfig(widgetConfig['widget-label'])}
-        {widgetConfig['widget-required'] && (
-          <span className="text-red-500 ml-1">{translate('common.required')}</span>
-        )}
-      </label>
-      <div className="flex items-center space-x-3" onBlur={onBlur}>
-        {allowUnset && (
-          <button
-            type="button"
-            onClick={() => handleChange(null)}
-            disabled={!isEnabled || widgetConfig['widget-readonly']}
-            className={`px-3 py-1 text-sm rounded border ${
-              currentValue === null
-                ? 'bg-blue-600 text-white border-blue-600'
-                : 'bg-white text-gray-700 border-gray-300'
-            } ${!isEnabled || widgetConfig['widget-readonly'] ? 'opacity-50 cursor-not-allowed' : 'hover:bg-gray-50'}`}
-          >
-            -
-          </button>
-        )}
-        <button
-          type="button"
-          onClick={() => handleChange(true)}
-          disabled={!isEnabled || widgetConfig['widget-readonly']}
-          className={`px-3 py-1 text-sm rounded border ${
-            currentValue === true
-              ? 'bg-blue-600 text-white border-blue-600'
-              : 'bg-white text-gray-700 border-gray-300'
-          } ${!isEnabled || widgetConfig['widget-readonly'] ? 'opacity-50 cursor-not-allowed' : 'hover:bg-gray-50'}`}
-        >
-          {trueLabel}
-        </button>
-        <button
-          type="button"
-          onClick={() => handleChange(false)}
-          disabled={!isEnabled || widgetConfig['widget-readonly']}
-          className={`px-3 py-1 text-sm rounded border ${
-            currentValue === false
-              ? 'bg-blue-600 text-white border-blue-600'
-              : 'bg-white text-gray-700 border-gray-300'
-          } ${!isEnabled || widgetConfig['widget-readonly'] ? 'opacity-50 cursor-not-allowed' : 'hover:bg-gray-50'}`}
-        >
-          {falseLabel}
-        </button>
+    <div className="mb-[10px]">
+      <div className="flex items-start">
+        <label className="text-base font-medium text-gray-700 min-w-[150px] pr-4 pt-1" style={{ fontFamily: 'Roboto, sans-serif' }}>
+          {translateConfig(widgetConfig['widget-label'])}
+          {widgetConfig['widget-required'] && (
+            <span className="text-red-500 ml-1">*</span>
+          )}
+        </label>
+        <div className="flex-1">
+          <div className="flex items-center space-x-3" onBlur={onBlur}>
+            {allowUnset && (
+              <button
+                type="button"
+                onClick={() => handleChange(null)}
+                disabled={!isEnabled || widgetConfig['widget-readonly']}
+                className={`px-3 py-1 text-sm border ${
+                  currentValue === null
+                    ? 'bg-blue-600 text-white border-blue-600'
+                    : 'bg-white text-gray-700 border-gray-300'
+                } ${!isEnabled || widgetConfig['widget-readonly'] ? 'opacity-50 cursor-not-allowed' : 'hover:bg-gray-50'}`}
+                style={{ borderRadius: '15px' }}
+              >
+                -
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={() => handleChange(true)}
+              disabled={!isEnabled || widgetConfig['widget-readonly']}
+              className={`px-3 py-1 text-sm border ${
+                currentValue === true
+                  ? 'bg-blue-600 text-white border-blue-600'
+                  : 'bg-white text-gray-700 border-gray-300'
+              } ${!isEnabled || widgetConfig['widget-readonly'] ? 'opacity-50 cursor-not-allowed' : 'hover:bg-gray-50'}`}
+              style={{ borderRadius: '15px' }}
+            >
+              {trueLabel}
+            </button>
+            <button
+              type="button"
+              onClick={() => handleChange(false)}
+              disabled={!isEnabled || widgetConfig['widget-readonly']}
+              className={`px-3 py-1 text-sm border ${
+                currentValue === false
+                  ? 'bg-blue-600 text-white border-blue-600'
+                  : 'bg-white text-gray-700 border-gray-300'
+              } ${!isEnabled || widgetConfig['widget-readonly'] ? 'opacity-50 cursor-not-allowed' : 'hover:bg-gray-50'}`}
+              style={{ borderRadius: '15px' }}
+            >
+              {falseLabel}
+            </button>
+          </div>
+          {touched && error.length > 0 && (
+            <p className="text-red-500 text-sm mt-1">{error[0]}</p>
+          )}
+          {/* {widgetConfig['widget-data-helptext'] && (
+            <p className="text-gray-500 text-sm mt-1">
+              {translateConfig(widgetConfig['widget-data-helptext'])}
+            </p>
+          )} */}
+        </div>
       </div>
-      {touched && error.length > 0 && (
-        <p className="text-red-500 text-sm mt-1">{error[0]}</p>
-      )}
-      {widgetConfig['widget-data-helptext'] && (
-        <p className="text-gray-500 text-sm mt-1">
-          {translateConfig(widgetConfig['widget-data-helptext'])}
-        </p>
-      )}
     </div>
   );
 };

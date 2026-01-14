@@ -1,7 +1,8 @@
 import { useState, useMemo, useCallback, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { useStore, useDispatch } from 'react-redux';
+import { useStore, useDispatch, useSelector } from 'react-redux';
 import { setValues } from '../store/widgetSlice';
+import { WidgetRootState } from '../store';
 import { SectionConfig, PanelConfig, SupportingDocumentConfig } from '../types';
 import { UseBaseWidgetOptions } from '../hooks/useBaseWidget';
 import { PanelRenderer } from './PanelRenderer';
@@ -9,6 +10,7 @@ import { useWidgetTranslation } from '../hooks/useWidgetTranslation';
 import { getValueByPath, setWidgetValue } from '../utils/pathUtils';
 import { useWidgetContext } from './WidgetProvider';
 import { FileInputWidget } from '../widgets/FileInputWidget';
+import { SectionMode } from './SectionsContainer';
 
 
 export interface SectionChanges {
@@ -25,6 +27,9 @@ export interface SectionRendererProps {
   onValueChange?: UseBaseWidgetOptions['onValueChange'];
   gridColumnSpan?: number; // Number of grid columns this section should span
   onSectionSave?: (changes: SectionChanges) => Promise<void> | void;
+  hideEditButton?: boolean; // Hide the edit button band below the section
+  mode?: SectionMode; // Display mode: 'RegistryView' (default) or 'CRView'
+  // CRView data is read from schemaData with keys: createdBy, createdDate, approvedBy, approvedDate
 }
 
 
@@ -43,11 +48,34 @@ export const SectionRenderer = ({
   onValueChange,
   gridColumnSpan,
   onSectionSave,
+  hideEditButton = false,
+  mode = 'RegistryView',
 }: SectionRendererProps) => {
-  const { translateConfig } = useWidgetTranslation();
+  const { translateConfig, translate } = useWidgetTranslation();
   const { schemaData: contextSchemaData } = useWidgetContext();
   const store = useStore();
   const dispatch = useDispatch();
+
+  // Get CRView data from schemaData (prefer prop over context, then Redux store)
+  const currentSchemaData = schemaData || contextSchemaData || {};
+  const storeValues = useSelector((state: WidgetRootState) => state.widget?.values || {});
+  const crViewData = useMemo(() => {
+    if (mode !== 'CRView') return null;
+    // Try to get from schemaData first, then from Redux store
+    // Merge both sources to ensure we get the data
+    const dataSource = { ...storeValues, ...currentSchemaData };
+    const result = {
+      createdBy: getValueByPath(dataSource, 'createdBy') || getValueByPath(dataSource, 'created_by'),
+      createdDate: getValueByPath(dataSource, 'createdDate') || getValueByPath(dataSource, 'created_date'),
+      approvedBy: getValueByPath(dataSource, 'approvedBy') || getValueByPath(dataSource, 'approved_by'),
+      approvedDate: getValueByPath(dataSource, 'approvedDate') || getValueByPath(dataSource, 'approved_date'),
+    };
+    // Debug logging (can be removed in production)
+    if (mode === 'CRView') {
+      console.log('CRView Data Source:', { dataSource, result, currentSchemaData, storeValues });
+    }
+    return result;
+  }, [mode, currentSchemaData, storeValues]);
 
   const sectionId = section['section-id'];
   const gridId = `section-panels-${sectionId}`;
@@ -135,7 +163,9 @@ export const SectionRenderer = ({
   
   // Edit mode state
   const [isEditMode, setIsEditMode] = useState(false);
+  const [isDocumentsExpanded, setIsDocumentsExpanded] = useState(true);
   const sectionRef = useRef<HTMLDivElement>(null);
+  const [sectionHeight, setSectionHeight] = useState<number | null>(null);
   const [editSectionPosition, setEditSectionPosition] = useState<{
     top: number;
     left: number;
@@ -169,6 +199,7 @@ export const SectionRenderer = ({
       };
     } else if (!isEditMode) {
       setEditSectionPosition(null);
+      setSectionHeight(null);
     }
   }, [isEditMode]);
 
@@ -198,6 +229,11 @@ export const SectionRenderer = ({
 
   // Handle edit button click
   const handleEdit = () => {
+    // Capture height BEFORE entering edit mode to preserve space
+    if (sectionRef.current) {
+      const height = sectionRef.current.offsetHeight;
+      setSectionHeight(height);
+    }
     setIsEditMode(true);
   };
   
@@ -239,9 +275,24 @@ export const SectionRenderer = ({
               flex: 1 1 calc(20% - 1.2rem);
             }
           }
+          
+          /* Vertical dividers between vertical panels in edit mode */
+          #${editGridId} > .panel-wrapper {
+            position: relative;
+          }
+          /* Only add divider between panels, not after the last one */
+          #${editGridId} > .panel-wrapper:not(.last-panel-wrapper)::after {
+            content: '';
+            position: absolute;
+            right: 0;
+            top: 0;
+            bottom: 0;
+            width: 1px;
+            background-color: #F2BA1A;
+          }
         `}</style>
         <div
-          className={`section ${sectionClassId} ${sectionClassId}-edit px-4 sm:px-6 lg:px-8 border-2 rounded-lg`}
+          className={`section ${sectionClassId} ${sectionClassId}-edit px-4 sm:px-6 lg:px-8`}
           data-section-id={`${sectionId}-edit`}
           style={{
             position: 'absolute',
@@ -253,53 +304,78 @@ export const SectionRenderer = ({
           }}
         >
           {section['section-title'] && (
-            <h2 className="text-xl font-semibold my-4">{translateConfig(section['section-title'])}</h2>
+            <h2 className="text-xl font-semibold mb-4" style={{ fontFamily: 'Roboto, sans-serif', marginTop: '35px' }}>{translateConfig(section['section-title'])}</h2>
           )}
           <div id={editGridId} className="section-panels">
-            {editableSection.panels.map((panel, index) => (
+            {editableSection.panels.map((panel, index) => {
+              const isLastPanel = index === editableSection.panels.length - 1;
+              return (
               <div
                 key={panel['panel-id'] || `section-panel-${index}`}
-                className="panel-wrapper"
+                className={`panel-wrapper ${isLastPanel ? 'last-panel-wrapper' : ''}`}
               >
                 <PanelRenderer
                   panel={panel}
                   apiAdapter={apiAdapter}
                   schemaData={schemaData}
                   onValueChange={onValueChange}
+                  isEditMode={true}
                 />
               </div>
-            ))}
-            <hr className="border-gray-300 my-4 w-full" />
-            <div className="edit-controls-container">
-              {hasSupportingDocuments && (
+              );
+            })}
+            {hasSupportingDocuments && (
+              <>
+                <hr className="my-4 w-full" style={{ height: '1px', backgroundColor: '#F2BA1A', border: 'none' }} />
                 <div className="supporting-documents-container">
-                  <div className="supporting-documents-title">
-                    {translateConfig('Upload Supporting Documents') || 'Upload Supporting Documents'}
-                  </div>
-                  <div className="supporting-documents-grid">
-                    {supportingDocuments.map((doc, index) => {
-                      const docConfig = createDocumentWidgetConfig(doc, sectionId, index);
-                      return (
-                        <div key={`${sectionId}-doc-${index}`} className="supporting-document-item">
-                          <FileInputWidget config={docConfig} />
-                        </div>
-                      );
-                    })}
-                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setIsDocumentsExpanded(!isDocumentsExpanded)}
+                    className="supporting-documents-title-button w-full flex items-center text-left"
+                  >
+                    <span className="font-semibold" style={{ fontFamily: 'Roboto, sans-serif', fontSize: '16px' }}>
+                      {translate('common.supportedDocuments') || 'Supported Documents'}
+                    </span>
+                    <svg
+                      className={`w-5 h-5 text-[#ED7C22] transition-transform ml-2 ${isDocumentsExpanded ? 'rotate-180' : ''}`}
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </button>
+                  {isDocumentsExpanded && (
+                    <div className="supporting-documents-grid mt-4">
+                      {supportingDocuments.map((doc, index) => {
+                        const docConfig = createDocumentWidgetConfig(doc, sectionId, index);
+                        return (
+                          <div key={`${sectionId}-doc-${index}`} className="supporting-document-item">
+                            <FileInputWidget config={docConfig} />
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
                 </div>
-              )}
+              </>
+            )}
+            <hr className="w-full" style={{ height: '1px', backgroundColor: '#F2BA1A', border: 'none', marginTop: hasSupportingDocuments ? '20px' : 0, marginBottom: '20px' }} />
+            <div className="edit-controls-container" style={{ marginBottom: '20px' }}>
               <div className="edit-controls-buttons">
                 <button
-                  onClick={handleSave}
-                  className="bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium px-4 py-2 rounded-md transition-colors"
+                  onClick={handleCancel}
+                  className="bg-white hover:bg-gray-50 text-gray-900 text-sm font-medium px-6 py-2 transition-colors border border-gray-300"
+                  style={{ fontFamily: 'Roboto, sans-serif', borderRadius: '15px' }}
                 >
-                  Save
+                  {translate('common.cancel') || 'Cancel'}
                 </button>
                 <button
-                  onClick={handleCancel}
-                  className="bg-gray-200 hover:bg-gray-300 text-gray-700 text-sm font-medium px-4 py-2 rounded-md transition-colors"
+                  onClick={handleSave}
+                  className="bg-gray-900 hover:bg-gray-800 text-white text-sm font-medium px-6 py-2 transition-colors"
+                  style={{ fontFamily: 'Roboto, sans-serif', borderRadius: '15px' }}
                 >
-                  Cancel
+                  {translate('common.save') || 'Save'}
                 </button>
               </div>
             </div>
@@ -328,7 +404,18 @@ export const SectionRenderer = ({
     widgets.forEach(widget => {
       const dataPath = widget['widget-data-path'];
       if (!dataPath) return;
-      snapshot[dataPath] = getValueByPath(sourceData, dataPath);
+      
+      // Handle multi-path (object) or single path (string)
+      if (typeof dataPath === 'object') {
+        // Multi-path: store each path separately
+        Object.entries(dataPath).forEach(([key, path]) => {
+          if (typeof path === 'string') {
+            snapshot[path] = getValueByPath(sourceData, path);
+          }
+        });
+      } else if (typeof dataPath === 'string') {
+        snapshot[dataPath] = getValueByPath(sourceData, dataPath);
+      }
     });
     return snapshot;
  };
@@ -398,14 +485,29 @@ export const SectionRenderer = ({
       const widgetId = widget['widget-id'];
       const dataPath = widget['widget-data-path'];
 
-      if (widgetId) {
-        let oldValue = getValueByPath(oldSchemaData, dataPath);
-        newStoreValues = setWidgetValue(
-          newStoreValues,
-          dataPath,
-          widgetId,
-          oldValue
-        );
+      if (widgetId && dataPath) {
+        // Handle multi-path (object) or single path (string)
+        let oldValue: any;
+        if (typeof dataPath === 'object') {
+          // Multi-path: get values for each path
+          oldValue = {};
+          Object.entries(dataPath).forEach(([key, path]) => {
+            if (typeof path === 'string') {
+              oldValue[key] = getValueByPath(oldSchemaData, path);
+            }
+          });
+        } else if (typeof dataPath === 'string') {
+          oldValue = getValueByPath(oldSchemaData, dataPath);
+        }
+        
+        if (oldValue !== undefined) {
+          newStoreValues = setWidgetValue(
+            newStoreValues,
+            dataPath,
+            widgetId,
+            oldValue
+          );
+        }
       }
     });
 
@@ -471,22 +573,35 @@ export const SectionRenderer = ({
           transition: box-shadow 0.3s ease-in-out, border-color 0.3s ease-in-out;
         }
         
-        /* Hide original section content when in edit mode */
+        /* Hide original section content when in edit mode but maintain space */
         .${sectionClassId}[data-edit-mode="true"] {
+          visibility: hidden;
+          position: relative;
+        }
+        
+        /* Ensure all children are also hidden but maintain their space */
+        .${sectionClassId}[data-edit-mode="true"] * {
           visibility: hidden;
         }
         
         /* Edit section styles (rendered via portal, absolutely positioned) */
         .${sectionClassId}-edit {
           box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.2), 
-                      0 8px 10px -6px rgba(0, 0, 0, 0.1),
-                      0 0 0 3px rgba(59, 130, 246, 0.3);
+                      0 8px 10px -6px rgba(0, 0, 0, 0.1);
           border-color: #ED7C22;
           border-style: dashed;
+          border-width: 1px;
           background-color: #F3E6BC;
+          border-radius: 30px;
           z-index: 1000;
           position: absolute;
         }
+        
+        /* Ensure widget containers in edit section have no margin bottom */
+        .${sectionClassId}-edit .widget-container {
+          margin-bottom: 0 !important;
+        }
+        
         
         /* Only set grid-column in CSS if no explicit span (inline style will handle explicit spans) */
         .${sectionClassId}[data-has-explicit-span="false"] {
@@ -502,6 +617,7 @@ export const SectionRenderer = ({
         #${gridId} > .panel-wrapper {
           flex: 1 1 100%;
           min-width: 0;
+          position: relative;
         }
         /* Mobile: 1 panel per row */
         @media (min-width: 640px) {
@@ -528,30 +644,35 @@ export const SectionRenderer = ({
           }
         }
         
+        
         /* Supporting documents container */
         .${sectionClassId} .supporting-documents-container {
           width: 100%;
-          margin-top: 1rem;
-          padding-top: 1rem;
-          border-top: 1px solid #e5e7eb;
         }
         
-        .${sectionClassId} .supporting-documents-title {
-          font-size: 0.875rem;
-          font-weight: 600;
-          color: #374151;
-          margin-bottom: 0.75rem;
+        .${sectionClassId} .supporting-documents-title-button {
+          background: none;
+          border: none;
+          padding: 0;
+          cursor: pointer;
+        }
+        
+        .${sectionClassId} .supporting-documents-title-button:hover {
+          opacity: 0.8;
         }
         
         .${sectionClassId} .supporting-documents-grid {
           display: flex;
           flex-direction: column;
           gap: 1rem;
-          margin-bottom: 1rem;
         }
         
         .${sectionClassId} .supporting-document-item {
           width: 100%;
+        }
+        
+        .${sectionClassId} .supporting-document-item > div {
+          margin-bottom: 0 !important;
         }
         
         .${sectionClassId} .edit-controls-container {
@@ -563,14 +684,14 @@ export const SectionRenderer = ({
         
         .${sectionClassId} .edit-controls-buttons {
           display: flex;
-          justify-content: center;
+          justify-content: flex-start;
           align-items: center;
           gap: 0.5rem;
         }
       `}</style>
       <div
         ref={sectionRef}
-        className={`section ${sectionClassId} px-4 sm:px-6 lg:px-8 border-2 rounded-lg border-gray-300`}
+        className={`section ${sectionClassId} px-4 sm:px-6 lg:px-8 border-2 border-gray-300`}
         data-section-id={sectionId}
         data-has-table={hasTableWidget ? 'true' : 'false'}
         data-has-explicit-span={hasExplicitTableSpan ? 'true' : 'false'}
@@ -579,12 +700,22 @@ export const SectionRenderer = ({
         style={{
           gridColumn: `span ${columnSpan}`,
           width: '100%',
+          borderRadius: '30px',
+          backgroundColor: '#FFFFFF',
+          ...(isEditMode && sectionHeight ? { 
+            height: `${sectionHeight}px`,
+            minHeight: `${sectionHeight}px`
+          } : {}),
         }}
       >
         {section['section-title'] && (
-          <h2 className="text-xl font-semibold my-4">{translateConfig(section['section-title'])}</h2>
+          <h2 className="text-xl font-semibold mb-4" style={{ marginTop: '35px' }}>{translateConfig(section['section-title'])}</h2>
         )}
-        <div id={gridId} className="section-panels">
+        <div 
+          id={gridId} 
+          className="section-panels"
+          style={mode === 'RegistryView' && hideEditButton ? { paddingBottom: '40px' } : {}}
+        >
           {editableSection.panels.map((panel, index) => (
             <div
               key={panel['panel-id'] || `section-panel-${index}`}
@@ -598,15 +729,130 @@ export const SectionRenderer = ({
               />
             </div>
           ))}
-          <hr className="border-gray-300 my-4 w-full" />
-          {!isEditMode && (
-            <div className="flex justify-center items-center py-4">
+          {/* CRView Mode - Show Created by / Approved by information */}
+          {mode === 'CRView' && crViewData && (
+            <>
+              <hr className="border-gray-300 w-full" style={{ height: '1px', marginTop: '20px', marginBottom: '0px' }} />
+              <div className="cr-view-container" style={{ 
+              marginTop: '20px',
+              paddingBottom: '30px',
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              width: '100%',
+            }}>
+              {/* Created by section - Left aligned */}
+              <div className="created-by-section" style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                flex: 1,
+              }}>
+                <span style={{
+                  fontFamily: 'Roboto, sans-serif',
+                  fontSize: '14px',
+                  color: '#000000',
+                  fontWeight: 'normal',
+                }}>
+                  Created by
+                </span>
+                {/* Person icon */}
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M8 8C9.47276 8 10.6667 6.80609 10.6667 5.33333C10.6667 3.86058 9.47276 2.66667 8 2.66667C6.52724 2.66667 5.33333 3.86058 5.33333 5.33333C5.33333 6.80609 6.52724 8 8 8Z" fill="#ED7C22"/>
+                  <path d="M8 9.33333C5.42267 9.33333 3.33333 11.4227 3.33333 14H12.6667C12.6667 11.4227 10.5773 9.33333 8 9.33333Z" fill="#ED7C22"/>
+                </svg>
+                {crViewData?.createdBy && (
+                  <span style={{
+                    fontFamily: 'Roboto, sans-serif',
+                    fontSize: '14px',
+                    color: '#000000',
+                    fontWeight: 'normal',
+                  }}>
+                    {crViewData.createdBy}
+                  </span>
+                )}
+                {/* Calendar icon */}
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ marginLeft: '6px' }}>
+                  <path d="M12.6667 2.66667H12V2C12 1.63181 11.7015 1.33333 11.3333 1.33333C10.9651 1.33333 10.6667 1.63181 10.6667 2V2.66667H5.33333V2C5.33333 1.63181 5.03486 1.33333 4.66667 1.33333C4.29848 1.33333 4 1.63181 4 2V2.66667H3.33333C2.59695 2.66667 2 3.26362 2 4V13.3333C2 14.0697 2.59695 14.6667 3.33333 14.6667H12.6667C13.403 14.6667 14 14.0697 14 13.3333V4C14 3.26362 13.403 2.66667 12.6667 2.66667ZM12.6667 13.3333H3.33333V6.66667H12.6667V13.3333Z" fill="#ED7C22"/>
+                </svg>
+                {crViewData?.createdDate && (
+                  <span style={{
+                    fontFamily: 'Roboto, sans-serif',
+                    fontSize: '14px',
+                    color: '#000000',
+                    fontWeight: 'normal',
+                  }}>
+                    {crViewData.createdDate}
+                  </span>
+                )}
+              </div>
+
+              {/* Approved by section - Right aligned */}
+              <div className="approved-by-section" style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                flex: 1,
+                justifyContent: 'flex-end',
+              }}>
+                <span style={{
+                  fontFamily: 'Roboto, sans-serif',
+                  fontSize: '14px',
+                  color: '#000000',
+                  fontWeight: 'normal',
+                }}>
+                  Approved by
+                </span>
+                {/* Person icon */}
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M8 8C9.47276 8 10.6667 6.80609 10.6667 5.33333C10.6667 3.86058 9.47276 2.66667 8 2.66667C6.52724 2.66667 5.33333 3.86058 5.33333 5.33333C5.33333 6.80609 6.52724 8 8 8Z" fill="#ED7C22"/>
+                  <path d="M8 9.33333C5.42267 9.33333 3.33333 11.4227 3.33333 14H12.6667C12.6667 11.4227 10.5773 9.33333 8 9.33333Z" fill="#ED7C22"/>
+                </svg>
+                {crViewData?.approvedBy && (
+                  <span style={{
+                    fontFamily: 'Roboto, sans-serif',
+                    fontSize: '14px',
+                    color: '#000000',
+                    fontWeight: 'normal',
+                  }}>
+                    {crViewData.approvedBy}
+                  </span>
+                )}
+                {/* Calendar icon */}
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ marginLeft: '6px' }}>
+                  <path d="M12.6667 2.66667H12V2C12 1.63181 11.7015 1.33333 11.3333 1.33333C10.9651 1.33333 10.6667 1.63181 10.6667 2V2.66667H5.33333V2C5.33333 1.63181 5.03486 1.33333 4.66667 1.33333C4.29848 1.33333 4 1.63181 4 2V2.66667H3.33333C2.59695 2.66667 2 3.26362 2 4V13.3333C2 14.0697 2.59695 14.6667 3.33333 14.6667H12.6667C13.403 14.6667 14 14.0697 14 13.3333V4C14 3.26362 13.403 2.66667 12.6667 2.66667ZM12.6667 13.3333H3.33333V6.66667H12.6667V13.3333Z" fill="#ED7C22"/>
+                </svg>
+                {crViewData?.approvedDate && (
+                  <span style={{
+                    fontFamily: 'Roboto, sans-serif',
+                    fontSize: '14px',
+                    color: '#000000',
+                    fontWeight: 'normal',
+                  }}>
+                    {crViewData.approvedDate}
+                  </span>
+                )}
+              </div>
+            </div>
+            </>
+          )}
+          {/* RegistryView Mode - Show edit button (if not hidden) */}
+          {mode === 'RegistryView' && !hideEditButton && (
+            <hr className="border-gray-300 w-full" style={{ height: '1px', marginTop: !isEditMode ? '20px' : 0, marginBottom: '14px' }} />
+          )}
+          {mode === 'RegistryView' && !isEditMode && !hideEditButton && (
+            <div className="flex justify-center items-center" style={{ marginBottom: '20px' }}>
               <button
                 onClick={handleEdit}
-                className="text-blue-600 bg-gray-200 hover:text-blue-800 text-sm font-medium inline-flex items-center px-2 py-2 rounded-md hover:bg-blue-50 transition-colors"
+                className="font-normal inline-flex items-center gap-2 bg-transparent border-0 p-0 cursor-pointer hover:opacity-80"
+                style={{ 
+                  fontFamily: 'Roboto, sans-serif',
+                  fontSize: '16px',
+                  color: 'rgba(0, 0, 0, 0.50)'
+                }}
               >
-                Edit details
-                <span className="ml-1">→</span>
+                Edit Details
+                <span>→</span>
               </button>
             </div>
           )}

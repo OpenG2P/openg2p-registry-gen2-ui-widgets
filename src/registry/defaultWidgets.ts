@@ -15,7 +15,8 @@ import {
   PhoneInputWidget,
   CurrencyInputWidget,
   DisplayWidget,
-  TableWidget
+  TableWidget,
+  ProfileWidget
 } from '../widgets';
 
 /**
@@ -65,6 +66,9 @@ export const registerDefaultWidgets = () => {
 
   // Display widget for readonly text display
   widgetRegistry.register({ widget: 'display', component: DisplayWidget });
+
+  // Profile widget for displaying user identity (image, name, ID)
+  widgetRegistry.register({ widget: 'profile', component: ProfileWidget });
 };
 
 // Auto-register on import

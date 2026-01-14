@@ -9,6 +9,7 @@ export interface PanelRendererProps {
   apiAdapter?: UseBaseWidgetOptions['apiAdapter'];
   schemaData?: UseBaseWidgetOptions['schemaData'];
   onValueChange?: UseBaseWidgetOptions['onValueChange'];
+  isEditMode?: boolean;
 }
 
 /**
@@ -23,6 +24,7 @@ export const PanelRenderer = ({
   apiAdapter,
   schemaData,
   onValueChange,
+  isEditMode = false,
 }: PanelRendererProps) => {
   const { translateConfig } = useWidgetTranslation();
   const orientation = panel['panel-orientation'] || 'vertical';
@@ -37,20 +39,21 @@ export const PanelRenderer = ({
       const numPanels = nestedPanels.length;
       // Use predefined grid classes based on number of panels (1-5)
       // For more than 5, use inline style
+      // Removed gap to allow borders to show properly
       console.log('numPanels', numPanels);
       if (numPanels <= 5) {
         const gridClasses: Record<number, string> = {
-          1: 'grid grid-cols-1 gap-4',
-          2: 'grid grid-cols-2 gap-4',
-          3: 'grid grid-cols-3 gap-4',
-          4: 'grid grid-cols-4 gap-4',
-          5: 'grid grid-cols-5 gap-4',
+          1: 'grid grid-cols-1',
+          2: 'grid grid-cols-2',
+          3: 'grid grid-cols-3',
+          4: 'grid grid-cols-4',
+          5: 'grid grid-cols-5',
         };
-        return { className: gridClasses[numPanels] || 'grid gap-4', style: {} };
+        return { className: gridClasses[numPanels] || 'grid', style: {} };
       } else {
         // For more than 5 panels, use inline style
         return {
-          className: 'grid gap-4',
+          className: 'grid',
           style: { gridTemplateColumns: `repeat(${numPanels}, minmax(0, 1fr))` },
         };
       }
@@ -78,19 +81,43 @@ export const PanelRenderer = ({
     >
       {/* Render nested panels */}
       {nestedPanels.map((nestedPanel, index) => {
+        const isLastPanel = index === nestedPanels.length - 1;
+        const isFirstPanel = index === 0;
+        const horizontalStyle = orientation === 'horizontal' 
+          ? {
+              minWidth: '200px',
+              paddingRight: !isLastPanel ? '40px' : undefined,
+              paddingLeft: !isFirstPanel ? '40px' : undefined,
+              position: 'relative' as const,
+            }
+          : { width: '100%' };
         return (
-          <div 
-            key={nestedPanel['panel-id'] || `panel-${index}`} 
-            className={orientation === 'horizontal' ? 'min-w-200  border-gray-300 float-left' : 'w-full'}
-            style={orientation === 'horizontal' ? { width: '200px' ,float:'left'} : {width:'100%'}}
-          > 
-            <PanelRenderer
-              panel={nestedPanel}
-              apiAdapter={apiAdapter}
-              schemaData={schemaData}
-              onValueChange={onValueChange}
-            />
-          </div>
+          <React.Fragment key={nestedPanel['panel-id'] || `panel-${index}`}>
+            <div 
+              className={orientation === 'horizontal' ? 'min-w-200 relative' : 'w-full'}
+              style={horizontalStyle}
+            > 
+              <PanelRenderer
+                panel={nestedPanel}
+                apiAdapter={apiAdapter}
+                schemaData={schemaData}
+                onValueChange={onValueChange}
+                isEditMode={isEditMode}
+              />
+              {orientation === 'horizontal' && !isLastPanel && (
+                <div
+                  style={{
+                    position: 'absolute',
+                    right: 0,
+                    top: 0,
+                    bottom: 0,
+                    width: '1px',
+                    backgroundColor: isEditMode ? '#F2BA1A' : '#D1D5DB',
+                  }}
+                />
+              )}
+            </div>
+          </React.Fragment>
         );
       })}
       

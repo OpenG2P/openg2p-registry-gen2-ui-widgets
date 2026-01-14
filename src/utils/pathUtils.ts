@@ -69,7 +69,10 @@ export const getWidgetValue = (
     // Fallback to widget-id if no data path
     return values[widgetId];
   }
-
+  if(widgetId=="user-profile"){
+    console.log('values', values);
+    console.log('dataPath', dataPath);
+  }
   if (typeof dataPath === 'string') {
     return getValueByPath(values, dataPath);
   }
