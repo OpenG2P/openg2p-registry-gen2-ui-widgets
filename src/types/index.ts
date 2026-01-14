@@ -142,6 +142,7 @@ export interface WidgetFormat {
   caseControl?: CaseControl; // Case transformation
   mask?: InputMask; // Input masking configuration
   showCharCounter?: boolean; // Show live character counter
+  rows?: number; // Number of rows for textarea (default: 2)
   // Number input specific format options
   numericType?: NumericType; // Integer or decimal (default: 'decimal')
   decimalPlaces?: number; // Number of decimal places (0-6, default: 0 for integer, 2 for decimal)

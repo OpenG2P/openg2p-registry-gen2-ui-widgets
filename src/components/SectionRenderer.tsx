@@ -211,19 +211,21 @@ export const SectionRenderer = ({
         panels: panel.panels ? makePanelsEditable(panel.panels, editable) : undefined,
         widgets: panel.widgets?.map(widget => ({
           ...widget,
-          'widget-readonly': editable ? false : widget['widget-readonly'],
+          // When NOT in edit mode (editable = false), set all widgets to readonly
+          // When in edit mode (editable = true), respect original readonly setting or make editable
+          'widget-readonly': editable ? (widget['widget-readonly'] || false) : true,
         })),
       };
       return modifiedPanel;
     });
   };
 
-  // Create editable version of section when in edit mode
+  // Create section with widgets readonly/editable based on edit mode
   const editableSection = useMemo(() => {
-    if (!isEditMode) return section;
+    // Always apply readonly/editable state based on edit mode
     return {
       ...section,
-      panels: makePanelsEditable(section.panels, true),
+      panels: makePanelsEditable(section.panels, isEditMode),
     };
   }, [section, isEditMode]);
 
