@@ -34,8 +34,10 @@ import { filterByCharacterType, applyCaseControl, applyMask, removeMask } from '
  *     "showCharCounter": true
  *   },
  *   "widget-data-validation": {
- *     "pattern": "^[a-z0-9]+$",
- *     "patternMessage": "Only lowercase alphanumeric characters allowed",
+ *     "validationType": "email",  // Predefined type: "email", "phone", or "url"
+ *     // OR use custom pattern:
+ *     // "pattern": "^[a-z0-9]+$",
+ *     // "patternMessage": "Only lowercase alphanumeric characters allowed",
  *     "minLength": 5,
  *     "maxLength": 20
  *   },

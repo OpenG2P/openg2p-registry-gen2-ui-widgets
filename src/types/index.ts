@@ -74,11 +74,21 @@ export interface InputMask {
 }
 
 /**
+ * Validation type options for common patterns
+ */
+export type ValidationType = 
+  | 'email'      // Email address validation
+  | 'phone'      // Phone number validation
+  | 'url';       // URL validation
+  // Additional types can be added here in the future
+
+/**
  * Validation configuration
  */
 export interface WidgetValidation {
   required?: boolean;
-  pattern?: string;
+  validationType?: ValidationType; // Predefined validation type (email, phone, url, etc.)
+  pattern?: string; // Custom regex pattern (takes precedence over validationType if both are provided)
   patternMessage?: string; // Custom message for pattern validation mismatch
   minLength?: number;
   maxLength?: number;

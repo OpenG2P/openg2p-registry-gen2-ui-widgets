@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { WidgetValidation, WidgetDataPath } from '../types';
+import { getValidationPattern } from './validationPatterns';
 
 /**
  * Validate value against validation rules
@@ -35,10 +36,26 @@ export const validateWidget = (
   }
 
   // Pattern validation
-  if (validation.pattern && typeof value === 'string') {
-    const regex = new RegExp(validation.pattern);
-    if (!regex.test(value)) {
-      errors.push(validation.patternMessage || 'Invalid format');
+  if (typeof value === 'string') {
+    let patternToUse: RegExp | null = null;
+    let patternMessage: string | undefined = undefined;
+
+    // Priority: explicit pattern > validationType
+    if (validation.pattern) {
+      // Use explicit pattern if provided
+      patternToUse = new RegExp(validation.pattern);
+      patternMessage = validation.patternMessage;
+    } else if (validation.validationType) {
+      // Use predefined validation type pattern
+      const validationPattern = getValidationPattern(validation.validationType);
+      if (validationPattern) {
+        patternToUse = validationPattern.pattern;
+        patternMessage = validation.patternMessage || validationPattern.message;
+      }
+    }
+
+    if (patternToUse && !patternToUse.test(value)) {
+      errors.push(patternMessage || 'Invalid format');
     }
   }
 
@@ -93,11 +110,21 @@ export const createZodSchema = (
   let schema: z.ZodSchema = z.any();
 
   // String validations
-  if (validation?.pattern || validation?.minLength || validation?.maxLength) {
+  if (validation?.pattern || validation?.validationType || validation?.minLength || validation?.maxLength) {
     let stringSchema: z.ZodString = z.string();
+    
+    // Priority: explicit pattern > validationType
     if (validation.pattern) {
       stringSchema = stringSchema.regex(new RegExp(validation.pattern));
+    } else if (validation.validationType) {
+      const validationPattern = getValidationPattern(validation.validationType);
+      if (validationPattern) {
+        stringSchema = stringSchema.regex(validationPattern.pattern, {
+          message: validation.patternMessage || validationPattern.message,
+        });
+      }
     }
+    
     if (validation.minLength) {
       stringSchema = stringSchema.min(validation.minLength);
     }

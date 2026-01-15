@@ -69,6 +69,27 @@ const exampleConfig = {
       },
     },
     {
+      widget: 'text-input',
+      'widget-type': 'input',
+      'widget-label': 'Email',
+      'widget-id': 'email',
+      'widget-data-path': 'person.email',
+      'widget-required': true,
+      'widget-data-validation': {
+        validationType: 'email', // Predefined validation type
+      },
+    },
+    {
+      widget: 'text-input',
+      'widget-type': 'input',
+      'widget-label': 'Website',
+      'widget-id': 'website',
+      'widget-data-path': 'person.website',
+      'widget-data-validation': {
+        validationType: 'url', // Predefined validation type
+      },
+    },
+    {
       widget: 'select',
       'widget-type': 'input',
       'widget-label': 'Country',
