@@ -607,7 +607,7 @@ export const SectionRenderer = ({
           border-width: 1px;
           background-color: #F3E6BC;
           border-radius: 30px;
-          z-index: 1000;
+          z-index: 10;
           position: absolute;
         }
         

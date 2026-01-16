@@ -35,8 +35,8 @@ export const DisplayWidget = ({ config }: DisplayWidgetProps) => {
 
   // With label, render as key-value pair
   return (
-    <div className="mb-[10px] flex items-start">
-      <div className="text-base text-gray-600 font-medium min-w-[150px] pr-4" style={{ fontFamily: 'Roboto, sans-serif' }}>
+    <div className="mb-[10px] flex flex-col sm:flex-row sm:items-start">
+      <div className="text-base text-gray-600 font-medium md:min-w-[120px] sm:pr-4 mb-1 sm:mb-0" style={{ fontFamily: 'Roboto, sans-serif' }}>
         {label}:
       </div>
       <div className="flex-1 text-base text-gray-900 font-medium">
