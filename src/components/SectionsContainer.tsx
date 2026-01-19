@@ -13,6 +13,7 @@ export interface SectionsContainerProps {
   onSectionSave?: (changes: SectionChanges) => Promise<void> | void;
   hideEditButton?: boolean; // Hide the edit button band below sections
   mode?: SectionMode; // Display mode: 'RegistryView' (default) or 'CRView'
+  namespace?: string | ((sectionId: string, index: number) => string); // Optional namespace for widget IDs. If string, applied to all sections. If function, called per section.
   // CRView data is read from schemaData with keys: createdBy, createdDate, approvedBy, approvedDate
 }
 
@@ -67,6 +68,7 @@ const getTableWidgetColumnSpan = (panels: SectionConfig['panels']): number | nul
 /**
  * Recursively count all vertical panels in a section
  * Handles nested structure: horizontal panels containing vertical panels
+ * Accounts for panel-column-span: a panel with column-span 3 counts as 3 columns
  */
 const countVerticalPanels = (panels: SectionConfig['panels']): number => {
   let count = 0;
@@ -77,8 +79,9 @@ const countVerticalPanels = (panels: SectionConfig['panels']): number => {
       // For horizontal panels, count all vertical panels nested inside
       count += countVerticalPanels(panel.panels);
     } else if (orientation === 'vertical') {
-      // Count this vertical panel
-      count += 1;
+      // Count this vertical panel, accounting for column span
+      const columnSpan = panel['panel-column-span'] || 1;
+      count += columnSpan;
       // Also recursively count vertical panels nested inside this vertical panel
       if (panel.panels && panel.panels.length > 0) {
         count += countVerticalPanels(panel.panels);
@@ -107,6 +110,7 @@ export const SectionsContainer = ({
   onSectionSave,
   hideEditButton = false,
   mode = 'RegistryView',
+  namespace,
 }: SectionsContainerProps) => {
   // Find the maximum number of vertical panels across all sections
   // This determines the grid size (minimum 3 columns)
@@ -160,7 +164,12 @@ export const SectionsContainer = ({
         id={containerId}
         className={`sections-container ${className}`}
       >
-        {sections.map((section) => {
+        {sections.map((section, index) => {
+          // Determine namespace for this section
+          const sectionNamespace = namespace 
+            ? (typeof namespace === 'string' ? namespace : namespace(section['section-id'], index))
+            : undefined;
+
           // Check if section has explicit column span
           if (section['section-column-span']) {
             return (
@@ -174,6 +183,7 @@ export const SectionsContainer = ({
                 onSectionSave={onSectionSave}
                 hideEditButton={hideEditButton}
                 mode={mode}
+                namespace={sectionNamespace}
               />
             );
           }
@@ -198,6 +208,7 @@ export const SectionsContainer = ({
               onSectionSave={onSectionSave}
               hideEditButton={hideEditButton}
               mode={mode}
+              namespace={sectionNamespace}
             />
           );
         })}
