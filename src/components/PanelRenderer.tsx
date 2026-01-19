@@ -32,29 +32,37 @@ export const PanelRenderer = ({
   const widgets = panel.widgets || [];
 
   // For horizontal orientation, use grid for equal-width columns
-  // Dynamic grid based on number of nested panels
+  // Dynamic grid based on number of nested panels and their column spans
   // For vertical orientation, use flex column
   const getContainerClassAndStyle = () => {
     if (orientation === 'horizontal' && nestedPanels.length > 0) {
-      const numPanels = nestedPanels.length;
-      // Use predefined grid classes based on number of panels (1-5)
+      // Calculate total columns needed based on panel column spans
+      // Sum up all column spans, or use panel count if no spans specified
+      let totalColumns = 0;
+      nestedPanels.forEach(panel => {
+        const columnSpan = panel['panel-column-span'] || 1;
+        totalColumns += columnSpan;
+      });
+      
+      // Ensure at least as many columns as panels (for panels without explicit span)
+      totalColumns = Math.max(totalColumns, nestedPanels.length);
+      
+      // Use predefined grid classes for common cases (1-5)
       // For more than 5, use inline style
       // Removed gap to allow borders to show properly
-      console.log('numPanels', numPanels);
-      if (numPanels <= 5) {
-        const gridClasses: Record<number, string> = {
-          1: 'grid grid-cols-1',
-          2: 'grid grid-cols-2',
-          3: 'grid grid-cols-3',
-          4: 'grid grid-cols-4',
-          5: 'grid grid-cols-5',
-        };
-        return { className: gridClasses[numPanels] || 'grid', style: {} };
-      } else {
-        // For more than 5 panels, use inline style
+      if (totalColumns <= 5) {
+        // For grid with column spans, we need to use inline styles to set minmax
+        // This ensures each column is at least 200px wide
         return {
           className: 'grid',
-          style: { gridTemplateColumns: `repeat(${numPanels}, minmax(0, 1fr))` },
+          style: { gridTemplateColumns: `repeat(${totalColumns}, minmax(200px, 1fr))` },
+        };
+      } else {
+        // For more than 5 columns, use inline style
+        // Use minmax(200px, 1fr) to ensure minimum 200px per column
+        return {
+          className: 'grid',
+          style: { gridTemplateColumns: `repeat(${totalColumns}, minmax(200px, 1fr))` },
         };
       }
     }
@@ -83,19 +91,53 @@ export const PanelRenderer = ({
       {nestedPanels.map((nestedPanel, index) => {
         const isLastPanel = index === nestedPanels.length - 1;
         const isFirstPanel = index === 0;
-        const horizontalStyle = orientation === 'horizontal' 
-          ? {
+        const nestedOrientation = nestedPanel['panel-orientation'] || 'vertical';
+        const columnSpan = nestedPanel['panel-column-span'];
+        
+        // Calculate style for nested panel based on orientation and column span
+        const getNestedPanelStyle = () => {
+          if (orientation === 'horizontal') {
+            // When nested inside horizontal panel, check for column span
+            const baseStyle: React.CSSProperties = {
               minWidth: '200px',
               paddingRight: !isLastPanel ? '40px' : undefined,
               paddingLeft: !isFirstPanel ? '40px' : undefined,
-              position: 'relative' as const,
+              position: 'relative',
+            };
+            
+            // If vertical panel has column span, use CSS grid-column-span
+            if (nestedOrientation === 'vertical' && columnSpan && columnSpan > 1) {
+              return {
+                ...baseStyle,
+                gridColumn: `span ${columnSpan}`,
+                minWidth: 'auto', // Remove minWidth constraint when spanning columns
+              };
             }
-          : { width: '100%' };
+            
+            return baseStyle;
+          } else {
+            // Vertical panel nested in vertical panel
+            if (columnSpan && columnSpan > 1) {
+              // If column span is specified, calculate width based on 200px per column
+              const width = columnSpan * 200;
+              return {
+                width: `${width}px`,
+                maxWidth: '100%',
+                flexShrink: 0,
+              };
+            }
+            return { width: '100%' };
+          }
+        };
+        
+        const nestedPanelStyle = getNestedPanelStyle();
+        
         return (
           <React.Fragment key={nestedPanel['panel-id'] || `panel-${index}`}>
             <div 
               className={orientation === 'horizontal' ? 'min-w-200 relative' : 'w-full'}
-              style={horizontalStyle}
+              style={nestedPanelStyle}
+              data-panel-column-span={columnSpan || undefined}
             > 
               <PanelRenderer
                 panel={nestedPanel}

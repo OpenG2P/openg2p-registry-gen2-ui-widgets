@@ -7,10 +7,11 @@ import { SectionConfig, PanelConfig, SupportingDocumentConfig } from '../types';
 import { UseBaseWidgetOptions } from '../hooks/useBaseWidget';
 import { PanelRenderer } from './PanelRenderer';
 import { useWidgetTranslation } from '../hooks/useWidgetTranslation';
-import { getValueByPath, setWidgetValue } from '../utils/pathUtils';
+import { getValueByPath, setWidgetValue, setValueByPath } from '../utils/pathUtils';
 import { useWidgetContext } from './WidgetProvider';
 import { FileInputWidget } from '../widgets/FileInputWidget';
 import { SectionMode } from './SectionsContainer';
+import { namespaceSectionConfig } from '../utils/schemaNamespace';
 
 
 export interface SectionChanges {
@@ -29,6 +30,7 @@ export interface SectionRendererProps {
   onSectionSave?: (changes: SectionChanges) => Promise<void> | void;
   hideEditButton?: boolean; // Hide the edit button band below the section
   mode?: SectionMode; // Display mode: 'RegistryView' (default) or 'CRView'
+  namespace?: string; // Optional namespace prefix for widget IDs (ensures uniqueness when same section is rendered multiple times)
   // CRView data is read from schemaData with keys: createdBy, createdDate, approvedBy, approvedDate
 }
 
@@ -50,6 +52,7 @@ export const SectionRenderer = ({
   onSectionSave,
   hideEditButton = false,
   mode = 'RegistryView',
+  namespace,
 }: SectionRendererProps) => {
   const { translateConfig, translate } = useWidgetTranslation();
   const { schemaData: contextSchemaData } = useWidgetContext();
@@ -59,6 +62,55 @@ export const SectionRenderer = ({
   // Get CRView data from schemaData (prefer prop over context, then Redux store)
   const currentSchemaData = schemaData || contextSchemaData || {};
   const storeValues = useSelector((state: WidgetRootState) => state.widget?.values || {});
+
+  // Namespace the section if namespace is provided
+  // This ensures unique widget IDs when the same section is rendered multiple times
+  const namespacedSection = useMemo(() => {
+    if (namespace) {
+      return namespaceSectionConfig(section, namespace);
+    }
+    return section;
+  }, [section, namespace]);
+
+  // Create namespaced schemaData if namespace is provided
+  // This ensures widgets can read initial values from schemaData at namespaced paths
+  const namespacedSchemaData = useMemo(() => {
+    if (!namespace || !currentSchemaData) {
+      return schemaData;
+    }
+    // Create a namespaced version of schemaData by copying values to namespaced paths
+    const namespaced: Record<string, any> = { ...currentSchemaData };
+    
+    // Copy all top-level keys to namespaced paths
+    Object.keys(currentSchemaData).forEach(key => {
+      const namespacedKey = `${namespace}.${key}`;
+      if (!(namespacedKey in namespaced)) {
+        namespaced[namespacedKey] = currentSchemaData[key];
+      }
+    });
+    
+    // Also handle nested objects - copy nested values to namespaced paths
+    const copyNestedValues = (obj: any, prefix: string = '') => {
+      if (obj && typeof obj === 'object' && !Array.isArray(obj)) {
+        Object.keys(obj).forEach(key => {
+          const fullPath = prefix ? `${prefix}.${key}` : key;
+          const namespacedPath = `${namespace}.${fullPath}`;
+          if (typeof obj[key] === 'object' && obj[key] !== null && !Array.isArray(obj[key])) {
+            copyNestedValues(obj[key], fullPath);
+            // Also set the nested object at the namespaced path
+            setValueByPath(namespaced, namespacedPath, obj[key]);
+          } else {
+            setValueByPath(namespaced, namespacedPath, obj[key]);
+          }
+        });
+      }
+    };
+    
+    copyNestedValues(currentSchemaData);
+    
+    return namespaced;
+  }, [namespace, schemaData, currentSchemaData]);
+
   const crViewData = useMemo(() => {
     if (mode !== 'CRView') return null;
     // Try to get from schemaData first, then from Redux store
@@ -77,12 +129,15 @@ export const SectionRenderer = ({
     return result;
   }, [mode, currentSchemaData, storeValues]);
 
-  const sectionId = section['section-id'];
+  // Use namespaced section for rendering
+  const sectionToRender = namespacedSection;
+  const sectionId = sectionToRender['section-id'];
   const gridId = `section-panels-${sectionId}`;
   const sectionClassId = `section-${sectionId}`;
 
   // Recursively count all vertical panels, especially those nested inside horizontal panels
   // Typically: horizontal panels at first level contain vertical panels at second level
+  // Accounts for panel-column-span: a panel with column-span 3 counts as 3 columns
   const countVerticalPanels = (panels: SectionConfig['panels']): number => {
     let count = 0;
     for (const panel of panels) {
@@ -92,8 +147,9 @@ export const SectionRenderer = ({
         // For horizontal panels, count all vertical panels nested inside (typically second level)
         count += countVerticalPanels(panel.panels);
       } else if (orientation === 'vertical') {
-        // Count this vertical panel
-        count += 1;
+        // Count this vertical panel, accounting for column span
+        const columnSpan = panel['panel-column-span'] || 1;
+        count += columnSpan;
         // Also recursively count vertical panels nested inside this vertical panel
         if (panel.panels && panel.panels.length > 0) {
           count += countVerticalPanels(panel.panels);
@@ -143,10 +199,10 @@ export const SectionRenderer = ({
     return null;
   };
 
-  const hasTableWidget = checkForTableWidget(section.panels);
-  const tableWidgetColumnSpan = getTableWidgetColumnSpan(section.panels);
+  const hasTableWidget = checkForTableWidget(sectionToRender.panels);
+  const tableWidgetColumnSpan = getTableWidgetColumnSpan(sectionToRender.panels);
 
-  const verticalPanelsCount = countVerticalPanels(section.panels);
+  const verticalPanelsCount = countVerticalPanels(sectionToRender.panels);
   // If section contains a table widget with explicit column span, use it
   // Otherwise, if it has a table widget, ensure it spans at least 2 columns
   // Otherwise, use the vertical panel count
@@ -158,7 +214,7 @@ export const SectionRenderer = ({
   const hasExplicitTableSpan = tableWidgetColumnSpan !== null;
   
   // Supporting documents configuration
-  const supportingDocuments = section['section-supporting-documents'] || [];
+  const supportingDocuments = sectionToRender['section-supporting-documents'] || [];
   const hasSupportingDocuments = supportingDocuments.length > 0;
   
   // Edit mode state
@@ -205,7 +261,7 @@ export const SectionRenderer = ({
 
   // Recursively modify panels to set readonly based on edit mode
   const makePanelsEditable = (panels: PanelConfig[], editable: boolean): PanelConfig[] => {
-    const sectionEditable = section['section-editable'] === true;
+    const sectionEditable = sectionToRender['section-editable'] === true;
     return panels.map(panel => {
       const modifiedPanel: PanelConfig = {
         ...panel,
@@ -229,10 +285,10 @@ export const SectionRenderer = ({
   const editableSection = useMemo(() => {
     // Always apply readonly/editable state based on edit mode
     return {
-      ...section,
-      panels: makePanelsEditable(section.panels, isEditMode),
+      ...sectionToRender,
+      panels: makePanelsEditable(sectionToRender.panels, isEditMode),
     };
-  }, [section, isEditMode]);
+  }, [sectionToRender, isEditMode]);
 
   // Handle edit button click
   const handleEdit = () => {
@@ -310,9 +366,9 @@ export const SectionRenderer = ({
             overflowY: 'auto',
           }}
         >
-          {section['section-title'] && (
-            <h2 className="text-xl font-semibold mb-4" style={{ fontFamily: 'Roboto, sans-serif', marginTop: '35px' }}>{translateConfig(section['section-title'])}</h2>
-          )}
+        {sectionToRender['section-title'] && (
+          <h2 className="text-xl font-semibold mb-4" style={{ fontFamily: 'Roboto, sans-serif', marginTop: '35px' }}>{translateConfig(sectionToRender['section-title'])}</h2>
+        )}
           <div id={editGridId} className="section-panels">
             {editableSection.panels.map((panel, index) => {
               const isLastPanel = index === editableSection.panels.length - 1;
@@ -321,13 +377,13 @@ export const SectionRenderer = ({
                 key={panel['panel-id'] || `section-panel-${index}`}
                 className={`panel-wrapper ${isLastPanel ? 'last-panel-wrapper' : ''}`}
               >
-                <PanelRenderer
-                  panel={panel}
-                  apiAdapter={apiAdapter}
-                  schemaData={schemaData}
-                  onValueChange={onValueChange}
-                  isEditMode={true}
-                />
+              <PanelRenderer
+                panel={panel}
+                apiAdapter={apiAdapter}
+                schemaData={namespacedSchemaData}
+                onValueChange={onValueChange}
+                isEditMode={true}
+              />
               </div>
               );
             })}
@@ -406,26 +462,44 @@ export const SectionRenderer = ({
     return widgets;
   };
 
-  const buildSectionSnapshot = (widgets: any[], sourceData: any) => {
+  const buildSectionSnapshot = (widgets: any[], sourceData: any, useNamespacedPaths: boolean = false) => {
     const snapshot: Record<string, any> = {};
     widgets.forEach(widget => {
-      const dataPath = widget['widget-data-path'];
-      if (!dataPath) return;
+      const originalDataPath = widget['widget-data-path'];
+      if (!originalDataPath) return;
       
+      // If namespace was used and we're reading from store, use namespaced paths
+      const readDataPath = useNamespacedPaths && namespace && originalDataPath
+        ? (typeof originalDataPath === 'string'
+            ? `${namespace}.${originalDataPath}`
+            : Object.fromEntries(
+                Object.entries(originalDataPath).map(([key, path]) => [key, `${namespace}.${path}`])
+              ))
+        : originalDataPath;
+      
+      // Always store snapshot using original paths (for change tracking)
       // Handle multi-path (object) or single path (string)
-      if (typeof dataPath === 'object') {
-        // Multi-path: store each path separately
-        Object.entries(dataPath).forEach(([key, path]) => {
+      if (typeof originalDataPath === 'object') {
+        // Multi-path: store each path separately using original paths
+        Object.entries(originalDataPath).forEach(([key, path]) => {
           if (typeof path === 'string') {
-            snapshot[path] = getValueByPath(sourceData, path);
+            // Read from source using namespaced path if needed
+            const readPath = useNamespacedPaths && namespace ? `${namespace}.${path}` : path;
+            snapshot[path] = getValueByPath(sourceData, readPath);
           }
         });
-      } else if (typeof dataPath === 'string') {
-        snapshot[dataPath] = getValueByPath(sourceData, dataPath);
+      } else if (typeof originalDataPath === 'string') {
+        // Read from source using namespaced path if needed
+        const readPath = useNamespacedPaths && namespace ? `${namespace}.${originalDataPath}` : originalDataPath;
+        snapshot[originalDataPath] = getValueByPath(sourceData, readPath);
       }
     });
     return snapshot;
- };
+  };
+
+  // Get original section (without namespace) for building snapshots
+  // This ensures we use the original data paths when saving
+  const originalSection = section;
 
   // Handle save button click
   const handleSave = async () => {
@@ -434,37 +508,50 @@ export const SectionRenderer = ({
       setIsEditMode(false);
       return;
     }
-    const sectionWidgets = collectWidgets(section.panels)
+    // Use original section (without namespace) for collecting widgets
+    // This ensures we use the original widget IDs and data paths
+    const sectionWidgets = collectWidgets(originalSection.panels)
     const currentState = (store.getState() as any).widget
     const currentSchemaData = currentState.values || {}
     const oldSchemaData = schemaData || contextSchemaData
 
+    // Build snapshots: old from original schema (no namespace), new from store (with namespace if used)
     const oldSectionValue = buildSectionSnapshot(
       sectionWidgets,
-      oldSchemaData
+      oldSchemaData,
+      false // Read from original schema, no namespace
     )
 
     const newSectionValue = buildSectionSnapshot(
       sectionWidgets,
-      currentSchemaData
+      currentSchemaData,
+      true // Read from store, use namespaced paths if namespace was used
     )
 
     // Include supporting documents in the snapshot if they exist
     if (hasSupportingDocuments) {
-      supportingDocuments.forEach((doc, index) => {
+      // Use original section's supporting documents to get original data paths
+      const originalSupportingDocuments = originalSection['section-supporting-documents'] || [];
+      originalSupportingDocuments.forEach((doc, index) => {
         const widgetId = `supporting-doc-${sectionId}-${index}`;
-        const dataPath = doc['document-data-path'];
-        const oldValue = getValueByPath(oldSchemaData, dataPath);
-        const newValue = getValueByPath(currentSchemaData, dataPath);
-        oldSectionValue[dataPath] = oldValue;
-        newSectionValue[dataPath] = newValue;
+        const originalDataPath = doc['document-data-path'];
+        // Read old value from original schema (no namespace)
+        const oldValue = getValueByPath(oldSchemaData, originalDataPath);
+        // Read new value from store (with namespace if used)
+        const storeDataPath = namespace && originalDataPath
+          ? `${namespace}.${originalDataPath}`
+          : originalDataPath;
+        const newValue = getValueByPath(currentSchemaData, storeDataPath);
+        // Store in snapshot using original paths
+        oldSectionValue[originalDataPath] = oldValue;
+        newSectionValue[originalDataPath] = newValue;
       });
     }
 
     if (JSON.stringify(oldSectionValue) !== JSON.stringify(newSectionValue)) {
       const changes: SectionChanges = {
-        section_id: sectionId,
-        section_schema: section,
+        section_id: originalSection['section-id'], // Use original section ID
+        section_schema: originalSection, // Use original section schema
         old_section_value: oldSectionValue,
         new_section_value: newSectionValue,
       }
@@ -483,34 +570,48 @@ export const SectionRenderer = ({
  // Handle cancel button click
   const handleCancel = () => {
     // Revert values in store to original schema data
-    const sectionWidgets = collectWidgets(section.panels);
+    // Use original section (without namespace) for collecting widgets
+    const sectionWidgets = collectWidgets(originalSection.panels);
     const oldSchemaData = schemaData || contextSchemaData;
     const currentStoreValues = (store.getState() as any).widget.values;
     let newStoreValues = currentStoreValues;
 
     sectionWidgets.forEach(widget => {
-      const widgetId = widget['widget-id'];
-      const dataPath = widget['widget-data-path'];
+      const originalWidgetId = widget['widget-id'];
+      // If namespace was used, we need to use namespaced widget ID and data path
+      const namespacedWidgetId = namespace ? `${namespace}__${originalWidgetId}` : originalWidgetId;
+      const widgetId = namespacedWidgetId;
+      const originalDataPath = widget['widget-data-path'];
+      // If namespace was used, data path in store is namespaced, but we read from original schema using original path
+      const storeDataPath = namespace && originalDataPath
+        ? (typeof originalDataPath === 'string' 
+            ? `${namespace}.${originalDataPath}` 
+            : Object.fromEntries(
+                Object.entries(originalDataPath).map(([key, path]) => [key, `${namespace}.${path}`])
+              ))
+        : originalDataPath;
 
-      if (widgetId && dataPath) {
+      if (widgetId && originalDataPath) {
         // Handle multi-path (object) or single path (string)
+        // Read from original schema data using original paths
         let oldValue: any;
-        if (typeof dataPath === 'object') {
+        if (typeof originalDataPath === 'object') {
           // Multi-path: get values for each path
           oldValue = {};
-          Object.entries(dataPath).forEach(([key, path]) => {
+          Object.entries(originalDataPath).forEach(([key, path]) => {
             if (typeof path === 'string') {
               oldValue[key] = getValueByPath(oldSchemaData, path);
             }
           });
-        } else if (typeof dataPath === 'string') {
-          oldValue = getValueByPath(oldSchemaData, dataPath);
+        } else if (typeof originalDataPath === 'string') {
+          oldValue = getValueByPath(oldSchemaData, originalDataPath);
         }
         
+        // Set in store using namespaced data path (if namespace was used)
         if (oldValue !== undefined) {
           newStoreValues = setWidgetValue(
             newStoreValues,
-            dataPath,
+            storeDataPath,
             widgetId,
             oldValue
           );
@@ -520,13 +621,19 @@ export const SectionRenderer = ({
 
     // Also revert supporting documents if any
     if (hasSupportingDocuments) {
-      supportingDocuments.forEach((doc, index) => {
+      // Use original section's supporting documents to get original data paths
+      const originalSupportingDocuments = originalSection['section-supporting-documents'] || [];
+      originalSupportingDocuments.forEach((doc, index) => {
         const widgetId = `supporting-doc-${sectionId}-${index}`;
-        const dataPath = doc['document-data-path'];
-        const oldValue = getValueByPath(oldSchemaData, dataPath);
+        const originalDataPath = doc['document-data-path'];
+        // If namespace was used, data path in store is namespaced
+        const storeDataPath = namespace && originalDataPath
+          ? `${namespace}.${originalDataPath}`
+          : originalDataPath;
+        const oldValue = getValueByPath(oldSchemaData, originalDataPath);
         newStoreValues = setWidgetValue(
           newStoreValues,
-          dataPath,
+          storeDataPath,
           widgetId,
           oldValue
         );
@@ -552,11 +659,14 @@ export const SectionRenderer = ({
        documentType === 'pdf' ? '.pdf' : 
        '*/*');
     
+    // Use the namespaced section ID for widget ID to ensure uniqueness
+    const widgetId = `supporting-doc-${sectionId}-${index}`;
+    
     return {
       widget: 'file',
       'widget-type': 'input' as const,
       'widget-label': doc['document-label'] || doc['document-data-path'] || `Document ${index + 1}`,
-      'widget-id': `supporting-doc-${sectionId}-${index}`,
+      'widget-id': widgetId,
       'widget-data-path': doc['document-data-path'],
       'widget-required': doc['document-required'] || false,
       'widget-readonly': false,
@@ -727,8 +837,8 @@ export const SectionRenderer = ({
           }),
         }}
       >
-        {section['section-title'] && (
-          <h2 className="text-xl font-semibold mb-4" style={{ marginTop: '35px' }}>{translateConfig(section['section-title'])}</h2>
+        {sectionToRender['section-title'] && (
+          <h2 className="text-xl font-semibold mb-4" style={{ marginTop: '35px' }}>{translateConfig(sectionToRender['section-title'])}</h2>
         )}
         <div 
           id={gridId} 
@@ -743,7 +853,7 @@ export const SectionRenderer = ({
               <PanelRenderer
                 panel={panel}
                 apiAdapter={apiAdapter}
-                schemaData={schemaData}
+                schemaData={namespacedSchemaData}
                 onValueChange={onValueChange}
               />
             </div>

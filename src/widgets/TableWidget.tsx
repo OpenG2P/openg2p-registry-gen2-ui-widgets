@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useMemo, useEffect } from 'react';
-import { useDispatch } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
 import { useBaseWidget } from '../hooks/useBaseWidget';
 import { BaseWidgetConfig } from '../types';
 import { WidgetRenderer } from '../components/WidgetRenderer';
@@ -8,6 +8,7 @@ import { useWidgetContext } from '../components/WidgetProvider';
 import { formatValue } from '../utils/formatting';
 import { getValueByPath, setValueByPath } from '../utils/pathUtils';
 import { setValue, resetWidget } from '../store/widgetSlice';
+import { WidgetRootState } from '../store';
 
 // Lightweight table cell components (no labels, compact styling)
 
@@ -193,6 +194,7 @@ export const TableWidget = ({ config }: TableWidgetProps) => {
   const { translate, translateConfig } = useWidgetTranslation();
   const { apiAdapter } = useWidgetContext();
   const dispatch = useDispatch();
+  const storeValues = useSelector((state: WidgetRootState) => state.widget?.values || {});
 
   const rows: any[] = Array.isArray(value) ? value : [];
   const columns = widgetConfig['widget-data-columns'] || [];
@@ -206,12 +208,15 @@ export const TableWidget = ({ config }: TableWidgetProps) => {
   const [confirmationState, setConfirmationState] = useState<ConfirmationState | null>(null);
   const [isAdding, setIsAdding] = useState(false);
   const [newRowData, setNewRowData] = useState<any>(null);
+  // Track original rows when entering section edit mode for edit_action tracking
+  const [originalRows, setOriginalRows] = useState<any[] | null>(null);
 
-  // When section is in edit mode (isReadonly is false), all rows are automatically editable
+  // When section is in edit mode (isReadonly is false), rows can be edited individually
+  // But they are NOT automatically editable - user must click Edit button for each row
   const isSectionEditMode = !isReadonly && operations.edit;
   
   // Check if any row is being edited (either manually or via section edit mode)
-  const isAnyRowEditing = editingState !== null || isAdding || isSectionEditMode;
+  const isAnyRowEditing = editingState !== null || isAdding;
 
   // Show confirmation dialog
   const showConfirmation = useCallback((message: string, onConfirm: () => void, onCancel: () => void) => {
@@ -285,18 +290,8 @@ export const TableWidget = ({ config }: TableWidgetProps) => {
 
   // Update cell value during edit
   const updateCellValue = useCallback((columnKey: string, newValue: any, rowIndex?: number) => {
-    if (isSectionEditMode && rowIndex !== undefined) {
-      // When section is in edit mode, update the row directly
-      const newRows = [...rows];
-      if (!newRows[rowIndex]) {
-        newRows[rowIndex] = {};
-      }
-      newRows[rowIndex] = {
-        ...newRows[rowIndex],
-        [columnKey]: newValue,
-      };
-      onChange(newRows);
-    } else if (editingState) {
+    if (editingState && rowIndex !== undefined) {
+      // Update editing state (works for both section edit mode and normal mode)
       setEditingState({
         ...editingState,
         currentValue: {
@@ -304,13 +299,17 @@ export const TableWidget = ({ config }: TableWidgetProps) => {
           [columnKey]: newValue,
         },
       });
+      
+      // Also update Redux store for the cell widget
+      const cellWidgetId = `${widgetConfig['widget-id']}-row-${rowIndex}-col-${columnKey}`;
+      dispatch(setValue({ widgetId: cellWidgetId, value: newValue }));
     } else if (isAdding && newRowData) {
       setNewRowData({
         ...newRowData,
         [columnKey]: newValue,
       });
     }
-  }, [editingState, isAdding, newRowData, isSectionEditMode, rows, onChange]);
+  }, [editingState, isAdding, newRowData, widgetConfig, dispatch]);
 
   // Save edited row
   const saveEdit = useCallback(async () => {
@@ -340,9 +339,50 @@ export const TableWidget = ({ config }: TableWidgetProps) => {
 
       // Update local state
       const newRows = [...rows];
-      newRows[rowIndex] = rowData;
+      const currentRow = newRows[rowIndex] || {};
+      const wasDeleted = currentRow.edit_action === 'DELETE';
+      
+      // Determine edit_action for section edit mode
+      let editAction = currentRow.edit_action;
+      if (isSectionEditMode) {
+        // If row was deleted but is being saved, un-delete it
+        if (wasDeleted) {
+          // Check if this row exists in original rows
+          if (originalRows) {
+            const rowId = rowData.id;
+            const existsInOriginal = rowId !== undefined
+              ? originalRows.some(or => or.id === rowId)
+              : rowIndex < originalRows.length;
+            
+            editAction = existsInOriginal ? 'UPDATE' : 'ADD';
+          } else {
+            editAction = 'UPDATE';
+          }
+        } else if (!editAction && originalRows) {
+          // Check if this row exists in original rows
+          const rowId = rowData.id;
+          const existsInOriginal = rowId !== undefined
+            ? originalRows.some(or => or.id === rowId)
+            : rowIndex < originalRows.length;
+          
+          editAction = existsInOriginal ? 'UPDATE' : 'ADD';
+        } else if (!editAction) {
+          editAction = 'UPDATE';
+        }
+      }
+      
+      newRows[rowIndex] = {
+        ...rowData,
+        ...(isSectionEditMode && editAction ? { edit_action: editAction } : {}),
+      };
       onChange(newRows);
 
+      // Clear editing state and reset widget values in Redux
+      columns.forEach((col) => {
+        const cellWidgetId = `${widgetConfig['widget-id']}-row-${rowIndex}-col-${col['column-key']}`;
+        dispatch(resetWidget(cellWidgetId));
+      });
+      
       setEditingState(null);
     } catch (error) {
       console.error('Error saving record:', error);
@@ -351,7 +391,7 @@ export const TableWidget = ({ config }: TableWidgetProps) => {
     } finally {
       setLoadingRowIndex(null);
     }
-  }, [editingState, rows, onChange, apiAdapter, apiConfig, translate]);
+  }, [editingState, rows, onChange, apiAdapter, apiConfig, translate, isSectionEditMode, originalRows, columns, widgetConfig, dispatch]);
 
   // Add new row
   const startAdd = useCallback(() => {
@@ -391,6 +431,11 @@ export const TableWidget = ({ config }: TableWidgetProps) => {
         }
       }
 
+      // In section edit mode, mark new row with edit_action: 'ADD'
+      if (isSectionEditMode) {
+        savedRow = { ...savedRow, edit_action: 'ADD' };
+      }
+
       // Add to local state
       onChange([...rows, savedRow]);
 
@@ -402,7 +447,7 @@ export const TableWidget = ({ config }: TableWidgetProps) => {
     } finally {
       setLoadingRowIndex(null);
     }
-  }, [isAdding, newRowData, rows, onChange, apiAdapter, apiConfig, translate]);
+  }, [isAdding, newRowData, rows, onChange, apiAdapter, apiConfig, translate, isSectionEditMode]);
 
   // Delete row
   const deleteRow = useCallback(async (rowIndex: number) => {
@@ -443,31 +488,44 @@ export const TableWidget = ({ config }: TableWidgetProps) => {
         });
       }
 
-      // Remove from local state
-      const newRows = rows.filter((_, i) => i !== rowIndex);
-      onChange(newRows);
+      // In section edit mode, mark row as deleted instead of removing it
+      if (isSectionEditMode) {
+        const newRows = [...rows];
+        newRows[rowIndex] = {
+          ...newRows[rowIndex],
+          edit_action: 'DELETE',
+        };
+        onChange(newRows);
+      } else {
+        // Remove from local state (non-section edit mode)
+        const newRows = rows.filter((_, i) => i !== rowIndex);
+        onChange(newRows);
+      }
     } catch (error) {
       console.error('Error deleting record:', error);
       alert(translate('table.deleteError') || 'Failed to delete record. Please try again.');
     } finally {
       setLoadingRowIndex(null);
     }
-  }, [rows, onChange, apiAdapter, apiConfig, translate]);
+  }, [rows, onChange, apiAdapter, apiConfig, translate, isSectionEditMode]);
 
   // Get cell value (from editing state or row data)
   const getCellValue = useCallback((rowIndex: number, columnKey: string) => {
-    // When section is in edit mode, use row data directly
-    if (isSectionEditMode) {
-      return rows[rowIndex]?.[columnKey];
-    }
+    // When a specific row is being edited (either in section edit mode or normal mode)
     if (editingState && editingState.rowIndex === rowIndex) {
+      // Check Redux store first for most up-to-date value
+      const cellWidgetId = `${widgetConfig['widget-id']}-row-${rowIndex}-col-${columnKey}`;
+      const storeValue = storeValues[cellWidgetId];
+      if (storeValue !== undefined) {
+        return storeValue;
+      }
       return editingState.currentValue[columnKey];
     }
     if (isAdding && rowIndex === rows.length) {
       return newRowData?.[columnKey];
     }
     return rows[rowIndex]?.[columnKey];
-  }, [editingState, isAdding, rows, newRowData, isSectionEditMode]);
+  }, [editingState, isAdding, rows, newRowData, widgetConfig, storeValues]);
 
   // Get formatted display value for a cell
   const getDisplayValue = useCallback((rowIndex: number, column: any) => {
@@ -487,29 +545,23 @@ export const TableWidget = ({ config }: TableWidgetProps) => {
   }, [getCellValue]);
 
   // Check if row is being edited
-  // When section is in edit mode, all rows are editable
+  // In section edit mode, only the row with active editingState is editable
   const isRowEditing = useCallback((rowIndex: number) => {
-    if (isSectionEditMode) {
-      return true; // All rows are editable when section is in edit mode
-    }
     return editingState?.rowIndex === rowIndex || (isAdding && rowIndex === rows.length);
-  }, [editingState, isAdding, rows.length, isSectionEditMode]);
+  }, [editingState, isAdding, rows.length]);
 
-  // Set cell widget value in Redux when entering edit mode
+  // Store original rows when entering section edit mode (for edit_action tracking)
   useEffect(() => {
-    if (isSectionEditMode) {
-      // When section is in edit mode, set values for all rows
-      rows.forEach((row, rowIndex) => {
-        columns.forEach((col) => {
-          const columnKey = col['column-key'];
-          const cellWidgetId = `${widgetConfig['widget-id']}-row-${rowIndex}-col-${columnKey}`;
-          const cellValue = row[columnKey];
-          const defaultValue = cellValue !== undefined ? cellValue : (col['widget-data-default'] ?? '');
-          // Set value in Redux store
-          dispatch(setValue({ widgetId: cellWidgetId, value: defaultValue }));
-        });
-      });
-    } else if (editingState) {
+    if (isSectionEditMode && originalRows === null) {
+      setOriginalRows(JSON.parse(JSON.stringify(rows))); // Deep clone
+    } else if (!isSectionEditMode && originalRows !== null) {
+      setOriginalRows(null);
+    }
+  }, [isSectionEditMode, rows, originalRows]);
+
+  // Set cell widget value in Redux when entering edit mode for a specific row
+  useEffect(() => {
+    if (editingState) {
       columns.forEach((col) => {
         const columnKey = col['column-key'];
         const cellWidgetId = `${widgetConfig['widget-id']}-row-${editingState.rowIndex}-col-${columnKey}`;
@@ -519,7 +571,7 @@ export const TableWidget = ({ config }: TableWidgetProps) => {
         dispatch(setValue({ widgetId: cellWidgetId, value: defaultValue }));
       });
     }
-  }, [isSectionEditMode, editingState, columns, widgetConfig, dispatch, rows]);
+  }, [editingState, columns, widgetConfig, dispatch]);
 
   useEffect(() => {
     if (isAdding && newRowData) {
@@ -702,7 +754,7 @@ export const TableWidget = ({ config }: TableWidgetProps) => {
       )}
 
       {/* Table Header */}
-      {operations.add && !isReadonly && isEnabled && (
+      {operations.add && !isReadonly && isEnabled && (isSectionEditMode || !isAnyRowEditing) && (
         <div className="flex justify-end mb-2">
           <button
             type="button"
@@ -734,7 +786,7 @@ export const TableWidget = ({ config }: TableWidgetProps) => {
                     {translateConfig(col['widget-label'])}
                   </th>
                 ))}
-                {((operations.edit || operations.remove) && !isReadonly) || isAnyRowEditing ? (
+                {((operations.edit || operations.remove) && !isReadonly) || isAnyRowEditing || isSectionEditMode ? (
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     {translate('common.actions') || 'Actions'}
                   </th>
@@ -748,17 +800,25 @@ export const TableWidget = ({ config }: TableWidgetProps) => {
                 return (
                   <tr
                     key={rowIndex}
-                    className={isEditing ? 'bg-blue-50' : isLoading ? 'opacity-50' : ''}
+                    className={isEditing ? 'bg-blue-50' : isLoading ? 'opacity-50' : row.edit_action === 'DELETE' ? 'bg-red-50' : ''}
                   >
-                    {columns.map((col) => (
-                      <td key={col['column-key']} className="px-4 py-3 whitespace-nowrap">
-                        {renderCell(rowIndex, col)}
-                      </td>
-                    ))}
-                    {((operations.edit || operations.remove) && !isReadonly) || isEditing ? (
+                    {columns.map((col) => {
+                      // Hide deleted rows visually but keep them in data
+                      const isDeleted = row.edit_action === 'DELETE';
+                      return (
+                        <td 
+                          key={col['column-key']} 
+                          className="px-4 py-3 whitespace-nowrap"
+                          style={isDeleted ? { opacity: 0.5, textDecoration: 'line-through' } : {}}
+                        >
+                          {renderCell(rowIndex, col)}
+                        </td>
+                      );
+                    })}
+                    {((operations.edit || operations.remove) && !isReadonly) || isEditing || isSectionEditMode ? (
                       <td className="px-4 py-3 whitespace-nowrap" style={{ minWidth: '120px' }}>
-                        {isEditing && !isSectionEditMode ? (
-                          // Show Save/Cancel buttons only for manual row editing (not section edit mode)
+                        {isEditing ? (
+                          // Show OK (Save)/Cancel buttons when row is being edited (works in both section edit mode and normal mode)
                           <div className="flex flex-row gap-2 items-center" style={{ width: '100%' }}>
                             <button
                               type="button"
@@ -774,7 +834,7 @@ export const TableWidget = ({ config }: TableWidgetProps) => {
                                 borderRadius: '15px'
                               }}
                             >
-                              Save
+                              {translate('common.ok') || 'OK'}
                             </button>
                             <button
                               type="button"
@@ -783,11 +843,11 @@ export const TableWidget = ({ config }: TableWidgetProps) => {
                               className="px-3 py-1 text-xs font-medium bg-gray-200 text-gray-700 hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap flex-shrink-0"
                               style={{ display: 'inline-block', minWidth: '60px', borderRadius: '15px' }}
                             >
-                              Cancel
+                              {translate('common.cancel') || 'Cancel'}
                             </button>
                           </div>
-                        ) : !isSectionEditMode ? (
-                          // Show Edit/Delete buttons only when not in section edit mode
+                        ) : (
+                          // Show Edit/Delete buttons when row is not being edited
                           <div className="flex gap-2">
                             {operations.edit && (
                               <button
@@ -812,21 +872,6 @@ export const TableWidget = ({ config }: TableWidgetProps) => {
                               </button>
                             )}
                           </div>
-                        ) : (
-                          // In section edit mode, show only Delete button if remove is enabled
-                          operations.remove && (
-                            <div className="flex gap-2">
-                              <button
-                                type="button"
-                                onClick={() => deleteRow(rowIndex)}
-                                disabled={isLoading}
-                                className="px-3 py-1 text-xs text-red-600 hover:text-red-800 hover:bg-red-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                                style={{ borderRadius: '15px' }}
-                              >
-                                {translate('common.remove') || 'Delete'}
-                              </button>
-                            </div>
-                          )
                         )}
                       </td>
                     ) : null}
