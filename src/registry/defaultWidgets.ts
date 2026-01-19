@@ -16,7 +16,8 @@ import {
   CurrencyInputWidget,
   DisplayWidget,
   TableWidget,
-  ProfileWidget
+  ProfileWidget,
+  TextAreaWidget
 } from '../widgets';
 
 /**
@@ -26,6 +27,9 @@ import {
 export const registerDefaultWidgets = () => {
   // Text input widget (supports all text-based inputs via configuration: text, email, tel, number, etc.)
   widgetRegistry.register({ widget: 'text', component: TextInputWidget });
+
+  // TextArea widget (multi-line text input with 2 rows by default)
+  widgetRegistry.register({ widget: 'textarea', component: TextAreaWidget });
 
   // Number input widget (specialized for numeric input with formatting, precision, and validation)
   widgetRegistry.register({ widget: 'number', component: NumberInputWidget });

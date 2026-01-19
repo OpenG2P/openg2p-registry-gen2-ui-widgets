@@ -347,9 +347,9 @@ export const FileInputWidget = ({ config }: FileInputWidgetProps) => {
   if (widgetConfig['widget-readonly']) {
     const label = translateConfig(widgetConfig['widget-label']);
     return (
-      <div className="mb-[10px] FileDisplayWidget flex items-start">
+      <div className="mb-[10px] FileDisplayWidget flex flex-col sm:flex-row sm:items-start">
         {label && (
-          <div className="text-base text-gray-600 font-medium pr-4" style={{ fontFamily: 'Roboto, sans-serif', width: '166px', maxWidth: '166px' }}>
+          <div className="text-base text-gray-600 font-medium md:min-w-[120px] sm:pr-4 mb-1 sm:mb-0" style={{ fontFamily: 'Roboto, sans-serif' }}>
             {label}:
           </div>
         )}
@@ -378,15 +378,15 @@ export const FileInputWidget = ({ config }: FileInputWidgetProps) => {
 
   return (
     <div className="mb-[10px]">
-      <div className="flex items-start">
-        <label className="text-base font-medium text-gray-700 pr-4 pt-1" style={{ fontFamily: 'Roboto, sans-serif', width: '166px', maxWidth: '166px' }}>
+      <div className="flex flex-col sm:flex-row sm:items-start">
+        <label className="text-base font-medium text-gray-700 md:min-w-[120px] sm:pr-4 sm:pt-1 mb-1 sm:mb-0" style={{ fontFamily: 'Roboto, sans-serif' }}>
           {translateConfig(widgetConfig['widget-label'])}
           {widgetConfig['widget-required'] && (
             <span className="text-red-500 ml-1">*</span>
           )}
         </label>
-        <div className="flex-1">
-          <div className="flex items-center space-x-4">
+        <div className="flex-1 min-w-0">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:space-x-4">
             <label
               className={`cursor-pointer inline-flex items-center justify-between gap-2 border border-gray-300 shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 ${
                 !isEnabled
@@ -394,7 +394,8 @@ export const FileInputWidget = ({ config }: FileInputWidgetProps) => {
                   : ''
               }`}
               style={{
-                width: '180px',
+                width: '100%',
+                maxWidth: '180px',
                 height: '30px',
                 paddingLeft: '12px',
                 paddingRight: '12px',
@@ -432,7 +433,7 @@ export const FileInputWidget = ({ config }: FileInputWidgetProps) => {
               />
             </label>
             {displayValue && (
-              <div className="flex-1">
+              <div className="flex-1 min-w-0">
                 {renderFileDisplay()}
               </div>
             )}
@@ -446,7 +447,7 @@ export const FileInputWidget = ({ config }: FileInputWidgetProps) => {
             </p>
           )} */}
           {maxSize && (
-            <p className="text-gray-400 text-xs mt-1">
+            <p className="hidden sm:block text-gray-400 text-xs mt-1">
               {translate('common.maxFileSize', { size: (maxSize / 1024 / 1024).toFixed(2) })}
             </p>
           )}

@@ -205,25 +205,32 @@ export const SectionRenderer = ({
 
   // Recursively modify panels to set readonly based on edit mode
   const makePanelsEditable = (panels: PanelConfig[], editable: boolean): PanelConfig[] => {
+    const sectionEditable = section['section-editable'] === true;
     return panels.map(panel => {
       const modifiedPanel: PanelConfig = {
         ...panel,
         panels: panel.panels ? makePanelsEditable(panel.panels, editable) : undefined,
         widgets: panel.widgets?.map(widget => ({
           ...widget,
-          'widget-readonly': editable ? false : widget['widget-readonly'],
+          // When NOT in edit mode (editable = false), set all widgets to readonly
+          // When in edit mode (editable = true):
+          //   - If section-editable is true, force widgets to be editable (override widget-readonly)
+          //   - Otherwise, respect original readonly setting
+          'widget-readonly': editable 
+            ? (sectionEditable ? false : (widget['widget-readonly'] || false))
+            : true,
         })),
       };
       return modifiedPanel;
     });
   };
 
-  // Create editable version of section when in edit mode
+  // Create section with widgets readonly/editable based on edit mode
   const editableSection = useMemo(() => {
-    if (!isEditMode) return section;
+    // Always apply readonly/editable state based on edit mode
     return {
       ...section,
-      panels: makePanelsEditable(section.panels, true),
+      panels: makePanelsEditable(section.panels, isEditMode),
     };
   }, [section, isEditMode]);
 
@@ -571,6 +578,13 @@ export const SectionRenderer = ({
           width: 100%;
           position: relative;
           transition: box-shadow 0.3s ease-in-out, border-color 0.3s ease-in-out;
+          min-height: auto !important;
+          height: auto !important;
+        }
+        
+        /* Only apply fixed height when in edit mode */
+        .${sectionClassId}[data-edit-mode="true"] {
+          min-height: auto;
         }
         
         /* Hide original section content when in edit mode but maintain space */
@@ -593,7 +607,7 @@ export const SectionRenderer = ({
           border-width: 1px;
           background-color: #F3E6BC;
           border-radius: 30px;
-          z-index: 1000;
+          z-index: 10;
           position: absolute;
         }
         
@@ -613,6 +627,7 @@ export const SectionRenderer = ({
           flex-wrap: wrap;
           // gap: 1.5rem;
           width: 100%;
+          ${hasTableWidget ? 'margin-bottom: 20px;' : ''}
         }
         #${gridId} > .panel-wrapper {
           flex: 1 1 100%;
@@ -705,7 +720,11 @@ export const SectionRenderer = ({
           ...(isEditMode && sectionHeight ? { 
             height: `${sectionHeight}px`,
             minHeight: `${sectionHeight}px`
-          } : {}),
+          } : {
+            // Ensure no min-height when not in edit mode
+            minHeight: 'auto',
+            height: 'auto'
+          }),
         }}
       >
         {section['section-title'] && (

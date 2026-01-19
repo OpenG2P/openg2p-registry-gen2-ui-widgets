@@ -118,9 +118,9 @@ export const BooleanWidget = ({ config }: BooleanWidgetProps) => {
     }
 
     return (
-      <div className="mb-[10px] BooleanDisplayWidget flex items-start">
+      <div className="mb-[10px] BooleanDisplayWidget flex flex-col sm:flex-row sm:items-start">
         {label && (
-          <div className="text-base text-gray-600 font-medium min-w-[150px] pr-4" style={{ fontFamily: 'Roboto, sans-serif' }}>
+          <div className="text-base text-gray-600 font-medium md:min-w-[120px] sm:pr-4 mb-1 sm:mb-0" style={{ fontFamily: 'Roboto, sans-serif' }}>
             {label}:
           </div>
         )}
@@ -142,14 +142,14 @@ export const BooleanWidget = ({ config }: BooleanWidgetProps) => {
   if (controlType === 'checkbox') {
     return (
       <div className="mb-[10px]">
-        <div className="flex items-start">
-          <label className="text-base font-medium text-gray-700 min-w-[150px] pr-4 pt-1" style={{ fontFamily: 'Roboto, sans-serif' }}>
+        <div className="flex flex-col sm:flex-row sm:items-start">
+          <label className="text-base font-medium text-gray-700 md:min-w-[120px] sm:pr-4 sm:pt-1 mb-1 sm:mb-0" style={{ fontFamily: 'Roboto, sans-serif' }}>
             {translateConfig(widgetConfig['widget-label'])}
             {widgetConfig['widget-required'] && (
               <span className="text-red-500 ml-1">*</span>
             )}
           </label>
-          <div className="flex-1">
+          <div className="flex-1 min-w-0">
             <label className="flex items-center cursor-pointer">
               <input
                 type="checkbox"
@@ -184,14 +184,14 @@ export const BooleanWidget = ({ config }: BooleanWidgetProps) => {
 
     return (
       <div className="mb-[10px]">
-        <div className="flex items-start">
-          <label className="text-base font-medium text-gray-700 min-w-[150px] pr-4 pt-1" style={{ fontFamily: 'Roboto, sans-serif' }}>
+        <div className="flex flex-col sm:flex-row sm:items-start">
+          <label className="text-base font-medium text-gray-700 md:min-w-[120px] sm:pr-4 sm:pt-1 mb-1 sm:mb-0" style={{ fontFamily: 'Roboto, sans-serif' }}>
             {translateConfig(widgetConfig['widget-label'])}
             {widgetConfig['widget-required'] && (
               <span className="text-red-500 ml-1">*</span>
             )}
           </label>
-          <div className="flex-1">
+          <div className="flex-1 min-w-0">
             <div className={containerClass} onBlur={onBlur}>
               {allowUnset && (
                 <label className={`flex items-center cursor-pointer ${
@@ -252,14 +252,14 @@ export const BooleanWidget = ({ config }: BooleanWidgetProps) => {
   // Toggle/switch control type
   return (
     <div className="mb-[10px]">
-      <div className="flex items-start">
-        <label className="text-base font-medium text-gray-700 min-w-[150px] pr-4 pt-1" style={{ fontFamily: 'Roboto, sans-serif' }}>
+      <div className="flex flex-col sm:flex-row sm:items-start">
+        <label className="text-base font-medium text-gray-700 sm:min-w-[150px] sm:pr-4 sm:pt-1 mb-1 sm:mb-0" style={{ fontFamily: 'Roboto, sans-serif' }}>
           {translateConfig(widgetConfig['widget-label'])}
           {widgetConfig['widget-required'] && (
             <span className="text-red-500 ml-1">*</span>
           )}
         </label>
-        <div className="flex-1">
+        <div className="flex-1 min-w-0">
           <div className="flex items-center space-x-3" onBlur={onBlur}>
             {allowUnset && (
               <button

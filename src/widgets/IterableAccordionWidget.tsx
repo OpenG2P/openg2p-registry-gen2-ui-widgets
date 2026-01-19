@@ -102,14 +102,14 @@ export const IterableAccordionWidget = ({ config }: IterableAccordionWidgetProps
 
   return (
     <div className="mb-[10px]">
-      <div className="flex items-start mb-2">
-        <label className="text-base font-medium text-gray-700 min-w-[150px] pr-4 pt-1" style={{ fontFamily: 'Roboto, sans-serif' }}>
+      <div className="flex flex-col sm:flex-row sm:items-start mb-2">
+        <label className="text-base font-medium text-gray-700 md:min-w-[120px] sm:pr-4 sm:pt-1 mb-1 sm:mb-0" style={{ fontFamily: 'Roboto, sans-serif' }}>
           {translateConfig(widgetConfig['widget-label'])}
           {widgetConfig['widget-required'] && (
             <span className="text-red-500 ml-1">*</span>
           )}
         </label>
-        <div className="flex-1 flex justify-between items-center">
+        <div className="flex-1 min-w-0 flex justify-between items-center">
           <div className="flex-1"></div>
           {operations.add && !isReadonly && isEnabled && (
             <button

@@ -86,9 +86,9 @@ export const CheckboxWidget = ({ config }: CheckboxWidgetProps) => {
       const displayValue = isChecked ? 'Yes' : 'No';
 
       return (
-        <div className="mb-[10px] CheckboxDisplayWidget flex items-start">
+        <div className="mb-[10px] CheckboxDisplayWidget flex flex-col sm:flex-row sm:items-start">
           {label && (
-            <div className="text-base text-gray-600 font-medium min-w-[150px] pr-4" style={{ fontFamily: 'Roboto, sans-serif' }}>
+            <div className="text-base text-gray-600 font-medium md:min-w-[120px] sm:pr-4 mb-1 sm:mb-0" style={{ fontFamily: 'Roboto, sans-serif' }}>
               {label}:
             </div>
           )}
@@ -108,14 +108,14 @@ export const CheckboxWidget = ({ config }: CheckboxWidgetProps) => {
 
     return (
       <div className="mb-[10px]">
-        <div className="flex items-start">
-          <label className="text-base font-medium text-gray-700 min-w-[150px] pr-4 pt-1" style={{ fontFamily: 'Roboto, sans-serif' }}>
+        <div className="flex flex-col sm:flex-row sm:items-start">
+          <label className="text-base font-medium text-gray-700 md:min-w-[120px] sm:pr-4 sm:pt-1 mb-1 sm:mb-0" style={{ fontFamily: 'Roboto, sans-serif' }}>
             {translateConfig(widgetConfig['widget-label'])}
             {widgetConfig['widget-required'] && (
               <span className="text-red-500 ml-1">*</span>
             )}
           </label>
-          <div className="flex-1">
+          <div className="flex-1 min-w-0">
             <label className="flex items-center cursor-pointer">
               <input
                 type="checkbox"
@@ -216,9 +216,9 @@ export const CheckboxWidget = ({ config }: CheckboxWidgetProps) => {
       : '-';
 
     return (
-      <div className="mb-3 CheckboxDisplayWidget flex items-start">
+      <div className="mb-3 CheckboxDisplayWidget flex flex-col sm:flex-row sm:items-start">
         {label && (
-          <div className="text-sm text-gray-600 font-medium min-w-[150px] pr-4">
+          <div className="text-sm text-gray-600 font-medium md:min-w-[120px] sm:pr-4 mb-1 sm:mb-0">
             {label}:
           </div>
         )}
@@ -238,14 +238,14 @@ export const CheckboxWidget = ({ config }: CheckboxWidgetProps) => {
 
   return (
     <div className="mb-[10px]">
-      <div className="flex items-start">
-        <label className="text-base font-medium text-gray-700 min-w-[150px] pr-4 pt-1" style={{ fontFamily: 'Roboto, sans-serif' }}>
+      <div className="flex flex-col sm:flex-row sm:items-start">
+        <label className="text-base font-medium text-gray-700 md:min-w-[120px] sm:pr-4 sm:pt-1 mb-1 sm:mb-0" style={{ fontFamily: 'Roboto, sans-serif' }}>
           {translateConfig(widgetConfig['widget-label'])}
           {widgetConfig['widget-required'] && (
             <span className="text-red-500 ml-1">*</span>
           )}
         </label>
-        <div className="flex-1">
+        <div className="flex-1 min-w-0">
           <div className={layoutConfig.className} style={layoutConfig.style} onBlur={onBlur}>
             {loading ? (
               <p className="text-sm text-gray-500">{translate('common.loading')}</p>
