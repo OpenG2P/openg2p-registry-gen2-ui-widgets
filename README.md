@@ -34,7 +34,7 @@ npm install react react-dom @reduxjs/toolkit react-redux zod i18next react-i18ne
 
 ## Quick Start
 
-See [QUICKSTART.md](./QUICKSTART.md) for a detailed setup guide. Here's a minimal example:
+See [QUICKSTART.md](./QUICKSTART.md) for a detailed setup guide, or [Complete Reference](https://docs.openg2p.org/registry-gen-2/developer-zone/registry-ui-widgets-complete-guide-and-reference) for a comprehensive tutorial covering all features. Here's a minimal example:
 
 ```tsx
 import { WidgetProvider, createWidgetStore, WidgetRenderer } from '@openg2p/registry-widgets';
