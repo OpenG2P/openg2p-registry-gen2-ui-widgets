@@ -48,6 +48,27 @@ const TableCellSelect = ({ config, value, onValueChange }: TableCellSelectProps)
   );
 };
 
+// Component to display select value label in view mode
+interface SelectDisplayValueProps {
+  config: BaseWidgetConfig;
+  value: any;
+}
+
+const SelectDisplayValue = ({ config, value }: SelectDisplayValueProps) => {
+  const { dataSourceOptions, loading } = useBaseWidget({ config });
+  
+  if (loading) {
+    return <span>-</span>;
+  }
+  
+  if (value === null || value === undefined || value === '') {
+    return <span>-</span>;
+  }
+  
+  const selectedOption = dataSourceOptions.find((option: any) => option.value === value);
+  return <span>{selectedOption ? selectedOption.label : String(value)}</span>;
+};
+
 interface TableCellTextProps {
   config: BaseWidgetConfig;
   value: any;
@@ -342,7 +363,7 @@ export const TableWidget = ({ config }: TableWidgetProps) => {
       const currentRow = newRows[rowIndex] || {};
       const wasDeleted = currentRow.edit_action === 'DELETE';
       
-      // Determine edit_action for section edit mode
+      // Determine edit_action (for color coding)
       let editAction = currentRow.edit_action;
       if (isSectionEditMode) {
         // If row was deleted but is being saved, un-delete it
@@ -369,11 +390,16 @@ export const TableWidget = ({ config }: TableWidgetProps) => {
         } else if (!editAction) {
           editAction = 'UPDATE';
         }
+      } else {
+        // In non-section edit mode, mark as UPDATE if not already set
+        if (!editAction && !wasDeleted) {
+          editAction = 'UPDATE';
+        }
       }
       
       newRows[rowIndex] = {
         ...rowData,
-        ...(isSectionEditMode && editAction ? { edit_action: editAction } : {}),
+        ...(editAction ? { edit_action: editAction } : {}),
       };
       onChange(newRows);
 
@@ -431,10 +457,8 @@ export const TableWidget = ({ config }: TableWidgetProps) => {
         }
       }
 
-      // In section edit mode, mark new row with edit_action: 'ADD'
-      if (isSectionEditMode) {
-        savedRow = { ...savedRow, edit_action: 'ADD' };
-      }
+      // Mark new row with edit_action: 'ADD' (for color coding)
+      savedRow = { ...savedRow, edit_action: 'ADD' };
 
       // Add to local state
       onChange([...rows, savedRow]);
@@ -531,9 +555,16 @@ export const TableWidget = ({ config }: TableWidgetProps) => {
   const getDisplayValue = useCallback((rowIndex: number, column: any) => {
     const columnKey = column['column-key'];
     const cellValue = getCellValue(rowIndex, columnKey);
+    const widgetType = column.widget || 'text';
     
     if (cellValue === null || cellValue === undefined || cellValue === '') {
       return '-';
+    }
+
+    // For select widgets, we'll use SelectDisplayValue component instead
+    // This function is kept for other widget types
+    if (widgetType === 'select') {
+      return null; // Will be handled by SelectDisplayValue component
     }
 
     // Use formatValue if format config exists
@@ -642,20 +673,56 @@ export const TableWidget = ({ config }: TableWidgetProps) => {
   }, [widgetConfig, updateCellValue]);
 
   // Render cell content (widget in edit mode, formatted value in view mode)
-  const renderCell = useCallback((rowIndex: number, column: any) => {
+  const renderCell = useCallback((rowIndex: number, column: any, row: any) => {
     const columnKey = column['column-key'];
     const isEditing = isRowEditing(rowIndex);
     const cellValue = getCellValue(rowIndex, columnKey);
     const columnReadonly = column['widget-readonly'] === true;
     
+    // Get color styling based on edit_action
+    const getCellStyle = () => {
+      if (isEditing) return {}; // No special styling when editing
+      
+      const editAction = row?.edit_action;
+      if (editAction === 'ADD') {
+        return { color: '#16a34a' }; // green-600
+      } else if (editAction === 'DELETE') {
+        return { color: '#dc2626', textDecoration: 'line-through' }; // red-600 with strikethrough
+      } else if (editAction === 'UPDATE') {
+        return { color: '#ea580c' }; // orange-600
+      }
+      return {};
+    };
+    
     if (isEditing) {
       // Use lightweight cell renderer
       return renderTableCell(rowIndex, column, cellValue, columnReadonly);
     } else {
-      // Display formatted value in view mode
+      // Display formatted value in view mode with color styling
+      const widgetType = column.widget || 'text';
+      const displayValue = getDisplayValue(rowIndex, column);
+      
+      // For select widgets, use SelectDisplayValue component to show label
+      if (widgetType === 'select' && displayValue === null) {
+        const cellWidgetId = `${widgetConfig['widget-id']}-row-${rowIndex}-col-${columnKey}`;
+        const cellConfig: BaseWidgetConfig = {
+          ...column,
+          'widget-id': cellWidgetId,
+          'widget-label': '',
+          'widget-readonly': true,
+          'widget-data-path': undefined,
+        };
+        
+        return (
+          <div className="text-sm" style={getCellStyle()}>
+            <SelectDisplayValue config={cellConfig} value={cellValue} />
+          </div>
+        );
+      }
+      
       return (
-        <div className="text-sm text-gray-900">
-          {getDisplayValue(rowIndex, column)}
+        <div className="text-sm" style={getCellStyle()}>
+          {displayValue}
         </div>
       );
     }
@@ -803,15 +870,12 @@ export const TableWidget = ({ config }: TableWidgetProps) => {
                     className={isEditing ? 'bg-blue-50' : isLoading ? 'opacity-50' : row.edit_action === 'DELETE' ? 'bg-red-50' : ''}
                   >
                     {columns.map((col) => {
-                      // Hide deleted rows visually but keep them in data
-                      const isDeleted = row.edit_action === 'DELETE';
                       return (
                         <td 
                           key={col['column-key']} 
                           className="px-4 py-3 whitespace-nowrap"
-                          style={isDeleted ? { opacity: 0.5, textDecoration: 'line-through' } : {}}
                         >
-                          {renderCell(rowIndex, col)}
+                          {renderCell(rowIndex, col, row)}
                         </td>
                       );
                     })}
@@ -884,7 +948,7 @@ export const TableWidget = ({ config }: TableWidgetProps) => {
                 <tr className="bg-blue-50">
                   {columns.map((col) => (
                     <td key={col['column-key']} className="px-4 py-3 whitespace-nowrap">
-                      {renderCell(rows.length, col)}
+                      {renderCell(rows.length, col, { ...newRowData, edit_action: 'ADD' })}
                     </td>
                   ))}
                   <td className="px-4 py-3 whitespace-nowrap">

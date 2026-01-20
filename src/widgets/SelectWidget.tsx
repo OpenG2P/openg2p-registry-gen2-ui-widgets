@@ -38,6 +38,29 @@ export const SelectWidget = ({ config }: SelectWidgetProps) => {
 
   const { translate, translateConfig } = useWidgetTranslation();
 
+  // For readonly mode, render as display text showing only the selected label
+  if (widgetConfig['widget-readonly']) {
+    const label = translateConfig(widgetConfig['widget-label']);
+    // Find the selected option's label
+    const selectedOption = dataSourceOptions.find((option) => option.value === value);
+    const displayValue = selectedOption ? selectedOption.label : (value || '-');
+    
+    return (
+      <div className="mb-[10px] SelectDisplayWidget flex flex-col sm:flex-row sm:items-start">
+        {label && (
+          <div className="text-base text-gray-600 font-medium md:min-w-[120px] sm:pr-4 mb-1 sm:mb-0" style={{ fontFamily: 'Roboto, sans-serif' }}>
+            {label}:
+          </div>
+        )}
+        <div className="flex-1">
+          <div className="text-base text-gray-900 font-medium">
+            {displayValue}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="mb-[10px]">
       <div className="flex flex-col sm:flex-row sm:items-start">
