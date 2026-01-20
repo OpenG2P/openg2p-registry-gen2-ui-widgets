@@ -13,12 +13,11 @@ import { FileInputWidget } from '../widgets/FileInputWidget';
 import { SectionMode } from './SectionsContainer';
 import { namespaceSectionConfig } from '../utils/schemaNamespace';
 
-
+// Track section changes for change request creation
 export interface SectionChanges {
   section_id: string;
-  section_schema: SectionConfig;
-  old_section_value: unknown;
-  new_section_value: unknown;
+  records: unknown[];
+  files?: unknown[];
 }
 
 export interface SectionRendererProps {
@@ -462,11 +461,16 @@ export const SectionRenderer = ({
     return widgets;
   };
 
-  const buildSectionSnapshot = (widgets: any[], sourceData: any, useNamespacedPaths: boolean = false) => {
+  const trackSectionChages = (widgets: any[], sourceData: any, useNamespacedPaths: boolean = false) => {
     const snapshot: Record<string, any> = {};
+    let hasTable = false
+    const recordId = Object.keys(sourceData)[0];
     widgets.forEach(widget => {
       const originalDataPath = widget['widget-data-path'];
       if (!originalDataPath) return;
+      if (widget['widget-type'] === 'table' || widget['widget-type'] === 'simple-table') {
+        hasTable = true;
+      }
       
       // If namespace was used and we're reading from store, use namespaced paths
       const readDataPath = useNamespacedPaths && namespace && originalDataPath
@@ -494,7 +498,29 @@ export const SectionRenderer = ({
         snapshot[originalDataPath] = getValueByPath(sourceData, readPath);
       }
     });
-    return snapshot;
+
+    if (hasTable===false) {
+      const cleanedSnapshot: Record<string, any> = {};
+
+      Object.entries(snapshot).forEach(([key, value]) => {
+        const removedFirstLevelPath = key.includes('.')
+          ? key.split('.').slice(1).join('.')
+          : key;
+
+        cleanedSnapshot[removedFirstLevelPath] = value;
+      });
+
+      return [
+        { ...sourceData[recordId],
+          ...cleanedSnapshot,
+          edit_action: "UPDATE"
+        }
+      ]
+    }
+    const recordEntry = Object.entries(snapshot).find(
+        ([key, value]) => key.endsWith('.records') && Array.isArray(value)
+    );
+    return recordEntry ? recordEntry[1] : snapshot;
   };
 
   // Get original section (without namespace) for building snapshots
@@ -513,51 +539,38 @@ export const SectionRenderer = ({
     const sectionWidgets = collectWidgets(originalSection.panels)
     const currentState = (store.getState() as any).widget
     const currentSchemaData = currentState.values || {}
+
+    // schema data before section change
     const oldSchemaData = schemaData || contextSchemaData
-
-    // Build snapshots: old from original schema (no namespace), new from store (with namespace if used)
-    const oldSectionValue = buildSectionSnapshot(
-      sectionWidgets,
-      oldSchemaData,
-      false // Read from original schema, no namespace
-    )
-
-    const newSectionValue = buildSectionSnapshot(
+    // schema data after section change
+    const newSchemaData = trackSectionChages(
       sectionWidgets,
       currentSchemaData,
-      true // Read from store, use namespaced paths if namespace was used
     )
 
     // Include supporting documents in the snapshot if they exist
+    const sectionFiles:unknown[] = [];
     if (hasSupportingDocuments) {
       // Use original section's supporting documents to get original data paths
       const originalSupportingDocuments = originalSection['section-supporting-documents'] || [];
-      originalSupportingDocuments.forEach((doc, index) => {
-        const widgetId = `supporting-doc-${sectionId}-${index}`;
+      originalSupportingDocuments.forEach((doc) => {
         const originalDataPath = doc['document-data-path'];
-        // Read old value from original schema (no namespace)
-        const oldValue = getValueByPath(oldSchemaData, originalDataPath);
         // Read new value from store (with namespace if used)
         const storeDataPath = namespace && originalDataPath
           ? `${namespace}.${originalDataPath}`
           : originalDataPath;
-        const newValue = getValueByPath(currentSchemaData, storeDataPath);
-        // Store in snapshot using original paths
-        oldSectionValue[originalDataPath] = oldValue;
-        newSectionValue[originalDataPath] = newValue;
+        sectionFiles.push(getValueByPath(currentSchemaData, storeDataPath));
       });
     }
-
-    if (JSON.stringify(oldSectionValue) !== JSON.stringify(newSectionValue)) {
-      const changes: SectionChanges = {
-        section_id: originalSection['section-id'], // Use original section ID
-        section_schema: originalSection, // Use original section schema
-        old_section_value: oldSectionValue,
-        new_section_value: newSectionValue,
-      }
-
+  
+    if (JSON.stringify(oldSchemaData) !== JSON.stringify(newSchemaData)) {
       try {
-        await onSectionSave(changes)
+        const sectionchanges: SectionChanges = {
+          section_id: originalSection['section-id'],
+          records:[...newSchemaData],
+          files:[...sectionFiles]
+      }
+        await onSectionSave(sectionchanges)
       } catch (error) {
         console.error('Section Changes Save failed', error)
       }
