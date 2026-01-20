@@ -48,6 +48,27 @@ const TableCellSelect = ({ config, value, onValueChange }: TableCellSelectProps)
   );
 };
 
+// Component to display select value label in view mode
+interface SelectDisplayValueProps {
+  config: BaseWidgetConfig;
+  value: any;
+}
+
+const SelectDisplayValue = ({ config, value }: SelectDisplayValueProps) => {
+  const { dataSourceOptions, loading } = useBaseWidget({ config });
+  
+  if (loading) {
+    return <span>-</span>;
+  }
+  
+  if (value === null || value === undefined || value === '') {
+    return <span>-</span>;
+  }
+  
+  const selectedOption = dataSourceOptions.find((option: any) => option.value === value);
+  return <span>{selectedOption ? selectedOption.label : String(value)}</span>;
+};
+
 interface TableCellTextProps {
   config: BaseWidgetConfig;
   value: any;
@@ -534,9 +555,16 @@ export const TableWidget = ({ config }: TableWidgetProps) => {
   const getDisplayValue = useCallback((rowIndex: number, column: any) => {
     const columnKey = column['column-key'];
     const cellValue = getCellValue(rowIndex, columnKey);
+    const widgetType = column.widget || 'text';
     
     if (cellValue === null || cellValue === undefined || cellValue === '') {
       return '-';
+    }
+
+    // For select widgets, we'll use SelectDisplayValue component instead
+    // This function is kept for other widget types
+    if (widgetType === 'select') {
+      return null; // Will be handled by SelectDisplayValue component
     }
 
     // Use formatValue if format config exists
@@ -671,9 +699,30 @@ export const TableWidget = ({ config }: TableWidgetProps) => {
       return renderTableCell(rowIndex, column, cellValue, columnReadonly);
     } else {
       // Display formatted value in view mode with color styling
+      const widgetType = column.widget || 'text';
+      const displayValue = getDisplayValue(rowIndex, column);
+      
+      // For select widgets, use SelectDisplayValue component to show label
+      if (widgetType === 'select' && displayValue === null) {
+        const cellWidgetId = `${widgetConfig['widget-id']}-row-${rowIndex}-col-${columnKey}`;
+        const cellConfig: BaseWidgetConfig = {
+          ...column,
+          'widget-id': cellWidgetId,
+          'widget-label': '',
+          'widget-readonly': true,
+          'widget-data-path': undefined,
+        };
+        
+        return (
+          <div className="text-sm" style={getCellStyle()}>
+            <SelectDisplayValue config={cellConfig} value={cellValue} />
+          </div>
+        );
+      }
+      
       return (
         <div className="text-sm" style={getCellStyle()}>
-          {getDisplayValue(rowIndex, column)}
+          {displayValue}
         </div>
       );
     }
