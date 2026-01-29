@@ -1,12 +1,12 @@
 import React from 'react';
-import { PanelConfig } from '../types';
+import { PanelConfig, DataSourceRequestHandler } from '../types';
 import { UseBaseWidgetOptions } from '../hooks/useBaseWidget';
 import { WidgetRenderer } from './WidgetRenderer';
 import { useWidgetTranslation } from '../hooks/useWidgetTranslation';
 
 export interface PanelRendererProps {
   panel: PanelConfig;
-  apiAdapter?: UseBaseWidgetOptions['apiAdapter'];
+  dataSourceRequestHandler?: DataSourceRequestHandler;
   schemaData?: UseBaseWidgetOptions['schemaData'];
   onValueChange?: UseBaseWidgetOptions['onValueChange'];
   isEditMode?: boolean;
@@ -21,7 +21,7 @@ export interface PanelRendererProps {
  */
 export const PanelRenderer = ({
   panel,
-  apiAdapter,
+  dataSourceRequestHandler,
   schemaData,
   onValueChange,
   isEditMode = false,
@@ -141,7 +141,7 @@ export const PanelRenderer = ({
             > 
               <PanelRenderer
                 panel={nestedPanel}
-                apiAdapter={apiAdapter}
+                dataSourceRequestHandler={dataSourceRequestHandler}
                 schemaData={schemaData}
                 onValueChange={onValueChange}
                 isEditMode={isEditMode}
@@ -164,15 +164,19 @@ export const PanelRenderer = ({
       })}
       
       {/* Render widgets */}
-      {widgets.map((widgetConfig, index) => (
-        <WidgetRenderer
-          key={widgetConfig['widget-id'] || `widget-${index}`}
-          config={widgetConfig}
-          apiAdapter={apiAdapter}
-          schemaData={schemaData}
-          onValueChange={onValueChange}
-        />
-      ))}
+      {widgets.map((widgetConfig, index) => {
+        // Don't use readonly state in key - it causes remounting which resets userHasSetValueRef
+        // The readonly state is already handled in the widget components themselves
+        return (
+          <WidgetRenderer
+            key={widgetConfig['widget-id'] || `widget-${index}`}
+            config={widgetConfig}
+            dataSourceRequestHandler={dataSourceRequestHandler}
+            schemaData={schemaData}
+            onValueChange={onValueChange}
+          />
+        );
+      })}
     </div>
   );
 

@@ -85,7 +85,7 @@ export const validateWidget = (
       validation.zodSchema.parse(value);
     } catch (error) {
       if (error instanceof z.ZodError) {
-        errors.push(...error.errors.map((e) => e.message));
+        errors.push(...error.issues.map((e: z.ZodIssue) => e.message));
       } else {
         errors.push('Validation failed');
       }
