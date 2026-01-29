@@ -1,5 +1,6 @@
 // Types
 export * from './types';
+export type { DataSourceRequestHandler } from './types';
 
 // Store
 export { createWidgetStore } from './store';
@@ -9,6 +10,9 @@ export * from './store/widgetSlice';
 // Hooks
 export { useBaseWidget } from './hooks/useBaseWidget';
 export type { UseBaseWidgetOptions } from './hooks/useBaseWidget';
+export { useWidgetEventBus } from './hooks/useWidgetEventBus';
+export { useWidgetCascade } from './hooks/useWidgetCascade';
+export { useGeoWidgetCascade } from './hooks/useGeoWidgetCascade';
 
 // Components
 // Components
@@ -37,6 +41,11 @@ export * from './utils/conditions';
 export * from './utils/dataSource';
 export * from './utils/textInput';
 export * from './utils/numberInput';
+export * from './utils/geoHierarchy';
+
+// Events
+export { WidgetEventBus } from './events/WidgetEventBus';
+export type { WidgetEventType, WidgetEvent } from './events/WidgetEventBus';
 
 // i18n
 export { initI18n } from './i18n/config';

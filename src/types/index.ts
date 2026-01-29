@@ -19,17 +19,34 @@ export interface StaticDataSource {
 }
 
 /**
+ * Data source request handler - called by widgets to request data from host application
+ * Host application handles all API calls, formatting, CORS, auth, etc.
+ */
+export type DataSourceRequestHandler = (
+  service: string,              // Service mnemonic (e.g., "master-data", "geo-service")
+  endpoint: string,             // Endpoint/operation name (e.g., "get_g2p_geo_level_values", "get_g2p_programs")
+  method: string,               // HTTP method ("GET", "POST", etc.)
+  params: Record<string, any>,   // Request parameters (level_id, parent_level_value_id, etc.)
+  options?: {
+    headers?: Record<string, string>;
+  }
+) => Promise<any>;               // Returns response data (host handles all formatting)
+
+/**
  * API data source configuration
  */
 export interface ApiDataSource {
   type: 'api';
-  url: string;
+  service: string;               // Service mnemonic (e.g., "master-data") - host app handles routing
+  endpoint: string;              // Endpoint/operation name (e.g., "get_g2p_geo_level_values") - identifies which endpoint within the service
   method?: 'GET' | 'POST' | 'PUT' | 'DELETE';
-  dependsOn?: string; // Field path this depends on
+  dependsOn?: string; // Field path or widget-id this depends on
   valueKey?: string; // Key for value in response
   labelKey?: string; // Key for label in response
-  headers?: Record<string, string>;
-  body?: Record<string, any>;
+  params?: Record<string, any>; // Static parameters to include in request (merged with dependency params)
+  [key: string]: any; // Allow additional fields like level_id for backward compatibility
+  // Deprecated: url - use service + endpoint instead
+  url?: string; // @deprecated - use service + endpoint instead
 }
 
 /**
@@ -214,6 +231,28 @@ export interface WidgetOptions {
 }
 
 /**
+ * Widget cascade configuration
+ */
+export interface WidgetCascadeConfig {
+  listenTo: string[]; // Array of parent widget IDs to listen to
+  onEvent?: 'widget:change' | 'widget:blur' | 'widget:focus' | 'widget:reload' | 'widget:clear';
+  clearOnChange?: boolean; // Clear child value when parent changes (default: true)
+  reloadOnChange?: boolean; // Reload data source when parent changes (default: true)
+  debounce?: number; // Debounce time in milliseconds
+  throttle?: number; // Throttle time in milliseconds
+}
+
+/**
+ * Widget geo configuration
+ */
+export interface WidgetGeoConfig {
+  level: string; // Geo level identifier (e.g., "admin1", "admin2")
+  isLastLevel: boolean; // Whether this is the final level in the hierarchy
+  parentWidgetId: string | null; // ID of parent geo widget (null for first level)
+  levelMnemonic?: string; // Optional level mnemonic override
+}
+
+/**
  * Base widget configuration
  */
 export interface BaseWidgetConfig {
@@ -233,6 +272,8 @@ export interface BaseWidgetConfig {
   'widget-data-placeholder'?: string;
   'widget-data-helptext'?: string;
   'widget-data-tooltip'?: string;
+  'widget-cascade'?: WidgetCascadeConfig; // Cascade configuration
+  'widget-geo-config'?: WidgetGeoConfig; // Geo cascade configuration
   widgets?: BaseWidgetConfig[]; // For layout widgets
   'widget-item'?: BaseWidgetConfig; // For array/group widgets
   'widget-data-columns'?: Array<{

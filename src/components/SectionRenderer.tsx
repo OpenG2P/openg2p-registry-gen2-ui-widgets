@@ -22,7 +22,7 @@ export interface SectionChanges {
 
 export interface SectionRendererProps {
   section: SectionConfig;
-  apiAdapter?: UseBaseWidgetOptions['apiAdapter'];
+  dataSourceRequestHandler?: UseBaseWidgetOptions['dataSourceRequestHandler'];
   schemaData?: UseBaseWidgetOptions['schemaData'];
   onValueChange?: UseBaseWidgetOptions['onValueChange'];
   gridColumnSpan?: number; // Number of grid columns this section should span
@@ -44,7 +44,7 @@ export interface SectionRendererProps {
  */
 export const SectionRenderer = ({
   section,
-  apiAdapter,
+  dataSourceRequestHandler: propDataSourceRequestHandler,
   schemaData,
   onValueChange,
   gridColumnSpan,
@@ -54,9 +54,12 @@ export const SectionRenderer = ({
   namespace,
 }: SectionRendererProps) => {
   const { translateConfig, translate } = useWidgetTranslation();
-  const { schemaData: contextSchemaData } = useWidgetContext();
+  const { schemaData: contextSchemaData, dataSourceRequestHandler: contextDataSourceRequestHandler } = useWidgetContext();
   const store = useStore();
   const dispatch = useDispatch();
+  
+  // Use prop handler if provided, otherwise fall back to context
+  const dataSourceRequestHandler = propDataSourceRequestHandler || contextDataSourceRequestHandler;
 
   // Get CRView data from schemaData (prefer prop over context, then Redux store)
   const currentSchemaData = schemaData || contextSchemaData || {};
@@ -121,10 +124,6 @@ export const SectionRenderer = ({
       approvedBy: getValueByPath(dataSource, 'approvedBy') || getValueByPath(dataSource, 'approved_by'),
       approvedDate: getValueByPath(dataSource, 'approvedDate') || getValueByPath(dataSource, 'approved_date'),
     };
-    // Debug logging (can be removed in production)
-    if (mode === 'CRView') {
-      console.log('CRView Data Source:', { dataSource, result, currentSchemaData, storeValues });
-    }
     return result;
   }, [mode, currentSchemaData, storeValues]);
 
@@ -265,16 +264,20 @@ export const SectionRenderer = ({
       const modifiedPanel: PanelConfig = {
         ...panel,
         panels: panel.panels ? makePanelsEditable(panel.panels, editable) : undefined,
-        widgets: panel.widgets?.map(widget => ({
-          ...widget,
+        widgets: panel.widgets?.map(widget => {
           // When NOT in edit mode (editable = false), set all widgets to readonly
           // When in edit mode (editable = true):
           //   - If section-editable is true, force widgets to be editable (override widget-readonly)
           //   - Otherwise, respect original readonly setting
-          'widget-readonly': editable 
+          const newReadonly = editable 
             ? (sectionEditable ? false : (widget['widget-readonly'] || false))
-            : true,
-        })),
+            : true;
+          
+          return {
+            ...widget,
+            'widget-readonly': newReadonly,
+          };
+        }),
       };
       return modifiedPanel;
     });
@@ -288,6 +291,7 @@ export const SectionRenderer = ({
       panels: makePanelsEditable(sectionToRender.panels, isEditMode),
     };
   }, [sectionToRender, isEditMode]);
+
 
   // Handle edit button click
   const handleEdit = () => {
@@ -378,7 +382,7 @@ export const SectionRenderer = ({
               >
               <PanelRenderer
                 panel={panel}
-                apiAdapter={apiAdapter}
+                dataSourceRequestHandler={dataSourceRequestHandler}
                 schemaData={namespacedSchemaData}
                 onValueChange={onValueChange}
                 isEditMode={true}
@@ -865,7 +869,7 @@ export const SectionRenderer = ({
             >
               <PanelRenderer
                 panel={panel}
-                apiAdapter={apiAdapter}
+                dataSourceRequestHandler={dataSourceRequestHandler}
                 schemaData={namespacedSchemaData}
                 onValueChange={onValueChange}
               />

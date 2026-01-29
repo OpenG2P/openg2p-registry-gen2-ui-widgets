@@ -1,12 +1,14 @@
-import { SectionConfig } from '../types';
+import { useEffect } from 'react';
+import { SectionConfig, DataSourceRequestHandler } from '../types';
 import { UseBaseWidgetOptions } from '../hooks/useBaseWidget';
 import { SectionRenderer, SectionChanges } from './SectionRenderer';
+import { useWidgetContext } from './WidgetProvider';
 
 export type SectionMode = 'RegistryView' | 'CRView';
 
 export interface SectionsContainerProps {
   sections: SectionConfig[];
-  apiAdapter?: UseBaseWidgetOptions['apiAdapter'];
+  dataSourceRequestHandler?: DataSourceRequestHandler;
   schemaData?: UseBaseWidgetOptions['schemaData'];
   onValueChange?: UseBaseWidgetOptions['onValueChange'];
   className?: string;
@@ -103,7 +105,7 @@ const countVerticalPanels = (panels: SectionConfig['panels']): number => {
  */
 export const SectionsContainer = ({
   sections,
-  apiAdapter,
+  dataSourceRequestHandler: propDataSourceRequestHandler,
   schemaData,
   onValueChange,
   className = '',
@@ -112,6 +114,20 @@ export const SectionsContainer = ({
   mode = 'RegistryView',
   namespace,
 }: SectionsContainerProps) => {
+  // Get dataSourceRequestHandler from context if not provided as prop
+  const { dataSourceRequestHandler: contextDataSourceRequestHandler } = useWidgetContext();
+  const dataSourceRequestHandler = propDataSourceRequestHandler || contextDataSourceRequestHandler;
+  
+  // Warn if dataSourceRequestHandler is missing
+  useEffect(() => {
+    if (!dataSourceRequestHandler) {
+      console.warn(
+        '[SectionsContainer] ⚠️ dataSourceRequestHandler is not provided. ' +
+        'Sections with widgets that have API data sources will not be able to load data. ' +
+        'Please provide dataSourceRequestHandler prop to SectionsContainer or WidgetProvider.'
+      );
+    }
+  }, [dataSourceRequestHandler]);
   // Find the maximum number of vertical panels across all sections
   // This determines the grid size (minimum 3 columns)
   // Also account for table widgets and their explicit column spans
@@ -176,7 +192,7 @@ export const SectionsContainer = ({
               <SectionRenderer
                 key={section['section-id']}
                 section={section}
-                apiAdapter={apiAdapter}
+                dataSourceRequestHandler={dataSourceRequestHandler}
                 schemaData={schemaData}
                 onValueChange={onValueChange}
                 gridColumnSpan={section['section-column-span']}
@@ -201,7 +217,7 @@ export const SectionsContainer = ({
             <SectionRenderer
               key={section['section-id']}
               section={section}
-              apiAdapter={apiAdapter}
+              dataSourceRequestHandler={dataSourceRequestHandler}
               schemaData={schemaData}
               onValueChange={onValueChange}
               gridColumnSpan={columnSpan}

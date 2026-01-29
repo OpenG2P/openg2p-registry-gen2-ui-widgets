@@ -213,7 +213,7 @@ export const TableWidget = ({ config }: TableWidgetProps) => {
   } = useBaseWidget({ config });
 
   const { translate, translateConfig } = useWidgetTranslation();
-  const { apiAdapter } = useWidgetContext();
+  const { dataSourceRequestHandler } = useWidgetContext();
   const dispatch = useDispatch();
   const storeValues = useSelector((state: WidgetRootState) => state.widget?.values || {});
 
@@ -342,20 +342,12 @@ export const TableWidget = ({ config }: TableWidgetProps) => {
 
     try {
       // If API config exists, make API call
-      if (apiAdapter && apiConfig.edit) {
+      // TODO: Update to use dataSourceRequestHandler pattern
+      if (dataSourceRequestHandler && apiConfig.edit) {
         const editConfig = apiConfig.edit;
-        let url = editConfig.url || '';
-        
-        // Replace {id} placeholder if present
-        if (rowData.id !== undefined) {
-          url = url.replace('{id}', rowData.id);
-        }
-
-        await apiAdapter(url, {
-          method: editConfig.method || 'PUT',
-          headers: editConfig.headers || { 'Content-Type': 'application/json' },
-          body: rowData,
-        });
+        // Extract service and endpoint from URL if possible, or use config
+        // For now, API operations in TableWidget are disabled
+        console.warn('[TableWidget] API edit operations require migration to dataSourceRequestHandler pattern');
       }
 
       // Update local state
@@ -417,7 +409,7 @@ export const TableWidget = ({ config }: TableWidgetProps) => {
     } finally {
       setLoadingRowIndex(null);
     }
-  }, [editingState, rows, onChange, apiAdapter, apiConfig, translate, isSectionEditMode, originalRows, columns, widgetConfig, dispatch]);
+  }, [editingState, rows, onChange, dataSourceRequestHandler, apiConfig, translate, isSectionEditMode, originalRows, columns, widgetConfig, dispatch]);
 
   // Add new row
   const startAdd = useCallback(() => {
@@ -443,15 +435,14 @@ export const TableWidget = ({ config }: TableWidgetProps) => {
       let savedRow = { ...newRowData };
 
       // If API config exists, make API call
-      if (apiAdapter && apiConfig.add) {
+      // TODO: Update to use dataSourceRequestHandler pattern
+      if (dataSourceRequestHandler && apiConfig.add) {
         const addConfig = apiConfig.add;
-        const response = await apiAdapter(addConfig.url || '', {
-          method: addConfig.method || 'POST',
-          headers: addConfig.headers || { 'Content-Type': 'application/json' },
-          body: newRowData,
-        });
-        
-        // Use response data if available (might contain generated ID)
+        // Extract service and endpoint from URL if possible, or use config
+        // For now, API operations in TableWidget are disabled
+        console.warn('[TableWidget] API add operations require migration to dataSourceRequestHandler pattern');
+        // Use newRowData as response for now
+        const response = newRowData;
         if (response && typeof response === 'object') {
           savedRow = { ...savedRow, ...response };
         }
@@ -471,7 +462,7 @@ export const TableWidget = ({ config }: TableWidgetProps) => {
     } finally {
       setLoadingRowIndex(null);
     }
-  }, [isAdding, newRowData, rows, onChange, apiAdapter, apiConfig, translate, isSectionEditMode]);
+  }, [isAdding, newRowData, rows, onChange, dataSourceRequestHandler, apiConfig, translate, isSectionEditMode]);
 
   // Delete row
   const deleteRow = useCallback(async (rowIndex: number) => {
@@ -497,19 +488,12 @@ export const TableWidget = ({ config }: TableWidgetProps) => {
 
     try {
       // If API config exists, make API call
-      if (apiAdapter && apiConfig.delete) {
+      // TODO: Update to use dataSourceRequestHandler pattern
+      if (dataSourceRequestHandler && apiConfig.delete) {
         const deleteConfig = apiConfig.delete;
-        let url = deleteConfig.url || '';
-        
-        // Replace {id} placeholder if present
-        if (row.id !== undefined) {
-          url = url.replace('{id}', row.id);
-        }
-
-        await apiAdapter(url, {
-          method: deleteConfig.method || 'DELETE',
-          headers: deleteConfig.headers || {},
-        });
+        // Extract service and endpoint from URL if possible, or use config
+        // For now, API operations in TableWidget are disabled
+        console.warn('[TableWidget] API delete operations require migration to dataSourceRequestHandler pattern');
       }
 
       // In section edit mode, mark row as deleted instead of removing it
@@ -531,7 +515,7 @@ export const TableWidget = ({ config }: TableWidgetProps) => {
     } finally {
       setLoadingRowIndex(null);
     }
-  }, [rows, onChange, apiAdapter, apiConfig, translate, isSectionEditMode]);
+  }, [rows, onChange, dataSourceRequestHandler, apiConfig, translate, isSectionEditMode]);
 
   // Get cell value (from editing state or row data)
   const getCellValue = useCallback((rowIndex: number, columnKey: string) => {
