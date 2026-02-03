@@ -15,7 +15,6 @@ export { useWidgetCascade } from './hooks/useWidgetCascade';
 export { useGeoWidgetCascade } from './hooks/useGeoWidgetCascade';
 
 // Components
-// Components
 export { WidgetRenderer } from './components/WidgetRenderer';
 export { WidgetProvider, useWidgetContext } from './components/WidgetProvider';
 export { PanelRenderer } from './components/PanelRenderer';
@@ -23,6 +22,15 @@ export { SectionRenderer } from './components/SectionRenderer';
 export type { SectionChanges } from './components/SectionRenderer';
 export { SectionsContainer } from './components/SectionsContainer';
 export type { SectionMode, SectionsContainerProps } from './components/SectionsContainer';
+
+// Section Builder Components
+export { SectionBuilder } from './components/SectionBuilder';
+export type { SectionBuilderProps } from './components/SectionBuilder';
+export { JSONEditorPanel } from './components/SectionBuilder';
+export { VisualBuilderPanel } from './components/SectionBuilder';
+export { SectionTree } from './components/SectionBuilder';
+export type { TreeNode, TreeNodeType } from './components/SectionBuilder';
+export { PropertyEditor } from './components/SectionBuilder';
 
 // Registry (import defaultWidgets to auto-register widgets)
 import './registry/defaultWidgets';
