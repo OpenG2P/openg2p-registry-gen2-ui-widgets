@@ -51,6 +51,7 @@ export default [
       'react-i18next',
       'lodash.get',
       'lodash.set',
+      'json-edit-react',
     ],
   },
   {
