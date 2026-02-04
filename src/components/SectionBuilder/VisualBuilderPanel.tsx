@@ -12,6 +12,9 @@ interface VisualBuilderPanelProps {
   onAddWidget: (parentId: string) => void;
   onDeleteNode: (node: TreeNode) => void;
   onDuplicateNode: (node: TreeNode) => void;
+  onSave?: (section: SectionConfig) => void;
+  isMaximized?: boolean;
+  onToggleMaximize?: () => void;
 }
 
 /**
@@ -26,7 +29,72 @@ export const VisualBuilderPanel: React.FC<VisualBuilderPanelProps> = ({
   onAddWidget,
   onDeleteNode,
   onDuplicateNode,
+  onSave,
+  isMaximized = false,
+  onToggleMaximize,
 }) => {
+  // Validate section before saving
+  const validateSection = (sectionToValidate: SectionConfig): { isValid: boolean; errors: string[] } => {
+    const errors: string[] = [];
+    
+    if (!sectionToValidate['section-id']) {
+      errors.push('Section ID is required');
+    }
+    
+    if (!sectionToValidate.panels || sectionToValidate.panels.length === 0) {
+      errors.push('Section must have at least one panel');
+    }
+    
+    // Validate panels
+    const validatePanels = (panels: PanelConfig[]): void => {
+      panels.forEach((panel, index) => {
+        if (!panel['panel-id']) {
+          errors.push(`Panel at index ${index} is missing panel-id`);
+        }
+        if (panel.panels) {
+          validatePanels(panel.panels);
+        }
+        if (panel.widgets) {
+          panel.widgets.forEach((widget, widgetIndex) => {
+            if (!widget['widget-id']) {
+              errors.push(`Widget at panel ${panel['panel-id'] || index}, index ${widgetIndex} is missing widget-id`);
+            }
+            if (!widget.widget) {
+              errors.push(`Widget ${widget['widget-id'] || widgetIndex} is missing widget type`);
+            }
+          });
+        }
+      });
+    };
+    
+    if (sectionToValidate.panels) {
+      validatePanels(sectionToValidate.panels);
+    }
+    
+    return {
+      isValid: errors.length === 0,
+      errors,
+    };
+  };
+
+  const handleSave = () => {
+    const validation = validateSection(section);
+    if (!validation.isValid) {
+      console.error('Section validation failed:', validation.errors);
+      alert(`Cannot save section. Please fix the following errors:\n\n${validation.errors.join('\n')}`);
+      return;
+    }
+    
+    if (onSave) {
+      try {
+        onSave(section);
+      } catch (error) {
+        console.error('Error saving section:', error);
+        alert('An error occurred while saving the section. Please check the console for details.');
+      }
+    }
+  };
+
   const handleNodeChange = (node: TreeNode, updates: Partial<SectionConfig | PanelConfig | BaseWidgetConfig>) => {
     // Create a deep copy of the section
     const updatedSection = JSON.parse(JSON.stringify(section));
@@ -129,7 +197,7 @@ export const VisualBuilderPanel: React.FC<VisualBuilderPanelProps> = ({
       <div
         style={{
           padding: '15px 20px',
-          background: '#f8f9fa',
+          background: '#ffffff',
           borderBottom: '1px solid #ddd',
           display: 'flex',
           justifyContent: 'space-between',
@@ -172,6 +240,71 @@ export const VisualBuilderPanel: React.FC<VisualBuilderPanelProps> = ({
           >
             + Add Widget
           </button>
+          {onSave && (
+            <button
+              onClick={handleSave}
+              style={{
+                padding: '8px 16px',
+                border: 'none',
+                borderRadius: '4px',
+                background: '#ff9800',
+                color: 'white',
+                fontWeight: 600,
+                cursor: 'pointer',
+                fontSize: '12px',
+                whiteSpace: 'nowrap',
+              }}
+            >
+              Save
+            </button>
+          )}
+          {onToggleMaximize && (
+            <button
+              onClick={onToggleMaximize}
+              style={{
+                padding: '8px',
+                border: 'none',
+                borderRadius: '4px',
+                background: 'transparent',
+                color: '#666',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                width: '32px',
+                height: '32px',
+              }}
+              title={isMaximized ? 'Minimize' : 'Maximize'}
+            >
+              {isMaximized ? (
+                <svg
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <path d="M8 3v3a2 2 0 0 1-2 2H3m18 0h-3a2 2 0 0 1-2-2V3m0 18v-3a2 2 0 0 1 2-2h3M3 16h3a2 2 0 0 1 2 2v3" />
+                </svg>
+              ) : (
+                <svg
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3" />
+                </svg>
+              )}
+            </button>
+          )}
         </div>
       </div>
       <div
