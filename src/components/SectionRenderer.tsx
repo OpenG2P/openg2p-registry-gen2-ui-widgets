@@ -30,6 +30,8 @@ export interface SectionRendererProps {
   hideEditButton?: boolean; // Hide the edit button band below the section
   mode?: SectionMode; // Display mode: 'RegistryView' (default) or 'CRView'
   namespace?: string; // Optional namespace prefix for widget IDs (ensures uniqueness when same section is rendered multiple times)
+  changeRequestType?: 'new' | 'old'; // For CRView mode: indicates if this is a new or old change request
+  showChangeRequestLabel?: boolean; // Show "New" or "Old" label badge (default: true when changeRequestType is set)
   // CRView data is read from schemaData with keys: createdBy, createdDate, approvedBy, approvedDate
 }
 
@@ -52,6 +54,8 @@ export const SectionRenderer = ({
   hideEditButton = false,
   mode = 'RegistryView',
   namespace,
+  changeRequestType,
+  showChangeRequestLabel = true,
 }: SectionRendererProps) => {
   const { translateConfig, translate } = useWidgetTranslation();
   const { schemaData: contextSchemaData, dataSourceRequestHandler: contextDataSourceRequestHandler } = useWidgetContext();
@@ -432,14 +436,14 @@ export const SectionRenderer = ({
                 <button
                   onClick={handleCancel}
                   className="bg-white hover:bg-gray-50 text-gray-900 text-sm font-medium px-6 py-2 transition-colors border border-gray-300"
-                  style={{ fontFamily: 'Roboto, sans-serif', borderRadius: '15px' }}
+                  style={{ fontFamily: 'Roboto, sans-serif', borderRadius: '10px' }}
                 >
                   {translate('common.cancel') || 'Cancel'}
                 </button>
                 <button
                   onClick={handleSave}
                   className="bg-gray-900 hover:bg-gray-800 text-white text-sm font-medium px-6 py-2 transition-colors"
-                  style={{ fontFamily: 'Roboto, sans-serif', borderRadius: '15px' }}
+                  style={{ fontFamily: 'Roboto, sans-serif', borderRadius: '10px' }}
                 >
                   {translate('common.save') || 'Save'}
                 </button>
@@ -733,7 +737,7 @@ export const SectionRenderer = ({
           border-style: dashed;
           border-width: 1px;
           background-color: #F3E6BC;
-          border-radius: 30px;
+          border-radius: 10px;
           z-index: 10;
           position: absolute;
         }
@@ -833,17 +837,19 @@ export const SectionRenderer = ({
       `}</style>
       <div
         ref={sectionRef}
-        className={`section ${sectionClassId} px-4 sm:px-6 lg:px-8 border-2 border-gray-300`}
+        className={`section ${sectionClassId} px-4 sm:px-6 lg:px-8 border-2 border-white `}
         data-section-id={sectionId}
         data-has-table={hasTableWidget ? 'true' : 'false'}
         data-has-explicit-span={hasExplicitTableSpan ? 'true' : 'false'}
         data-edit-mode={isEditMode ? 'true' : 'false'}
         data-column-span={columnSpan}
+        data-change-request-type={changeRequestType}
         style={{
           gridColumn: `span ${columnSpan}`,
           width: '100%',
-          borderRadius: '30px',
-          backgroundColor: '#FFFFFF',
+          borderRadius: '10px',
+          backgroundColor: changeRequestType === 'old' ? '#F9F9F9' : '#FFFFFF', // Faded background for old change requests
+          opacity: changeRequestType === 'old' ? 0.95 : 1, // Slight opacity reduction for old sections
           ...(isEditMode && sectionHeight ? { 
             height: `${sectionHeight}px`,
             minHeight: `${sectionHeight}px`
@@ -854,8 +860,41 @@ export const SectionRenderer = ({
           }),
         }}
       >
+        {/* Section Title with Change Request Label */}
         {sectionToRender['section-title'] && (
-          <h2 className="text-xl font-semibold mb-4" style={{ marginTop: '35px' }}>{translateConfig(sectionToRender['section-title'])}</h2>
+          <div style={{ 
+            marginTop: '35px', 
+            marginBottom: '16px',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '12px',
+            flexWrap: 'wrap',
+          }}>
+            <h2 className="text-xl font-semibold" style={{ margin: 0 }}>
+              {translateConfig(sectionToRender['section-title'])}
+            </h2>
+            {/* Change Request Label Badge */}
+            {mode === 'CRView' && changeRequestType && showChangeRequestLabel && (
+              <span
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  padding: '4px 12px',
+                  borderRadius: '4px',
+                  fontSize: '12px',
+                  fontWeight: 600,
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.5px',
+                  backgroundColor: changeRequestType === 'new' ? '#28a745' : '#ffcccc', // Green for new, faded red for old
+                  color: changeRequestType === 'new' ? '#FFFFFF' : '#cc0000',
+                  whiteSpace: 'nowrap',
+                  boxShadow: changeRequestType === 'new' ? '0 2px 4px rgba(40, 167, 69, 0.3)' : 'none',
+                }}
+              >
+                {changeRequestType === 'new' ? 'New' : 'Old'}
+              </span>
+            )}
+          </div>
         )}
         <div 
           id={gridId} 

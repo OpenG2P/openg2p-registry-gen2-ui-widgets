@@ -25,8 +25,13 @@ export const WidgetRenderer = ({
   const dataSourceRequestHandler = propDataSourceRequestHandler || context.dataSourceRequestHandler;
   const schemaData = propSchemaData || context.schemaData;
   
+  // Warn if dataSourceRequestHandler is missing for API data sources, but don't break rendering
+  // This allows widgets to render in read-only or static modes (e.g., CRView)
   if (!dataSourceRequestHandler && config['widget-data-source']?.type === 'api') {
-    console.error(`[WidgetRenderer] dataSourceRequestHandler is required for widget ${config['widget-id']} with API data source`);
+    console.warn(
+      `[WidgetRenderer] dataSourceRequestHandler is not provided for widget ${config['widget-id']} with API data source. ` +
+      `The widget will render but API data source functionality will be disabled.`
+    );
   }
 
   // Get values from Redux for cascade hooks

@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { SectionConfig, PanelConfig, BaseWidgetConfig } from '../../types';
 import { JSONEditorPanel } from './JSONEditorPanel';
 import { VisualBuilderPanel } from './VisualBuilderPanel';
@@ -19,18 +19,32 @@ export const SectionBuilder: React.FC<SectionBuilderProps> = ({
   onChange,
   onSave,
 }) => {
+  const defaultSection: SectionConfig = {
+    'section-id': 'new-section',
+    'section-title': '',
+    'section-editable': false,
+    panels: [],
+  };
+
   const [section, setSection] = useState<SectionConfig>(
-    initialSection || {
-      'section-id': 'new-section',
-      'section-title': '',
-      'section-editable': false,
-      panels: [],
-    }
+    initialSection || defaultSection
   );
   const [selectedNode, setSelectedNode] = useState<TreeNode | null>(null);
+  const [isMaximized, setIsMaximized] = useState<boolean>(false);
+  
+  // Store the original section for reset functionality
+  const originalSectionRef = useRef<SectionConfig>(
+    initialSection ? JSON.parse(JSON.stringify(initialSection)) : defaultSection
+  );
+  const isInitialMount = useRef(true);
 
   useEffect(() => {
     if (initialSection) {
+      // Only update original on initial mount
+      if (isInitialMount.current) {
+        originalSectionRef.current = JSON.parse(JSON.stringify(initialSection));
+        isInitialMount.current = false;
+      }
       setSection(initialSection);
     }
   }, [initialSection]);
@@ -44,6 +58,16 @@ export const SectionBuilder: React.FC<SectionBuilderProps> = ({
     },
     [onChange]
   );
+
+  // Reset to original section - resets both JSON editor and visual builder
+  const handleReset = useCallback(() => {
+    const original = JSON.parse(JSON.stringify(originalSectionRef.current));
+    setSection(original);
+    setSelectedNode(null); // Clear selection on reset
+    if (onChange) {
+      onChange(original);
+    }
+  }, [onChange]);
 
   const handleAddPanel = useCallback(
     (parentId: string, parentType: 'section' | 'panel' | 'widget') => {
@@ -215,18 +239,56 @@ export const SectionBuilder: React.FC<SectionBuilderProps> = ({
     [section, handleSectionChange]
   );
 
+  const toggleMaximize = useCallback(() => {
+    setIsMaximized((prev) => !prev);
+  }, []);
+
+  // Handle Escape key to exit fullscreen
+  useEffect(() => {
+    if (!isMaximized) return;
+
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setIsMaximized(false);
+      }
+    };
+
+    window.addEventListener('keydown', handleEscape);
+    return () => window.removeEventListener('keydown', handleEscape);
+  }, [isMaximized]);
+
   return (
-    <div
-      style={{
-        display: 'flex',
-        height: '100%',
-        width: '100%',
-        minHeight: 0,
-        background: '#f5f5f5',
-        fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
-        overflow: 'hidden',
-      }}
-    >
+    <>
+      {isMaximized && (
+        <div
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background: 'rgba(0, 0, 0, 0.5)',
+            zIndex: 9998,
+          }}
+          onClick={toggleMaximize}
+        />
+      )}
+      <div
+        style={{
+          display: 'flex',
+          height: isMaximized ? '100vh' : '100%',
+          width: isMaximized ? '100vw' : '100%',
+          minHeight: 0,
+          background: '#FFFFFF',
+          fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+          overflow: 'hidden',
+          border: 'none',
+          position: isMaximized ? 'fixed' : 'relative',
+          top: isMaximized ? 0 : 'auto',
+          left: isMaximized ? 0 : 'auto',
+          zIndex: isMaximized ? 9999 : 'auto',
+        }}
+      >
       {/* Left Panel: JSON Editor */}
       <div style={{ 
         width: '50%', 
@@ -234,9 +296,15 @@ export const SectionBuilder: React.FC<SectionBuilderProps> = ({
         minHeight: 0,
         overflow: 'hidden',
         display: 'flex',
+        padding: '10px 10px 10px 10px',
         flexDirection: 'column',
+        borderRight: '0px',
       }}>
-        <JSONEditorPanel section={section} onChange={handleSectionChange} />
+        <JSONEditorPanel 
+          section={section} 
+          onChange={handleSectionChange}
+          onReset={handleReset}
+        />
       </div>
 
       {/* Right Panel: Visual Builder */}
@@ -257,8 +325,12 @@ export const SectionBuilder: React.FC<SectionBuilderProps> = ({
           onAddWidget={handleAddWidget}
           onDeleteNode={handleDeleteNode}
           onDuplicateNode={handleDuplicateNode}
+          onSave={onSave}
+          isMaximized={isMaximized}
+          onToggleMaximize={toggleMaximize}
         />
       </div>
     </div>
+    </>
   );
 };

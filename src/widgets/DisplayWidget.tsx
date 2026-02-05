@@ -20,8 +20,46 @@ export const DisplayWidget = ({ config }: DisplayWidgetProps) => {
 
   const { translateConfig } = useWidgetTranslation();
 
-  // Use formatted value if available, otherwise raw value
-  const displayValue = formattedValue !== undefined ? formattedValue : (value || '');
+  // Helper to safely convert value to display string
+  const getDisplayValue = (val: any): string => {
+    if (val === null || val === undefined) {
+      return '';
+    }
+    
+    // If it's already a string or number, return as string
+    if (typeof val === 'string' || typeof val === 'number') {
+      return String(val);
+    }
+    
+    // If it's an object (like geo hierarchy), try to extract a meaningful value
+    if (typeof val === 'object' && !Array.isArray(val)) {
+      // For geo hierarchy objects, try to extract the actual value
+      if ('geo_lowest_level_value_id' in val) {
+        return String(val.geo_lowest_level_value_id || '');
+      }
+      if ('value' in val) {
+        return String(val.value || '');
+      }
+      if ('id' in val) {
+        return String(val.id || '');
+      }
+      // If no extractable value, return empty string to avoid rendering object
+      return '';
+    }
+    
+    // For arrays, join them or return empty
+    if (Array.isArray(val)) {
+      return val.length > 0 ? val.map(String).join(', ') : '';
+    }
+    
+    // Fallback: convert to string
+    return String(val);
+  };
+
+  // Use formatted value if available, otherwise safely convert raw value
+  const displayValue = formattedValue !== undefined 
+    ? (typeof formattedValue === 'object' ? getDisplayValue(formattedValue) : String(formattedValue))
+    : getDisplayValue(value);
   const label = translateConfig(widgetConfig['widget-label']);
 
   // If no label, render as paragraph text

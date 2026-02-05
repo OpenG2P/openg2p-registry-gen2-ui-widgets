@@ -1,6 +1,11 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import { createPortal } from 'react-dom';
+import { Provider } from 'react-redux';
 import { JsonEditor } from 'json-edit-react';
 import { SectionConfig } from '../../types';
+import { SectionRenderer } from '../SectionRenderer';
+import { WidgetProvider, useWidgetContext } from '../WidgetProvider';
+import { createWidgetStore, type WidgetStore } from '../../store';
 
 // Inject styles to constrain json-edit-react container
 if (typeof document !== 'undefined') {
@@ -48,6 +53,7 @@ import {
 interface JSONEditorPanelProps {
   section: SectionConfig;
   onChange: (section: SectionConfig) => void;
+  onReset?: () => void; // Optional reset handler from parent
   context?: 'section' | 'panel' | 'widget';
 }
 
@@ -57,17 +63,146 @@ interface JSONEditorPanelProps {
 export const JSONEditorPanel: React.FC<JSONEditorPanelProps> = ({
   section,
   onChange,
+  onReset,
   context = 'section',
 }) => {
   const [jsonData, setJsonData] = useState<SectionConfig>(section);
   const [validationErrors, setValidationErrors] = useState<string[]>([]);
   const [rawJsonView, setRawJsonView] = useState<boolean>(false);
   const [rawJsonText, setRawJsonText] = useState<string>('');
+  const [showPreview, setShowPreview] = useState<boolean>(false);
+  const [editorKey, setEditorKey] = useState<number>(0); // Key to force JsonEditor re-render on reset
+  
+  // Store the original section when component mounts or section prop changes
+  const originalSectionRef = useRef<SectionConfig>(section);
+  
+  // Get WidgetProvider context for preview modal (optional - may not be available)
+  let widgetContext;
+  try {
+    widgetContext = useWidgetContext();
+  } catch {
+    widgetContext = {
+      dataSourceRequestHandler: undefined,
+      schemaData: undefined,
+      translate: undefined,
+    };
+  }
+  
+  // Create a store for the preview modal if we're not in a Provider
+  // This ensures SectionRenderer has access to Redux
+  const previewStore = useMemo(() => createWidgetStore(), []);
 
+  // Track if this is the initial mount
+  const isInitialMount = useRef(true);
+  
   useEffect(() => {
+    // Only update original section on initial mount (when page loads)
+    // This ensures reset works until save is clicked
+    // Don't update original when user makes edits (those come through onChange)
+    if (isInitialMount.current) {
+      originalSectionRef.current = JSON.parse(JSON.stringify(section)); // Deep copy
+      isInitialMount.current = false;
+    }
+    // Always sync the display with the section prop (for external updates like reset from parent)
     setJsonData(section);
     setRawJsonText(JSON.stringify(section, null, 2));
+    // Force JsonEditor to update when section prop changes (e.g., from parent reset)
+    setEditorKey(prev => prev + 1);
   }, [section]);
+
+  // Reset to original section
+  const handleReset = useCallback(() => {
+    // If parent provides onReset, use it (this will reset both JSON editor and visual builder)
+    if (onReset) {
+      onReset();
+      // Also force JsonEditor to remount to ensure it picks up the reset
+      setEditorKey(prev => prev + 1);
+      return;
+    }
+    
+    // Fallback: reset only this panel (for standalone usage)
+    const original = JSON.parse(JSON.stringify(originalSectionRef.current)); // Deep copy to ensure new reference
+    
+    // Update state immediately
+    setJsonData(original);
+    setRawJsonText(JSON.stringify(original, null, 2));
+    
+    // Force JsonEditor to completely remount by changing key
+    // This is critical because json-edit-react maintains internal state that doesn't sync with props
+    setEditorKey(prev => prev + 1);
+    
+    // Notify parent
+    onChange(original);
+  }, [onChange, onReset]);
+
+  // Handle Escape key to close preview
+  useEffect(() => {
+    if (!showPreview) return;
+
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setShowPreview(false);
+      }
+    };
+
+    window.addEventListener('keydown', handleEscape);
+    return () => window.removeEventListener('keydown', handleEscape);
+  }, [showPreview]);
+
+  // Make section editable for preview - remove readonly flags from widgets
+  const makeSectionEditable = useCallback((section: SectionConfig): SectionConfig => {
+    const processWidget = (widget: any): any => {
+      if (!widget || typeof widget !== 'object') return widget;
+      
+      const editableWidget = {
+        ...widget,
+        'widget-readonly': false, // Make all widgets editable in preview
+      };
+      
+      // Process nested widgets
+      if (widget.widgets && Array.isArray(widget.widgets)) {
+        editableWidget.widgets = widget.widgets.map(processWidget);
+      }
+      
+      if (widget['widget-item']) {
+        editableWidget['widget-item'] = processWidget(widget['widget-item']);
+      }
+      
+      // Process table columns
+      if (widget['widget-data-columns'] && Array.isArray(widget['widget-data-columns'])) {
+        editableWidget['widget-data-columns'] = widget['widget-data-columns'].map((col: any) => {
+          if (col && typeof col === 'object' && col.widget) {
+            return processWidget(col);
+          }
+          return col;
+        });
+      }
+      
+      return editableWidget;
+    };
+    
+    const processPanel = (panel: any): any => {
+      if (!panel || typeof panel !== 'object') return panel;
+      
+      const editablePanel = { ...panel };
+      
+      if (panel.widgets && Array.isArray(panel.widgets)) {
+        editablePanel.widgets = panel.widgets.map(processWidget);
+      }
+      
+      if (panel.panels && Array.isArray(panel.panels)) {
+        editablePanel.panels = panel.panels.map(processPanel);
+      }
+      
+      return editablePanel;
+    };
+    
+    return {
+      ...section,
+      'section-editable': true,
+      panels: section.panels ? section.panels.map(processPanel) : [],
+    };
+  }, []);
 
   // Auto-populate widget-type based on widget selection
   const autoPopulateWidgetType = useCallback((data: any): any => {
@@ -299,13 +434,13 @@ export const JSONEditorPanel: React.FC<JSONEditorPanelProps> = ({
         height: '100%',
         width: '100%',
         minHeight: 0,
-        borderRight: '2px solid #ddd',
+        borderRight: '0px',
       }}
     >
       <div
         style={{
-          padding: '15px 20px',
-          background: '#f8f9fa',
+          padding: '16px 20px',
+          background: '#ffffff',
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center',
@@ -348,6 +483,81 @@ export const JSONEditorPanel: React.FC<JSONEditorPanelProps> = ({
             gap: '8px',
           }}
         >
+          <button
+            onClick={handleReset}
+            style={{
+              padding: '6px 12px',
+              border: '1px solid #ddd',
+              borderRadius: '10px',
+              background: '#f3f3f3',
+              color: '#666',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+              fontSize: '12px',
+              fontWeight: 500,
+              transition: 'all 0.2s',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = '#f8f9fa';
+              e.currentTarget.style.borderColor = '#999';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = 'white';
+              e.currentTarget.style.borderColor = '#ddd';
+            }}
+            title="Reset to original JSON"
+          >
+            <svg
+              width="14"
+              height="14"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8" />
+              <path d="M21 3v5h-5" />
+              <path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16" />
+              <path d="M3 21v-5h5" />
+            </svg>
+            Reset
+          </button>
+          <button
+            onClick={() => setShowPreview(true)}
+            style={{
+              padding: '6px 12px',
+              border: '1px solid #ddd',
+              borderRadius: '10px',
+              background: '#f3f3f3',
+              color: '#666',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+              fontSize: '12px',
+              fontWeight: 500,
+            }}
+            title="Preview Section"
+          >
+            <svg
+              width="14"
+              height="14"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+              <circle cx="12" cy="12" r="3" />
+            </svg>
+            Preview
+          </button>
           <span
             style={{
               fontSize: '12px',
@@ -448,6 +658,7 @@ export const JSONEditorPanel: React.FC<JSONEditorPanelProps> = ({
             }}
           >
             <JsonEditor
+              key={`editor-${editorKey}`} // Force re-render on reset - use string key for better remounting
               data={jsonData}
               setData={handleJsonChange}
               {...({ enumOptions: enumConfig() } as any)}
@@ -455,6 +666,103 @@ export const JSONEditorPanel: React.FC<JSONEditorPanelProps> = ({
           </div>
         )}
       </div>
+      {showPreview && createPortal(
+        <div
+          className="section-builder-preview-backdrop"
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background: 'rgba(0, 0, 0, 0.5)',
+            zIndex: 10000,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '20px',
+          }}
+          onClick={() => setShowPreview(false)}
+        >
+          <div
+            className="section-builder-preview-modal"
+            style={{
+              background: 'white',
+              borderRadius: '8px',
+              width: '100%',
+              minWidth: '700px', // Ensure enough width for 600px content + padding
+              maxWidth: '90vw',
+              height: '90vh',
+              maxHeight: '90vh',
+              display: 'flex',
+              flexDirection: 'column',
+              boxShadow: '0 4px 20px rgba(0, 0, 0, 0.3)',
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div
+              className="section-builder-preview-header"
+              style={{
+                padding: '15px 20px',
+                borderBottom: '1px solid #ddd',
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                background: '#f8f9fa',
+              }}
+            >
+              <h2 className="section-builder-preview-title" style={{ margin: 0, fontSize: '18px', fontWeight: 600, color: '#2c3e50' }}>
+                Section Preview
+              </h2>
+              <button
+                className="section-builder-preview-close"
+                onClick={() => setShowPreview(false)}
+                style={{
+                  padding: '6px 12px',
+                  border: 'none',
+                  borderRadius: '4px',
+                  background: '#e74c3c',
+                  color: 'white',
+                  cursor: 'pointer',
+                  fontSize: '14px',
+                  fontWeight: 600,
+                }}
+              >
+                Close
+              </button>
+            </div>
+            <div
+              className="section-builder-preview-content"
+              style={{
+                flex: 1,
+                overflow: 'auto',
+                padding: '20px',
+              }}
+            >
+              <Provider store={previewStore}>
+                <WidgetProvider
+                  store={previewStore}
+                  dataSourceRequestHandler={widgetContext.dataSourceRequestHandler}
+                  schemaData={widgetContext.schemaData}
+                  translate={widgetContext.translate}
+                >
+                  <div style={{ position: 'relative', width: '100%', height: '100%' }}>
+                    <SectionRenderer
+                      section={makeSectionEditable(jsonData)}
+                      hideEditButton={true} // Hide edit button in preview - widgets are already editable
+                      onValueChange={(widgetId, value) => {
+                        // Handle value changes in preview (optional - for tracking)
+                        console.log('Preview value changed:', widgetId, value);
+                      }}
+                    />
+                  </div>
+                </WidgetProvider>
+              </Provider>
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
     </div>
   );
 };
