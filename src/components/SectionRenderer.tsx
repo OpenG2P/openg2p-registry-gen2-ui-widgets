@@ -30,6 +30,8 @@ export interface SectionRendererProps {
   hideEditButton?: boolean; // Hide the edit button band below the section
   mode?: SectionMode; // Display mode: 'RegistryView' (default) or 'CRView'
   namespace?: string; // Optional namespace prefix for widget IDs (ensures uniqueness when same section is rendered multiple times)
+  changeRequestType?: 'new' | 'old'; // For CRView mode: indicates if this is a new or old change request
+  showChangeRequestLabel?: boolean; // Show "New" or "Old" label badge (default: true when changeRequestType is set)
   // CRView data is read from schemaData with keys: createdBy, createdDate, approvedBy, approvedDate
 }
 
@@ -52,6 +54,8 @@ export const SectionRenderer = ({
   hideEditButton = false,
   mode = 'RegistryView',
   namespace,
+  changeRequestType,
+  showChangeRequestLabel = true,
 }: SectionRendererProps) => {
   const { translateConfig, translate } = useWidgetTranslation();
   const { schemaData: contextSchemaData, dataSourceRequestHandler: contextDataSourceRequestHandler } = useWidgetContext();
@@ -839,11 +843,13 @@ export const SectionRenderer = ({
         data-has-explicit-span={hasExplicitTableSpan ? 'true' : 'false'}
         data-edit-mode={isEditMode ? 'true' : 'false'}
         data-column-span={columnSpan}
+        data-change-request-type={changeRequestType}
         style={{
           gridColumn: `span ${columnSpan}`,
           width: '100%',
           borderRadius: '10px',
-          backgroundColor: '#FFFFFF',
+          backgroundColor: changeRequestType === 'old' ? '#F9F9F9' : '#FFFFFF', // Faded background for old change requests
+          opacity: changeRequestType === 'old' ? 0.95 : 1, // Slight opacity reduction for old sections
           ...(isEditMode && sectionHeight ? { 
             height: `${sectionHeight}px`,
             minHeight: `${sectionHeight}px`
@@ -854,8 +860,41 @@ export const SectionRenderer = ({
           }),
         }}
       >
+        {/* Section Title with Change Request Label */}
         {sectionToRender['section-title'] && (
-          <h2 className="text-xl font-semibold mb-4" style={{ marginTop: '35px' }}>{translateConfig(sectionToRender['section-title'])}</h2>
+          <div style={{ 
+            marginTop: '35px', 
+            marginBottom: '16px',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '12px',
+            flexWrap: 'wrap',
+          }}>
+            <h2 className="text-xl font-semibold" style={{ margin: 0 }}>
+              {translateConfig(sectionToRender['section-title'])}
+            </h2>
+            {/* Change Request Label Badge */}
+            {mode === 'CRView' && changeRequestType && showChangeRequestLabel && (
+              <span
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  padding: '4px 12px',
+                  borderRadius: '4px',
+                  fontSize: '12px',
+                  fontWeight: 600,
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.5px',
+                  backgroundColor: changeRequestType === 'new' ? '#28a745' : '#ffcccc', // Green for new, faded red for old
+                  color: changeRequestType === 'new' ? '#FFFFFF' : '#cc0000',
+                  whiteSpace: 'nowrap',
+                  boxShadow: changeRequestType === 'new' ? '0 2px 4px rgba(40, 167, 69, 0.3)' : 'none',
+                }}
+              >
+                {changeRequestType === 'new' ? 'New' : 'Old'}
+              </span>
+            )}
+          </div>
         )}
         <div 
           id={gridId} 

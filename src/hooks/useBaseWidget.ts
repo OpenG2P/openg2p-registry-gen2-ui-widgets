@@ -63,26 +63,56 @@ export const useBaseWidget = (options: UseBaseWidgetOptions) => {
       return undefined; // Layout widgets don't have values
     }
     
+    // Helper to extract displayable value from object (especially geo hierarchy objects)
+    const extractValueFromObject = (obj: any): any => {
+      if (!obj || typeof obj !== 'object' || Array.isArray(obj)) {
+        return obj;
+      }
+      
+      // Check for geo hierarchy structure first
+      if ('geo_code_hierarchy_json' in obj || 'geo_lowest_level_value_id' in obj) {
+        if ('geo_lowest_level_value_id' in obj) {
+          return obj.geo_lowest_level_value_id;
+        }
+        // If it's a geo hierarchy object but no extractable ID, return undefined to avoid rendering object
+        return undefined;
+      }
+      
+      // Try common value fields
+      if ('value' in obj) {
+        return obj.value;
+      }
+      if ('id' in obj) {
+        return obj.id;
+      }
+      if ('label' in obj) {
+        return obj.label;
+      }
+      if ('name' in obj) {
+        return obj.name;
+      }
+      
+      // If no extractable value found, return undefined to avoid rendering object as React child
+      // This prevents "Objects are not valid as a React child" errors
+      return undefined;
+    };
+    
     // Try to get value from widgetId first (this should have the actual selected value)
     // For geo widgets with dataPath, widgetId stores the actual ID, while dataPath stores the hierarchy object
     let value = values[widgetId];
+    
+    // Extract value if it's an object (handles geo hierarchy objects stored in widgetId)
+    if (value !== null && value !== undefined && typeof value === 'object' && !Array.isArray(value)) {
+      value = extractValueFromObject(value);
+    }
     
     // If widgetId doesn't have a value, try dataPath
     if (value === undefined && config['widget-data-path']) {
       value = getWidgetValue(values, config['widget-data-path'], widgetId);
       
-      // CRITICAL: For geo widgets with dataPath, the value might be stored as a hierarchy object
-      // Extract the actual value (geo_lowest_level_value_id) if it's an object
-      const geoConfig = config['widget-geo-config'];
-      if (geoConfig?.isLastLevel && value && typeof value === 'object' && !Array.isArray(value)) {
-        // If it's a geo hierarchy object, extract the actual value
-        if ('geo_lowest_level_value_id' in value) {
-          value = value.geo_lowest_level_value_id;
-        } else if ('value' in value) {
-          value = value.value;
-        } else if ('id' in value) {
-          value = value.id;
-        }
+      // Extract value if it's an object (handles geo hierarchy objects from dataPath)
+      if (value !== null && value !== undefined && typeof value === 'object' && !Array.isArray(value)) {
+        value = extractValueFromObject(value);
       }
     }
     
@@ -90,6 +120,15 @@ export const useBaseWidget = (options: UseBaseWidgetOptions) => {
     // This handles cases where dataPath lookup might fail temporarily
     if (value === undefined && userHasSetValueRef.current && values[widgetId] !== undefined) {
       value = values[widgetId];
+      // Extract value if it's an object (handles geo hierarchy objects)
+      if (value !== null && value !== undefined && typeof value === 'object' && !Array.isArray(value)) {
+        value = extractValueFromObject(value);
+      }
+    }
+    
+    // Final safety check: if value is still an object, extract displayable value
+    if (value !== null && value !== undefined && typeof value === 'object' && !Array.isArray(value)) {
+      value = extractValueFromObject(value);
     }
     
     // If user has explicitly set a value, always return it (even if undefined/null)

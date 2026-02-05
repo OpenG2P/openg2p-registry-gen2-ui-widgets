@@ -75,7 +75,7 @@ export const WidgetProvider = ({
       widgetStore.dispatch(setValues(schemaData));
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // Only run on mount
+  }, [schemaData, widgetStore]); // Only run on mount
 
   const content = (
     <Provider store={widgetStore}>
