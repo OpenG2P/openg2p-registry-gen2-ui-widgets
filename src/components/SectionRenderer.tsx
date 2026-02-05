@@ -432,14 +432,14 @@ export const SectionRenderer = ({
                 <button
                   onClick={handleCancel}
                   className="bg-white hover:bg-gray-50 text-gray-900 text-sm font-medium px-6 py-2 transition-colors border border-gray-300"
-                  style={{ fontFamily: 'Roboto, sans-serif', borderRadius: '15px' }}
+                  style={{ fontFamily: 'Roboto, sans-serif', borderRadius: '10px' }}
                 >
                   {translate('common.cancel') || 'Cancel'}
                 </button>
                 <button
                   onClick={handleSave}
                   className="bg-gray-900 hover:bg-gray-800 text-white text-sm font-medium px-6 py-2 transition-colors"
-                  style={{ fontFamily: 'Roboto, sans-serif', borderRadius: '15px' }}
+                  style={{ fontFamily: 'Roboto, sans-serif', borderRadius: '10px' }}
                 >
                   {translate('common.save') || 'Save'}
                 </button>
@@ -733,7 +733,7 @@ export const SectionRenderer = ({
           border-style: dashed;
           border-width: 1px;
           background-color: #F3E6BC;
-          border-radius: 30px;
+          border-radius: 10px;
           z-index: 10;
           position: absolute;
         }
@@ -833,7 +833,7 @@ export const SectionRenderer = ({
       `}</style>
       <div
         ref={sectionRef}
-        className={`section ${sectionClassId} px-4 sm:px-6 lg:px-8 border-2 border-gray-300`}
+        className={`section ${sectionClassId} px-4 sm:px-6 lg:px-8 border-2 border-white `}
         data-section-id={sectionId}
         data-has-table={hasTableWidget ? 'true' : 'false'}
         data-has-explicit-span={hasExplicitTableSpan ? 'true' : 'false'}
@@ -842,7 +842,7 @@ export const SectionRenderer = ({
         style={{
           gridColumn: `span ${columnSpan}`,
           width: '100%',
-          borderRadius: '30px',
+          borderRadius: '10px',
           backgroundColor: '#FFFFFF',
           ...(isEditMode && sectionHeight ? { 
             height: `${sectionHeight}px`,

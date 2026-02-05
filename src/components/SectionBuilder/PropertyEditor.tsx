@@ -92,6 +92,8 @@ export const PropertyEditor: React.FC<PropertyEditorProps> = ({
               border: '1px solid #ccc',
               borderRadius: '4px',
               fontSize: '12px',
+              background: 'white',
+              color: '#333',
             }}
           />
         </div>
@@ -109,6 +111,8 @@ export const PropertyEditor: React.FC<PropertyEditorProps> = ({
               border: '1px solid #ccc',
               borderRadius: '4px',
               fontSize: '12px',
+              background: 'white',
+              color: '#333',
             }}
           />
         </div>
@@ -137,6 +141,8 @@ export const PropertyEditor: React.FC<PropertyEditorProps> = ({
               border: '1px solid #ccc',
               borderRadius: '4px',
               fontSize: '12px',
+              background: 'white',
+              color: '#333',
             }}
           />
         </div>
@@ -162,6 +168,8 @@ export const PropertyEditor: React.FC<PropertyEditorProps> = ({
               border: '1px solid #ccc',
               borderRadius: '4px',
               fontSize: '12px',
+              background: 'white',
+              color: '#333',
             }}
           />
         </div>
@@ -203,6 +211,8 @@ export const PropertyEditor: React.FC<PropertyEditorProps> = ({
               border: '1px solid #ccc',
               borderRadius: '4px',
               fontSize: '12px',
+              background: 'white',
+              color: '#333',
             }}
           />
         </div>
@@ -269,6 +279,8 @@ export const PropertyEditor: React.FC<PropertyEditorProps> = ({
               border: '1px solid #ccc',
               borderRadius: '4px',
               fontSize: '12px',
+              background: 'white',
+              color: '#333',
             }}
           />
         </div>
@@ -286,6 +298,8 @@ export const PropertyEditor: React.FC<PropertyEditorProps> = ({
               border: '1px solid #ccc',
               borderRadius: '4px',
               fontSize: '12px',
+              background: 'white',
+              color: '#333',
             }}
             placeholder="Enter label..."
           />
@@ -304,6 +318,8 @@ export const PropertyEditor: React.FC<PropertyEditorProps> = ({
               border: '1px solid #ccc',
               borderRadius: '4px',
               fontSize: '12px',
+              background: 'white',
+              color: '#333',
             }}
             placeholder="person.name"
           />
@@ -322,6 +338,8 @@ export const PropertyEditor: React.FC<PropertyEditorProps> = ({
               border: '1px solid #ccc',
               borderRadius: '4px',
               fontSize: '12px',
+              background: 'white',
+              color: '#333',
             }}
             placeholder="Enter placeholder..."
           />
@@ -399,6 +417,8 @@ export const PropertyEditor: React.FC<PropertyEditorProps> = ({
                     fontSize: '11px',
                     fontFamily: 'monospace',
                     minHeight: '80px',
+                    background: 'white',
+                    color: '#333',
                   }}
                   placeholder='[{"value": "opt1", "label": "Option 1"}]'
                 />
@@ -424,6 +444,8 @@ export const PropertyEditor: React.FC<PropertyEditorProps> = ({
                         border: '1px solid #ccc',
                         borderRadius: '4px',
                         fontSize: '11px',
+                        background: 'white',
+                        color: '#333',
                       }}
                       placeholder="https://api.example.com/options"
                     />
@@ -445,6 +467,8 @@ export const PropertyEditor: React.FC<PropertyEditorProps> = ({
                           border: '1px solid #ccc',
                           borderRadius: '4px',
                           fontSize: '11px',
+                          background: 'white',
+                          color: '#333',
                         }}
                         placeholder="value key"
                       />
@@ -460,6 +484,8 @@ export const PropertyEditor: React.FC<PropertyEditorProps> = ({
                           border: '1px solid #ccc',
                           borderRadius: '4px',
                           fontSize: '11px',
+                          background: 'white',
+                          color: '#333',
                         }}
                         placeholder="label key"
                       />
@@ -497,6 +523,8 @@ export const PropertyEditor: React.FC<PropertyEditorProps> = ({
                 fontSize: '11px',
                 fontFamily: 'monospace',
                 minHeight: '100px',
+                background: 'white',
+                color: '#333',
               }}
               placeholder='[{"column-key": "col1", "widget-label": "Column 1", "widget": "text"}]'
             />
@@ -525,6 +553,8 @@ export const PropertyEditor: React.FC<PropertyEditorProps> = ({
                     border: '1px solid #ccc',
                     borderRadius: '4px',
                     fontSize: '11px',
+                    background: 'white',
+                    color: '#333',
                   }}
                 />
               </div>
@@ -544,6 +574,8 @@ export const PropertyEditor: React.FC<PropertyEditorProps> = ({
                     border: '1px solid #ccc',
                     borderRadius: '4px',
                     fontSize: '11px',
+                    background: 'white',
+                    color: '#333',
                   }}
                 />
               </div>
@@ -573,6 +605,8 @@ export const PropertyEditor: React.FC<PropertyEditorProps> = ({
                     border: '1px solid #ccc',
                     borderRadius: '4px',
                     fontSize: '11px',
+                    background: 'white',
+                    color: '#333',
                   }}
                 />
               </div>
@@ -592,6 +626,8 @@ export const PropertyEditor: React.FC<PropertyEditorProps> = ({
                     border: '1px solid #ccc',
                     borderRadius: '4px',
                     fontSize: '11px',
+                    background: 'white',
+                    color: '#333',
                   }}
                 />
               </div>
@@ -652,6 +688,8 @@ export const PropertyEditor: React.FC<PropertyEditorProps> = ({
                     border: '1px solid #ccc',
                     borderRadius: '4px',
                     fontSize: '11px',
+                    background: 'white',
+                    color: '#333',
                   }}
                 />
               </div>
@@ -675,6 +713,8 @@ export const PropertyEditor: React.FC<PropertyEditorProps> = ({
                     border: '1px solid #ccc',
                     borderRadius: '4px',
                     fontSize: '11px',
+                    background: 'white',
+                    color: '#333',
                   }}
                 />
               </div>
@@ -733,7 +773,7 @@ export const PropertyEditor: React.FC<PropertyEditorProps> = ({
             flex: 1,
             padding: '10px',
             border: 'none',
-            borderRadius: '4px',
+            borderRadius: '10px',
             background: '#f44336',
             color: 'white',
             fontWeight: 600,
@@ -749,7 +789,7 @@ export const PropertyEditor: React.FC<PropertyEditorProps> = ({
             flex: 1,
             padding: '10px',
             border: 'none',
-            borderRadius: '4px',
+            borderRadius: '10px',
             background: '#ff9800',
             color: 'white',
             fontWeight: 600,

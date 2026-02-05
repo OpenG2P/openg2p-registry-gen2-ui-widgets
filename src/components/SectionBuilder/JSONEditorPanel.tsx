@@ -54,7 +54,6 @@ interface JSONEditorPanelProps {
   section: SectionConfig;
   onChange: (section: SectionConfig) => void;
   onReset?: () => void; // Optional reset handler from parent
-  onSelectNode?: (nodeId: string, nodeType: 'section' | 'panel' | 'widget') => void; // Handler to select node in visual builder
   context?: 'section' | 'panel' | 'widget';
 }
 
@@ -65,7 +64,6 @@ export const JSONEditorPanel: React.FC<JSONEditorPanelProps> = ({
   section,
   onChange,
   onReset,
-  onSelectNode,
   context = 'section',
 }) => {
   const [jsonData, setJsonData] = useState<SectionConfig>(section);
@@ -150,101 +148,6 @@ export const JSONEditorPanel: React.FC<JSONEditorPanelProps> = ({
     window.addEventListener('keydown', handleEscape);
     return () => window.removeEventListener('keydown', handleEscape);
   }, [showPreview]);
-
-  // Handle clicks in JSON editor to select corresponding node in visual builder
-  useEffect(() => {
-    if (!onSelectNode || rawJsonView) return; // Only work in tree view, not raw JSON view
-
-    const handleJsonEditorClick = (e: Event) => {
-      const mouseEvent = e as MouseEvent;
-      const target = mouseEvent.target as HTMLElement;
-      
-      // Find the key text element (json-edit-react uses .jer-key-text class)
-      const keyElement = target.closest('.jer-key-text') || 
-                        target.querySelector('.jer-key-text') ||
-                        (target.classList.contains('jer-key-text') ? target : null);
-      
-      if (!keyElement) return;
-      
-      const keyText = keyElement.textContent?.trim();
-      if (!keyText) return;
-      
-      // Remove colon if present
-      const keyName = keyText.replace(':', '').trim();
-      
-      // Map key names to node types and find the corresponding node
-      let nodeId: string | null = null;
-      let nodeType: 'section' | 'panel' | 'widget' | null = null;
-      
-      if (keyName === 'section-id') {
-        // Find the section-id value
-        const keyRow = keyElement.closest('.jer-collection-header-row, .jer-value-row');
-        if (keyRow) {
-          const valueElement = keyRow.querySelector('.jer-value-text, .jer-string-value');
-          if (valueElement) {
-            nodeId = valueElement.textContent?.replace(/^"|"$/g, '').trim() || section['section-id'];
-            nodeType = 'section';
-          }
-        }
-      } else if (keyName === 'panel-id') {
-        // Find the panel-id value in the current panel object
-        const panelContainer = keyElement.closest('.jer-collection-component');
-        if (panelContainer) {
-          const valueElement = panelContainer.querySelector('.jer-value-text, .jer-string-value');
-          if (valueElement) {
-            // Try to find panel-id value in this panel
-            const allKeys = panelContainer.querySelectorAll('.jer-key-text');
-            for (const key of Array.from(allKeys)) {
-              if (key.textContent?.includes('panel-id')) {
-                const keyRow = key.closest('.jer-collection-header-row, .jer-value-row');
-                if (keyRow) {
-                  const valElement = keyRow.querySelector('.jer-value-text, .jer-string-value');
-                  if (valElement) {
-                    nodeId = valElement.textContent?.replace(/^"|"$/g, '').trim() || null;
-                    nodeType = 'panel';
-                    break;
-                  }
-                }
-              }
-            }
-          }
-        }
-      } else if (keyName === 'widget-id') {
-        // Find the widget-id value in the current widget object
-        const widgetContainer = keyElement.closest('.jer-collection-component');
-        if (widgetContainer) {
-          const allKeys = widgetContainer.querySelectorAll('.jer-key-text');
-          for (const key of Array.from(allKeys)) {
-            if (key.textContent?.includes('widget-id')) {
-              const keyRow = key.closest('.jer-collection-header-row, .jer-value-row');
-              if (keyRow) {
-                const valElement = keyRow.querySelector('.jer-value-text, .jer-string-value');
-                if (valElement) {
-                  nodeId = valElement.textContent?.replace(/^"|"$/g, '').trim() || null;
-                  nodeType = 'widget';
-                  break;
-                }
-              }
-            }
-          }
-        }
-      }
-      
-      // If we found a node, select it in the visual builder
-      if (nodeId && nodeType) {
-        onSelectNode(nodeId, nodeType);
-      }
-    };
-
-    // Add click listener to the JSON editor container
-    const editorContainer = document.querySelector('.json-editor-scroll-container');
-    if (editorContainer) {
-      editorContainer.addEventListener('click', handleJsonEditorClick);
-      return () => {
-        editorContainer.removeEventListener('click', handleJsonEditorClick);
-      };
-    }
-  }, [onSelectNode, rawJsonView, section]);
 
   // Make section editable for preview - remove readonly flags from widgets
   const makeSectionEditable = useCallback((section: SectionConfig): SectionConfig => {
@@ -536,7 +439,7 @@ export const JSONEditorPanel: React.FC<JSONEditorPanelProps> = ({
     >
       <div
         style={{
-          padding: '15px 20px',
+          padding: '16px 20px',
           background: '#ffffff',
           display: 'flex',
           justifyContent: 'space-between',
@@ -585,8 +488,8 @@ export const JSONEditorPanel: React.FC<JSONEditorPanelProps> = ({
             style={{
               padding: '6px 12px',
               border: '1px solid #ddd',
-              borderRadius: '4px',
-              background: 'white',
+              borderRadius: '10px',
+              background: '#f3f3f3',
               color: '#666',
               cursor: 'pointer',
               display: 'flex',
@@ -628,8 +531,8 @@ export const JSONEditorPanel: React.FC<JSONEditorPanelProps> = ({
             style={{
               padding: '6px 12px',
               border: '1px solid #ddd',
-              borderRadius: '4px',
-              background: 'white',
+              borderRadius: '10px',
+              background: '#f3f3f3',
               color: '#666',
               cursor: 'pointer',
               display: 'flex',

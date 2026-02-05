@@ -69,83 +69,6 @@ export const SectionBuilder: React.FC<SectionBuilderProps> = ({
     }
   }, [onChange]);
 
-  // Handle node selection from JSON editor
-  const handleSelectNodeFromJson = useCallback((nodeId: string, nodeType: 'section' | 'panel' | 'widget') => {
-    // Find the corresponding node in the section structure
-    const findNode = (): TreeNode | null => {
-      if (nodeType === 'section') {
-        return {
-          type: 'section',
-          id: section['section-id'],
-          label: `Section: ${section['section-id']}`,
-          data: section,
-        };
-      }
-      
-      // Recursively search for panel or widget
-      const searchInPanels = (panels: PanelConfig[], parent?: TreeNode): TreeNode | null => {
-        for (const panel of panels) {
-          if (nodeType === 'panel' && panel['panel-id'] === nodeId) {
-            return {
-              type: 'panel',
-              id: panel['panel-id'],
-              label: `Panel: ${panel['panel-id']}`,
-              data: panel,
-              parent: parent,
-            };
-          }
-          
-          // Check nested panels
-          if (panel.panels) {
-            const panelNode: TreeNode = {
-              type: 'panel',
-              id: panel['panel-id'],
-              label: `Panel: ${panel['panel-id']}`,
-              data: panel,
-              parent: parent,
-            };
-            const found = searchInPanels(panel.panels, panelNode);
-            if (found) return found;
-          }
-          
-          // Check widgets
-          if (panel.widgets) {
-            const panelNode: TreeNode = {
-              type: 'panel',
-              id: panel['panel-id'],
-              label: `Panel: ${panel['panel-id']}`,
-              data: panel,
-              parent: parent,
-            };
-            for (const widget of panel.widgets) {
-              if (nodeType === 'widget' && widget['widget-id'] === nodeId) {
-                return {
-                  type: 'widget',
-                  id: widget['widget-id'],
-                  label: `Widget: ${widget['widget-id']} (${widget.widget})`,
-                  data: widget,
-                  parent: panelNode,
-                };
-              }
-            }
-          }
-        }
-        return null;
-      };
-      
-      if (section.panels) {
-        return searchInPanels(section.panels);
-      }
-      
-      return null;
-    };
-    
-    const node = findNode();
-    if (node) {
-      setSelectedNode(node);
-    }
-  }, [section]);
-
   const handleAddPanel = useCallback(
     (parentId: string, parentType: 'section' | 'panel' | 'widget') => {
       const updatedSection = JSON.parse(JSON.stringify(section));
@@ -381,7 +304,6 @@ export const SectionBuilder: React.FC<SectionBuilderProps> = ({
           section={section} 
           onChange={handleSectionChange}
           onReset={handleReset}
-          onSelectNode={handleSelectNodeFromJson}
         />
       </div>
 

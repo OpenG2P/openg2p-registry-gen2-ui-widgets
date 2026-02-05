@@ -192,19 +192,22 @@ export const VisualBuilderPanel: React.FC<VisualBuilderPanelProps> = ({
         height: '100%',
         width: '100%',
         minHeight: 0,
+        paddingBottom: '10px',
+        borderRight: '0px',
       }}
     >
       <div
         style={{
-          padding: '15px 20px',
+          padding: '20px 20px 20px 20px',
+
           background: '#ffffff',
-          borderBottom: '1px solid #ddd',
+          
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center',
         }}
       >
-        <div style={{ fontWeight: 600, fontSize: '16px', color: '#2c3e50' }}>
+        <div style={{ fontWeight: 600, fontSize: '16px', color: '#2c3e50', paddingTop: '5px' }}>
           Visual Builder
         </div>
         <div style={{ display: 'flex', gap: '10px' }}>
@@ -213,7 +216,7 @@ export const VisualBuilderPanel: React.FC<VisualBuilderPanelProps> = ({
             style={{
               padding: '8px 16px',
               border: 'none',
-              borderRadius: '4px',
+              borderRadius: '10px',
               background: '#2196f3',
               color: 'white',
               fontWeight: 600,
@@ -229,7 +232,7 @@ export const VisualBuilderPanel: React.FC<VisualBuilderPanelProps> = ({
             style={{
               padding: '8px 16px',
               border: 'none',
-              borderRadius: '4px',
+              borderRadius: '10px',
               background: '#4caf50',
               color: 'white',
               fontWeight: 600,
@@ -246,8 +249,8 @@ export const VisualBuilderPanel: React.FC<VisualBuilderPanelProps> = ({
               style={{
                 padding: '8px 16px',
                 border: 'none',
-                borderRadius: '4px',
-                background: '#ff9800',
+                borderRadius: '10px',
+                background: '#000000',
                 color: 'white',
                 fontWeight: 600,
                 cursor: 'pointer',
@@ -312,6 +315,8 @@ export const VisualBuilderPanel: React.FC<VisualBuilderPanelProps> = ({
           flex: 1,
           display: 'flex',
           overflow: 'hidden',
+          border: '1px solid #ddd',
+          borderRadius: '10px',
           minHeight: 0, // Important for flex children to respect overflow
         }}
       >
