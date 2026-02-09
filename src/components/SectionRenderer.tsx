@@ -122,11 +122,13 @@ export const SectionRenderer = ({
     // Try to get from schemaData first, then from Redux store
     // Merge both sources to ensure we get the data
     const dataSource = { ...storeValues, ...currentSchemaData };
+    const recordPath = Object.keys(dataSource)[0];
+
     const result = {
-      createdBy: getValueByPath(dataSource, 'createdBy') || getValueByPath(dataSource, 'created_by'),
-      createdDate: getValueByPath(dataSource, 'createdDate') || getValueByPath(dataSource, 'created_date'),
-      approvedBy: getValueByPath(dataSource, 'approvedBy') || getValueByPath(dataSource, 'approved_by'),
-      approvedDate: getValueByPath(dataSource, 'approvedDate') || getValueByPath(dataSource, 'approved_date'),
+      createdBy: getValueByPath(dataSource, `${recordPath}.created_by`),
+      createdDate: getValueByPath(dataSource, `${recordPath}.created_at`),
+      approvedBy: getValueByPath(dataSource, `${recordPath}.last_approved_by`),
+      approvedDate: getValueByPath(dataSource, `${recordPath}.last_approved_at`),
     };
     return result;
   }, [mode, currentSchemaData, storeValues]);
