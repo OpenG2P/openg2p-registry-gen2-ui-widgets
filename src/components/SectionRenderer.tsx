@@ -12,6 +12,7 @@ import { useWidgetContext } from './WidgetProvider';
 import { FileInputWidget } from '../widgets/FileInputWidget';
 import { SectionMode } from './SectionsContainer';
 import { namespaceSectionConfig } from '../utils/schemaNamespace';
+import { sectionValidate,collectWidgets } from '../utils/sectionValidate';
 
 // Track section changes for change request creation
 export interface SectionChanges {
@@ -458,18 +459,6 @@ export const SectionRenderer = ({
     );
   };
 
-  const collectWidgets = (panels: PanelConfig[]): any[] => {
-    let widgets: any[] = [];
-    panels.forEach(panel => {
-      if (panel.widgets) {
-        widgets = [...widgets, ...panel.widgets];
-      }
-      if (panel.panels) {
-        widgets = [...widgets, ...collectWidgets(panel.panels)];
-      }
-    });
-    return widgets;
-  };
 
   const trackSectionChages = (widgets: any[], sourceData: any, useNamespacedPaths: boolean = false) => {
     const snapshot: Record<string, any> = {};
@@ -549,6 +538,15 @@ export const SectionRenderer = ({
     const sectionWidgets = collectWidgets(originalSection.panels)
     const currentState = (store.getState() as any).widget
     const currentSchemaData = currentState.values || {}
+
+    const isSectionValid = sectionValidate(
+      originalSection,
+      currentSchemaData,
+      dispatch,
+    );
+    if (!isSectionValid) {
+      return;
+    }
 
     // schema data before section change
     const oldSchemaData = schemaData || contextSchemaData
