@@ -1,4 +1,3 @@
-import React from 'react';
 import { useSelector } from 'react-redux';
 import { useBaseWidget } from '../hooks/useBaseWidget';
 import { BaseWidgetConfig } from '../types';
@@ -6,6 +5,7 @@ import { useWidgetTranslation } from '../hooks/useWidgetTranslation';
 import { WidgetRootState } from '../store';
 import { useWidgetContext } from '../components/WidgetProvider';
 import { getValueByPath } from '../utils/pathUtils';
+import { dummyProfile } from '../assets';
 
 /**
  * Profile widget for displaying user identity information
@@ -62,10 +62,10 @@ export const ProfileWidget = ({ config }: ProfileWidgetProps) => {
   } = useBaseWidget({ config });
 
   const { translateConfig } = useWidgetTranslation();
-  
+
   // Get schemaData from context as fallback
   const { schemaData } = useWidgetContext();
-  
+
   // Get values from Redux store
   const values = useSelector((state: WidgetRootState) => state.widget.values);
 
@@ -89,15 +89,15 @@ export const ProfileWidget = ({ config }: ProfileWidgetProps) => {
     const imagePathValue = dataPath.image || dataPath.photo || dataPath.avatar;
     const namePathValue = dataPath.name || dataPath.displayName;
     const idPathValue = dataPath.id || dataPath.identifier;
-    
+
     // Helper function to search for a path within all top-level objects
     const findValueInNestedObjects = (path: string, searchIn: Record<string, any> | undefined): any => {
       if (!searchIn) return undefined;
-      
+
       // First try direct path (in case it's at root level)
       let value = getValueByPath(searchIn, path);
       if (value !== undefined) return value;
-      
+
       // If not found, search within each top-level object
       for (const [key, obj] of Object.entries(searchIn)) {
         if (obj && typeof obj === 'object') {
@@ -107,10 +107,10 @@ export const ProfileWidget = ({ config }: ProfileWidgetProps) => {
           }
         }
       }
-      
+
       return undefined;
     };
-    
+
     // Try to get values from Redux store first, then fallback to schemaData
     if (imagePathValue) {
       let fetchedImage = findValueInNestedObjects(imagePathValue, values);
@@ -197,10 +197,11 @@ export const ProfileWidget = ({ config }: ProfileWidgetProps) => {
           flex-shrink: 0;
         }
         
-        .${widgetClassId} .profile-avatar-placeholder svg {
-          width: ${imageSize * 0.6}px;
-          height: ${imageSize * 0.6}px;
-          color: #9ca3af;
+        .${widgetClassId} .profile-avatar-placeholder img {
+          width: 100%;
+          height: 100%;
+          border-radius: 8px;
+          object-fit: cover;
         }
         
         .${widgetClassId} .profile-info {
@@ -258,23 +259,14 @@ export const ProfileWidget = ({ config }: ProfileWidgetProps) => {
               }}
             />
           ) : null}
-          <div 
+          <div
             className="profile-avatar-placeholder"
             style={{ display: imageUrl ? 'none' : 'flex' }}
           >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-              strokeWidth={1.5}
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21c-2.796 0-5.307-.576-7.499-1.882z"
-              />
-            </svg>
+            <img
+              src={dummyProfile}
+              alt="Profile Placeholder"
+            />
           </div>
         </div>
 
