@@ -6,6 +6,7 @@ import { SectionConfig } from '../../types';
 import { SectionRenderer } from '../SectionRenderer';
 import { WidgetProvider, useWidgetContext } from '../WidgetProvider';
 import { createWidgetStore, type WidgetStore } from '../../store';
+import { resetIcon, previewIcon } from '../../assets';
 
 // Inject styles to constrain json-edit-react container
 if (typeof document !== 'undefined') {
@@ -72,10 +73,10 @@ export const JSONEditorPanel: React.FC<JSONEditorPanelProps> = ({
   const [rawJsonText, setRawJsonText] = useState<string>('');
   const [showPreview, setShowPreview] = useState<boolean>(false);
   const [editorKey, setEditorKey] = useState<number>(0); // Key to force JsonEditor re-render on reset
-  
+
   // Store the original section when component mounts or section prop changes
   const originalSectionRef = useRef<SectionConfig>(section);
-  
+
   // Get WidgetProvider context for preview modal (optional - may not be available)
   let widgetContext;
   try {
@@ -87,14 +88,14 @@ export const JSONEditorPanel: React.FC<JSONEditorPanelProps> = ({
       translate: undefined,
     };
   }
-  
+
   // Create a store for the preview modal if we're not in a Provider
   // This ensures SectionRenderer has access to Redux
   const previewStore = useMemo(() => createWidgetStore(), []);
 
   // Track if this is the initial mount
   const isInitialMount = useRef(true);
-  
+
   useEffect(() => {
     // Only update original section on initial mount (when page loads)
     // This ensures reset works until save is clicked
@@ -119,18 +120,18 @@ export const JSONEditorPanel: React.FC<JSONEditorPanelProps> = ({
       setEditorKey(prev => prev + 1);
       return;
     }
-    
+
     // Fallback: reset only this panel (for standalone usage)
     const original = JSON.parse(JSON.stringify(originalSectionRef.current)); // Deep copy to ensure new reference
-    
+
     // Update state immediately
     setJsonData(original);
     setRawJsonText(JSON.stringify(original, null, 2));
-    
+
     // Force JsonEditor to completely remount by changing key
     // This is critical because json-edit-react maintains internal state that doesn't sync with props
     setEditorKey(prev => prev + 1);
-    
+
     // Notify parent
     onChange(original);
   }, [onChange, onReset]);
@@ -153,21 +154,21 @@ export const JSONEditorPanel: React.FC<JSONEditorPanelProps> = ({
   const makeSectionEditable = useCallback((section: SectionConfig): SectionConfig => {
     const processWidget = (widget: any): any => {
       if (!widget || typeof widget !== 'object') return widget;
-      
+
       const editableWidget = {
         ...widget,
         'widget-readonly': false, // Make all widgets editable in preview
       };
-      
+
       // Process nested widgets
       if (widget.widgets && Array.isArray(widget.widgets)) {
         editableWidget.widgets = widget.widgets.map(processWidget);
       }
-      
+
       if (widget['widget-item']) {
         editableWidget['widget-item'] = processWidget(widget['widget-item']);
       }
-      
+
       // Process table columns
       if (widget['widget-data-columns'] && Array.isArray(widget['widget-data-columns'])) {
         editableWidget['widget-data-columns'] = widget['widget-data-columns'].map((col: any) => {
@@ -177,26 +178,26 @@ export const JSONEditorPanel: React.FC<JSONEditorPanelProps> = ({
           return col;
         });
       }
-      
+
       return editableWidget;
     };
-    
+
     const processPanel = (panel: any): any => {
       if (!panel || typeof panel !== 'object') return panel;
-      
+
       const editablePanel = { ...panel };
-      
+
       if (panel.widgets && Array.isArray(panel.widgets)) {
         editablePanel.widgets = panel.widgets.map(processWidget);
       }
-      
+
       if (panel.panels && Array.isArray(panel.panels)) {
         editablePanel.panels = panel.panels.map(processPanel);
       }
-      
+
       return editablePanel;
     };
-    
+
     return {
       ...section,
       'section-editable': true,
@@ -207,10 +208,10 @@ export const JSONEditorPanel: React.FC<JSONEditorPanelProps> = ({
   // Auto-populate widget-type based on widget selection
   const autoPopulateWidgetType = useCallback((data: any): any => {
     if (!data || typeof data !== 'object') return data;
-    
+
     const processWidget = (widget: any): any => {
       if (!widget || typeof widget !== 'object') return widget;
-      
+
       const widgetType = widget.widget;
       if (widgetType && !widget['widget-type']) {
         // Auto-determine widget-type based on widget name
@@ -234,13 +235,13 @@ export const JSONEditorPanel: React.FC<JSONEditorPanelProps> = ({
           'iterable-accordion': 'group',
           'profile': 'layout',
         };
-        
+
         widget = {
           ...widget,
           'widget-type': widgetTypeMap[widgetType] || 'input',
         };
       }
-      
+
       // Process nested widgets
       if (widget.widgets && Array.isArray(widget.widgets)) {
         widget = {
@@ -248,7 +249,7 @@ export const JSONEditorPanel: React.FC<JSONEditorPanelProps> = ({
           widgets: widget.widgets.map(processWidget),
         };
       }
-      
+
       // Process widget-item
       if (widget['widget-item']) {
         widget = {
@@ -256,7 +257,7 @@ export const JSONEditorPanel: React.FC<JSONEditorPanelProps> = ({
           'widget-item': processWidget(widget['widget-item']),
         };
       }
-      
+
       // Process table columns
       if (widget['widget-data-columns'] && Array.isArray(widget['widget-data-columns'])) {
         widget = {
@@ -279,28 +280,28 @@ export const JSONEditorPanel: React.FC<JSONEditorPanelProps> = ({
           }),
         };
       }
-      
+
       return widget;
     };
-    
+
     const processPanel = (panel: any): any => {
       if (!panel || typeof panel !== 'object') return panel;
-      
+
       let processed = { ...panel };
-      
+
       // Process widgets in panel
       if (processed.widgets && Array.isArray(processed.widgets)) {
         processed.widgets = processed.widgets.map(processWidget);
       }
-      
+
       // Process nested panels
       if (processed.panels && Array.isArray(processed.panels)) {
         processed.panels = processed.panels.map(processPanel);
       }
-      
+
       return processed;
     };
-    
+
     // Process section
     if (data.panels && Array.isArray(data.panels)) {
       return {
@@ -308,20 +309,20 @@ export const JSONEditorPanel: React.FC<JSONEditorPanelProps> = ({
         panels: data.panels.map(processPanel),
       };
     }
-    
+
     return data;
   }, []);
 
   const handleJsonChange = useCallback((data: any) => {
     // json-edit-react may wrap the data in a "root" key - unwrap it if present
     let unwrappedData = data?.root ? data.root : data;
-    
+
     // Auto-populate widget-type for widgets that don't have it
     unwrappedData = autoPopulateWidgetType(unwrappedData);
-    
+
     setJsonData(unwrappedData);
     setRawJsonText(JSON.stringify(unwrappedData, null, 2));
-    
+
     // Basic validation
     const errors: string[] = [];
     if (!unwrappedData['section-id']) {
@@ -330,9 +331,9 @@ export const JSONEditorPanel: React.FC<JSONEditorPanelProps> = ({
     if (!unwrappedData.panels || !Array.isArray(unwrappedData.panels)) {
       errors.push('panels must be an array');
     }
-    
+
     setValidationErrors(errors);
-    
+
     // Only update if valid
     if (errors.length === 0) {
       onChange(unwrappedData);
@@ -341,23 +342,23 @@ export const JSONEditorPanel: React.FC<JSONEditorPanelProps> = ({
 
   const handleRawJsonChange = useCallback((text: string) => {
     setRawJsonText(text);
-    
+
     try {
       const parsed = JSON.parse(text);
       const errors: string[] = [];
-      
+
       if (!parsed['section-id']) {
         errors.push('section-id is required');
       }
       if (!parsed.panels || !Array.isArray(parsed.panels)) {
         errors.push('panels must be an array');
       }
-      
+
       setValidationErrors(errors);
-      
+
       // Auto-populate widget-type
       const processed = autoPopulateWidgetType(parsed);
-      
+
       if (errors.length === 0) {
         setJsonData(processed);
         onChange(processed);
@@ -384,12 +385,12 @@ export const JSONEditorPanel: React.FC<JSONEditorPanelProps> = ({
       'section-title': undefined, // string, no enum
       'section-editable': undefined, // boolean, no enum
       'section-column-span': undefined, // number, no enum
-      
+
       // Panel level - can be nested in panels array
       'panel-id': undefined, // string, no enum
       'panel-orientation': ORIENTATIONS, // enum: ['horizontal', 'vertical']
       'panel-column-span': undefined, // number, no enum
-      
+
       // Widget level - can be nested in widgets array or widget-item
       'widget': WIDGET_TYPES, // enum: all widget types
       'widget-type': ['input', 'layout', 'table', 'group'], // enum
@@ -398,14 +399,14 @@ export const JSONEditorPanel: React.FC<JSONEditorPanelProps> = ({
       'widget-orientation': ORIENTATIONS, // enum: ['horizontal', 'vertical']
       'widget-required': undefined, // boolean, no enum
       'widget-readonly': undefined, // boolean, no enum
-      
+
       // Widget data source type
       'widget-data-source.type': DATA_SOURCE_TYPES, // enum: ['static', 'api', 'schema']
       'widget-data-source.method': ['GET', 'POST', 'PUT', 'DELETE'], // HTTP methods
-      
+
       // Widget validation
       'widget-data-validation.validationType': VALIDATION_TYPES, // enum: ['email', 'phone', 'url']
-      
+
       // Widget format options
       'widget-data-format.inputType': ['text', 'email', 'password', 'number', 'tel', 'url', 'search', 'file'],
       'widget-data-format.characterType': CHARACTER_TYPES,
@@ -419,7 +420,7 @@ export const JSONEditorPanel: React.FC<JSONEditorPanelProps> = ({
       'widget-data-format.inputMethod': ['picker', 'manual', 'hybrid'],
       'widget-data-format.dateConstraint': ['any', 'past-only', 'future-only'],
       'widget-data-format.dateTimeConstraint': ['any', 'past-only', 'future-only'],
-      
+
       // Widget options
       'widget-data-options.action': ['show', 'hide', 'enable', 'disable'],
       'widget-data-options.condition.operator': CONDITION_OPERATORS,
@@ -509,54 +510,24 @@ export const JSONEditorPanel: React.FC<JSONEditorPanelProps> = ({
             }}
             title="Reset to original JSON"
           >
-            <svg
-              width="14"
-              height="14"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8" />
-              <path d="M21 3v5h-5" />
-              <path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16" />
-              <path d="M3 21v-5h5" />
-            </svg>
+            <img
+              src={resetIcon}
+              alt="Reset"
+              className="w-3.5 h-3.5 grayscale opacity-70"
+            />
             Reset
           </button>
           <button
             onClick={() => setShowPreview(true)}
-            style={{
-              padding: '6px 12px',
-              border: '1px solid #ddd',
-              borderRadius: '10px',
-              background: '#f3f3f3',
-              color: '#666',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '6px',
-              fontSize: '12px',
-              fontWeight: 500,
-            }}
+            className="flex items-center gap-2 px-6 py-1.5 bg-[#4A90E2] hover:bg-[#357ABD] text-[#000000] font-bold rounded-full transition-all shadow-sm"
             title="Preview Section"
           >
-            <svg
-              width="14"
-              height="14"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
-              <circle cx="12" cy="12" r="3" />
-            </svg>
-            Preview
+            <span className="text-[14px]">Preview</span>
+            <img
+              src={previewIcon}
+              alt="Preview"
+              className="w-3 h-3.5"
+            />
           </button>
           <span
             style={{

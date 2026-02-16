@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { canPreviewInWeb } from '../utils/filePreview';
+import { closeSign, dummyDoc } from '../assets';
 
 interface FilePreviewModalProps {
   file: File | string | null;
@@ -15,11 +16,11 @@ const getPreviewMimeType = (file: File | string): string => {
   if (file instanceof File) {
     return file.type;
   }
-  
+
   // Infer from extension
   const fileName = file.toLowerCase();
   const extension = fileName.split('.').pop() || '';
-  
+
   const mimeMap: Record<string, string> = {
     'jpg': 'image/jpeg',
     'jpeg': 'image/jpeg',
@@ -40,7 +41,7 @@ const getPreviewMimeType = (file: File | string): string => {
     'yaml': 'text/yaml',
     'yml': 'text/yaml',
   };
-  
+
   return mimeMap[extension] || 'application/octet-stream';
 };
 
@@ -53,7 +54,7 @@ export const FilePreviewModal: React.FC<FilePreviewModalProps> = ({
   console.log('=== FilePreviewModal RENDER START ===');
   console.log('FilePreviewModal component called - isOpen:', isOpen, 'file:', file ? (file instanceof File ? file.name : file) : 'null');
   console.log('File type:', typeof file, 'Is File:', file instanceof File, 'Is null:', file === null);
-  
+
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [previewType, setPreviewType] = useState<'image' | 'pdf' | 'text' | 'unsupported'>('unsupported');
 
@@ -124,12 +125,12 @@ export const FilePreviewModal: React.FC<FilePreviewModalProps> = ({
   }, [isOpen, onClose]);
 
   console.log('FilePreviewModal render check - isOpen:', isOpen, 'file:', file ? (file instanceof File ? file.name : file) : 'null');
-  
+
   if (!isOpen || !file) {
     console.log('Modal not rendering - isOpen:', isOpen, 'file:', !!file);
     return null;
   }
-  
+
   console.log('Modal will render!');
 
   const fileName = file instanceof File ? file.name : file.split('/').pop() || 'file';
@@ -156,19 +157,11 @@ export const FilePreviewModal: React.FC<FilePreviewModalProps> = ({
             className="text-gray-400 hover:text-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500 rounded p-1"
             aria-label="Close preview"
           >
-            <svg
+            <img
+              src={closeSign}
+              alt="Close Preview"
               className="w-6 h-6"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M6 18L18 6M6 6l12 12"
-              />
-            </svg>
+            />
           </button>
         </div>
 
@@ -177,19 +170,11 @@ export const FilePreviewModal: React.FC<FilePreviewModalProps> = ({
           {!canPreview ? (
             <div className="flex items-center justify-center h-full min-h-[400px]">
               <div className="text-center">
-                <svg
-                  className="mx-auto h-12 w-12 text-gray-400"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"
-                  />
-                </svg>
+                <img
+                  src={dummyDoc}
+                  alt="Preview not available"
+                  className="w-24 h-24 mx-auto mb-4"
+                />
                 <p className="mt-4 text-sm text-gray-500">
                   Preview not available for this file type
                 </p>

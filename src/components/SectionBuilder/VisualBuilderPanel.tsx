@@ -2,6 +2,7 @@ import React from 'react';
 import { SectionConfig, PanelConfig, BaseWidgetConfig } from '../../types';
 import { SectionTree, TreeNode } from './SectionTree';
 import { PropertyEditor } from './PropertyEditor';
+import { maximizeIcon, minimizeIcon } from '../../assets';
 
 interface VisualBuilderPanelProps {
   section: SectionConfig;
@@ -36,15 +37,15 @@ export const VisualBuilderPanel: React.FC<VisualBuilderPanelProps> = ({
   // Validate section before saving
   const validateSection = (sectionToValidate: SectionConfig): { isValid: boolean; errors: string[] } => {
     const errors: string[] = [];
-    
+
     if (!sectionToValidate['section-id']) {
       errors.push('Section ID is required');
     }
-    
+
     if (!sectionToValidate.panels || sectionToValidate.panels.length === 0) {
       errors.push('Section must have at least one panel');
     }
-    
+
     // Validate panels
     const validatePanels = (panels: PanelConfig[]): void => {
       panels.forEach((panel, index) => {
@@ -66,11 +67,11 @@ export const VisualBuilderPanel: React.FC<VisualBuilderPanelProps> = ({
         }
       });
     };
-    
+
     if (sectionToValidate.panels) {
       validatePanels(sectionToValidate.panels);
     }
-    
+
     return {
       isValid: errors.length === 0,
       errors,
@@ -84,7 +85,7 @@ export const VisualBuilderPanel: React.FC<VisualBuilderPanelProps> = ({
       alert(`Cannot save section. Please fix the following errors:\n\n${validation.errors.join('\n')}`);
       return;
     }
-    
+
     if (onSave) {
       try {
         onSave(section);
@@ -201,7 +202,7 @@ export const VisualBuilderPanel: React.FC<VisualBuilderPanelProps> = ({
           padding: '20px 20px 20px 20px',
 
           background: '#ffffff',
-          
+
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center',
@@ -280,31 +281,9 @@ export const VisualBuilderPanel: React.FC<VisualBuilderPanelProps> = ({
               title={isMaximized ? 'Minimize' : 'Maximize'}
             >
               {isMaximized ? (
-                <svg
-                  width="16"
-                  height="16"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
-                  <path d="M8 3v3a2 2 0 0 1-2 2H3m18 0h-3a2 2 0 0 1-2-2V3m0 18v-3a2 2 0 0 1 2-2h3M3 16h3a2 2 0 0 1 2 2v3" />
-                </svg>
+                <img src={minimizeIcon} alt="Minimize" width="16" height="16" />
               ) : (
-                <svg
-                  width="16"
-                  height="16"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
-                  <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3" />
-                </svg>
+                <img src={maximizeIcon} alt="Maximize" width="16" height="16" />
               )}
             </button>
           )}
