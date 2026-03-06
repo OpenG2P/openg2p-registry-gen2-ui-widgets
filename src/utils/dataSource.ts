@@ -30,12 +30,12 @@ export const getApiDataSource = async (
     if (dataSource.dependsOn) {
       // First try as data path
       depValue = getValueByPath(allValues, dataSource.dependsOn);
-      
+
       // If not found and doesn't contain dots, try as widget-id
       if ((depValue === null || depValue === undefined) && !dataSource.dependsOn.includes('.')) {
         depValue = allValues[dataSource.dependsOn];
       }
-      
+
       if (depValue === null || depValue === undefined || depValue === '') {
         // If dependency is empty, return empty array
         return [];
@@ -44,11 +44,11 @@ export const getApiDataSource = async (
 
     // Build request parameters
     const method = dataSource.method || 'GET';
-    
+
     // Extract static params from dataSource
     // Include explicit params object and any additional fields (like level_id)
     const staticParams: Record<string, any> = { ...dataSource.params };
-    
+
     // Extract additional fields that aren't part of the standard ApiDataSource interface
     // These are fields like level_id that might be directly on the dataSource
     // BUT: level_id should come from widget-geo-config.level, not from dataSource
@@ -58,22 +58,22 @@ export const getApiDataSource = async (
         staticParams[key] = value;
       }
     }
-    
+
     // If levelId is provided (from widget-geo-config.level), use it instead of any level_id in dataSource
     if (levelId) {
       staticParams.level_id = levelId;
     }
-    
+
     // Build request params object
     const requestParams: Record<string, any> = { ...staticParams };
-    
+
     // Add dependency value to params
     if (dataSource.dependsOn && depValue !== null && depValue !== undefined) {
       // Extract the actual value ID if depValue is an object
       const parentValueId = typeof depValue === 'object' && depValue !== null
         ? (depValue.level_value_id || depValue.id || depValue.value || depValue)
         : depValue;
-      
+
       // For geo APIs, use parent_level_value_id
       if (staticParams.level_id) {
         requestParams.parent_level_value_id = parentValueId;
@@ -90,12 +90,12 @@ export const getApiDataSource = async (
     // Get service mnemonic and endpoint (required)
     const service = dataSource.service;
     const endpoint = dataSource.endpoint;
-    
+
     if (!service) {
       console.error('[getApiDataSource] API data source missing service mnemonic. Use "service" field instead of "url"');
       return [];
     }
-    
+
     if (!endpoint) {
       console.error('[getApiDataSource] API data source missing endpoint. Use "endpoint" field to specify the operation (e.g., "get_g2p_geo_level_values")');
       return [];
@@ -180,4 +180,3 @@ export const transformDataSourceOptions = (
     label: item[labelKey] || String(item[valueKey]),
   }));
 };
-
