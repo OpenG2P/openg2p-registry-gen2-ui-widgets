@@ -40,6 +40,8 @@ export interface SectionRendererProps {
   dbSectionId?: string;
   sectionRegisterId?: string;
 
+  /** Called when the section's dirty (has unsaved changes) status changes. Only fires while in edit mode. */
+  onSectionDirtyChange?: (sectionId: string, isDirty: boolean) => void;
 }
 
 
@@ -65,6 +67,7 @@ export const SectionRenderer = ({
   showChangeRequestLabel = true,
   dbSectionId,
   sectionRegisterId,
+  onSectionDirtyChange,
 }: SectionRendererProps) => {
   const { translateConfig, translate } = useWidgetTranslation();
   const { schemaData: contextSchemaData, dataSourceRequestHandler: contextDataSourceRequestHandler } = useWidgetContext();
@@ -451,7 +454,8 @@ export const SectionRenderer = ({
                 </button>
                 <button
                   onClick={handleSave}
-                  className="bg-gray-900 hover:bg-gray-800 text-white text-sm font-medium px-6 py-2 transition-colors"
+                  disabled={!isDirty}
+                  className="bg-gray-900 hover:bg-gray-800 text-white text-sm font-medium px-6 py-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   style={{ fontFamily: 'Roboto, sans-serif', borderRadius: '10px' }}
                 >
                   {translate('common.save') || 'Save'}
@@ -466,12 +470,14 @@ export const SectionRenderer = ({
   };
 
 
-  const trackSectionChages = (widgets: any[], sourceData: any) => {
+  const trackSectionChages = (widgets: any[], sourceData: any, pathPrefix?: string) => {
     if (!widgets || widgets.length === 0) return [];
 
     const snapshot: Record<string, any> = {};
     let hasTable = false;
     if (!sectionRegisterId) return [];
+
+    const resolvePath = (path: string) => (pathPrefix ? `${pathPrefix}.${path}` : path);
 
     widgets.forEach(widget => {
       const widgetPath = widget['widget-data-path'];
@@ -486,13 +492,13 @@ export const SectionRenderer = ({
       }
 
       if (typeof widgetPath === 'object') {
-        Object.values(widgetPath).forEach(path => {
+        Object.values(widgetPath).forEach((path: unknown) => {
           if (typeof path === 'string' && path.length > 0) {
-            snapshot[path] = getValueByPath(sourceData, path);
+            snapshot[path] = getValueByPath(sourceData, resolvePath(path));
           }
         });
       } else if (typeof widgetPath === 'string') {
-        snapshot[widgetPath] = getValueByPath(sourceData, widgetPath);
+        snapshot[widgetPath] = getValueByPath(sourceData, resolvePath(widgetPath));
       }
     });
 
@@ -507,9 +513,13 @@ export const SectionRenderer = ({
         cleanedSnapshot[fieldPath] = value;
       });
 
+      const sectionData = pathPrefix
+        ? getValueByPath(sourceData, resolvePath(sectionRegisterId))
+        : sourceData[sectionRegisterId];
+
       return [
         {
-          ...sourceData[sectionRegisterId],
+          ...sectionData,
           ...cleanedSnapshot,
           edit_action: "UPDATE",
         },
@@ -528,6 +538,69 @@ export const SectionRenderer = ({
   // Get original section (without namespace) for building snapshots
   // This ensures we use the original data paths when saving
   const originalSection = section;
+
+  /** Build a full section snapshot (records + files) for dirty comparison */
+  const buildSectionSnapshot = useCallback((
+    sourceData: Record<string, any>,
+    pathPrefix?: string
+  ): { records: unknown[]; files: unknown[] } => {
+    const sectionWidgets = collectWidgets(originalSection.panels);
+    const records = trackSectionChages(sectionWidgets, sourceData, pathPrefix);
+
+    const files: unknown[] = [];
+    if (hasSupportingDocuments) {
+      const originalSupportingDocuments = originalSection['section-supporting-documents'] || [];
+      originalSupportingDocuments.forEach((doc) => {
+        const originalDataPath = doc['document-data-path'];
+        const storeDataPath = pathPrefix && originalDataPath
+          ? `${pathPrefix}.${originalDataPath}`
+          : originalDataPath;
+        files.push(getValueByPath(sourceData, storeDataPath));
+      });
+    }
+
+    return { records, files };
+  }, [originalSection, hasSupportingDocuments]);
+
+  // Capture baseline when entering edit mode (used for isDirty comparison)
+  const baselineSnapshotRef = useRef<{ records: unknown[]; files: unknown[] } | null>(null);
+
+  // Compute isDirty: compare current store state to baseline (only when in edit mode)
+  const isDirty = useMemo(() => {
+    if (!isEditMode) return false;
+    const baseline = baselineSnapshotRef.current;
+    if (!baseline) return false;
+
+    const currentSnapshot = buildSectionSnapshot(storeValues, namespace);
+
+    return JSON.stringify(baseline) !== JSON.stringify(currentSnapshot);
+  }, [isEditMode, storeValues, namespace, buildSectionSnapshot]);
+
+  // Set baseline when entering edit mode; clear when leaving (baseline captured only on entry)
+  useEffect(() => {
+    if (isEditMode) {
+      const oldSchemaData = schemaData || contextSchemaData || {};
+      if (namespace) {
+        const namespacedSchema = getValueByPath(oldSchemaData, namespace);
+        baselineSnapshotRef.current = namespacedSchema
+          ? buildSectionSnapshot(namespacedSchema as Record<string, any>)
+          : buildSectionSnapshot(oldSchemaData);
+      } else {
+        baselineSnapshotRef.current = buildSectionSnapshot(oldSchemaData);
+      }
+    } else {
+      baselineSnapshotRef.current = null;
+      onSectionDirtyChange?.(sectionId, false);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- baseline must be captured only when isEditMode toggles
+  }, [isEditMode]);
+
+  // Notify parent when isDirty changes (only while in edit mode)
+  useEffect(() => {
+    if (isEditMode && onSectionDirtyChange) {
+      onSectionDirtyChange(sectionId, isDirty);
+    }
+  }, [isEditMode, isDirty, sectionId, onSectionDirtyChange]);
 
   // Handle save button click
   const handleSave = async () => {
@@ -553,10 +626,11 @@ export const SectionRenderer = ({
 
     // schema data before section change
     const oldSchemaData = schemaData || contextSchemaData
-    // schema data after section change
+    // schema data after section change (use namespace when store has namespaced paths)
     const newSchemaData = trackSectionChages(
       sectionWidgets,
       currentSchemaData,
+      namespace
     )
 
     // Include supporting documents in the snapshot if they exist
@@ -846,6 +920,7 @@ export const SectionRenderer = ({
         data-has-table={hasTableWidget ? 'true' : 'false'}
         data-has-explicit-span={hasExplicitTableSpan ? 'true' : 'false'}
         data-edit-mode={isEditMode ? 'true' : 'false'}
+        data-section-dirty={isEditMode && isDirty ? 'true' : 'false'}
         data-column-span={columnSpan}
         data-change-request-type={changeRequestType}
         style={{

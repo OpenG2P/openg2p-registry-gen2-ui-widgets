@@ -19,7 +19,7 @@ export { WidgetRenderer } from './components/WidgetRenderer';
 export { WidgetProvider, useWidgetContext } from './components/WidgetProvider';
 export { PanelRenderer } from './components/PanelRenderer';
 export { SectionRenderer } from './components/SectionRenderer';
-export type { SectionChanges } from './components/SectionRenderer';
+export type { SectionChanges, SectionRendererProps } from './components/SectionRenderer';
 export { SectionsContainer } from './components/SectionsContainer';
 export type { SectionMode, SectionsContainerProps } from './components/SectionsContainer';
 

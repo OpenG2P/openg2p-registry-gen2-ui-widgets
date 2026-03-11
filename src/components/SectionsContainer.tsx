@@ -17,6 +17,8 @@ export interface SectionsContainerProps {
   mode?: SectionMode; // Display mode: 'RegistryView' (default) or 'CRView'
   namespace?: string | ((sectionId: string, index: number) => string); // Optional namespace for widget IDs. If string, applied to all sections. If function, called per section.
   // CRView data is read from schemaData with keys: createdBy, createdDate, approvedBy, approvedDate
+  /** Called when a section's dirty (has unsaved changes) status changes. Only fires while the section is in edit mode. */
+  onSectionDirtyChange?: (sectionId: string, isDirty: boolean) => void;
 }
 
 /**
@@ -113,6 +115,7 @@ export const SectionsContainer = ({
   hideEditButton = false,
   mode = 'RegistryView',
   namespace,
+  onSectionDirtyChange,
 }: SectionsContainerProps) => {
   // Get dataSourceRequestHandler from context if not provided as prop
   const { dataSourceRequestHandler: contextDataSourceRequestHandler } = useWidgetContext();
@@ -200,6 +203,7 @@ export const SectionsContainer = ({
                 hideEditButton={hideEditButton}
                 mode={mode}
                 namespace={sectionNamespace}
+                onSectionDirtyChange={onSectionDirtyChange}
               />
             );
           }
@@ -225,6 +229,7 @@ export const SectionsContainer = ({
               hideEditButton={hideEditButton}
               mode={mode}
               namespace={sectionNamespace}
+              onSectionDirtyChange={onSectionDirtyChange}
             />
           );
         })}
