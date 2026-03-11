@@ -14,6 +14,7 @@ import {
   transformDataSourceOptions,
 } from '../utils/dataSource';
 import { useWidgetEventBus } from './useWidgetEventBus';
+import { useWidgetContext } from '../components/WidgetProvider';
 
 export interface UseBaseWidgetOptions {
   config: BaseWidgetConfig;
@@ -27,10 +28,14 @@ const EMPTY_ERRORS: string[] = [];
 const EMPTY_DATA_SOURCE: any[] = [];
 
 export const useBaseWidget = (options: UseBaseWidgetOptions) => {
-  const { config, dataSourceRequestHandler, schemaData, onValueChange } = options;
+  const { config, dataSourceRequestHandler: propHandler, schemaData, onValueChange } = options;
   const dispatch = useDispatch();
+  const context = useWidgetContext();
   const eventBus = useWidgetEventBus();
   const widgetId = config['widget-id'];
+
+  // Fall back to WidgetContext for dataSourceRequestHandler
+  const dataSourceRequestHandler = propHandler || context.dataSourceRequestHandler;
 
   // Get state from Redux
   const values = useSelector((state: WidgetRootState) => state.widget.values);
@@ -47,13 +52,13 @@ export const useBaseWidget = (options: UseBaseWidgetOptions) => {
 
   // Track if user has explicitly set a value to prevent default from overwriting
   const userHasSetValueRef = useRef(false);
-  
+
   // Use ref for values to avoid stale closures in handleChange
   const valuesRef = useRef(values);
   useEffect(() => {
     valuesRef.current = values;
   }, [values]);
-  
+
   // Track last dispatched value to prevent duplicate dispatches
   const lastDispatchedValueRef = useRef<any>(null);
 
@@ -62,13 +67,13 @@ export const useBaseWidget = (options: UseBaseWidgetOptions) => {
     if (isLayoutWidget) {
       return undefined; // Layout widgets don't have values
     }
-    
+
     // Helper to extract displayable value from object (especially geo hierarchy objects)
     const extractValueFromObject = (obj: any): any => {
       if (!obj || typeof obj !== 'object' || Array.isArray(obj)) {
         return obj;
       }
-      
+
       // Check for geo hierarchy structure first
       if ('geo_code_hierarchy_json' in obj || 'geo_lowest_level_value_id' in obj) {
         if ('geo_lowest_level_value_id' in obj) {
@@ -77,7 +82,7 @@ export const useBaseWidget = (options: UseBaseWidgetOptions) => {
         // If it's a geo hierarchy object but no extractable ID, return undefined to avoid rendering object
         return undefined;
       }
-      
+
       // Try common value fields
       if ('value' in obj) {
         return obj.value;
@@ -91,31 +96,31 @@ export const useBaseWidget = (options: UseBaseWidgetOptions) => {
       if ('name' in obj) {
         return obj.name;
       }
-      
+
       // If no extractable value found, return undefined to avoid rendering object as React child
       // This prevents "Objects are not valid as a React child" errors
       return undefined;
     };
-    
+
     // Try to get value from widgetId first (this should have the actual selected value)
     // For geo widgets with dataPath, widgetId stores the actual ID, while dataPath stores the hierarchy object
     let value = values[widgetId];
-    
+
     // Extract value if it's an object (handles geo hierarchy objects stored in widgetId)
     if (value !== null && value !== undefined && typeof value === 'object' && !Array.isArray(value)) {
       value = extractValueFromObject(value);
     }
-    
+
     // If widgetId doesn't have a value, try dataPath
     if (value === undefined && config['widget-data-path']) {
       value = getWidgetValue(values, config['widget-data-path'], widgetId);
-      
+
       // Extract value if it's an object (handles geo hierarchy objects from dataPath)
       if (value !== null && value !== undefined && typeof value === 'object' && !Array.isArray(value)) {
         value = extractValueFromObject(value);
       }
     }
-    
+
     // If value is still undefined and user has set a value, try reading from widgetId as backup
     // This handles cases where dataPath lookup might fail temporarily
     if (value === undefined && userHasSetValueRef.current && values[widgetId] !== undefined) {
@@ -125,24 +130,24 @@ export const useBaseWidget = (options: UseBaseWidgetOptions) => {
         value = extractValueFromObject(value);
       }
     }
-    
+
     // Final safety check: if value is still an object, extract displayable value
     if (value !== null && value !== undefined && typeof value === 'object' && !Array.isArray(value)) {
       value = extractValueFromObject(value);
     }
-    
+
     // If user has explicitly set a value, always return it (even if undefined/null)
     // This prevents the default from overwriting user selections
     if (userHasSetValueRef.current) {
       return value;
     }
-    
+
     // Only fall back to default if user hasn't set a value yet
     // But check if value is explicitly null (user cleared it) vs undefined (never set)
     if (value === null) {
       return null; // User explicitly cleared it, don't use default
     }
-    
+
     return value !== undefined ? value : config['widget-data-default'];
   }, [values, config, widgetId, isLayoutWidget]);
 
@@ -225,7 +230,7 @@ export const useBaseWidget = (options: UseBaseWidgetOptions) => {
       // Skip publishing for last-level geo widgets (no child widgets waiting)
       const geoConfig = config['widget-geo-config'];
       const isLastLevelGeo = geoConfig?.isLastLevel === true;
-      
+
       if (eventBus && !isLastLevelGeo) {
         eventBus.publish({
           type: 'widget:change',
@@ -301,13 +306,13 @@ export const useBaseWidget = (options: UseBaseWidgetOptions) => {
   const isReadonly = config['widget-readonly'] ?? false;
   const dataSource = config['widget-data-source'];
   const geoConfig = config['widget-geo-config'];
-  
+
   // Use ref to store handler to avoid stale closures
   const handlerRef = useRef(dataSourceRequestHandler);
   useEffect(() => {
     handlerRef.current = dataSourceRequestHandler;
   }, [dataSourceRequestHandler]);
-  
+
   // Create a stable key for the config to detect changes
   // This ensures the effect runs when widget-readonly changes
   const apiService = dataSource?.type === 'api' ? (dataSource as any).service : '';
@@ -336,7 +341,7 @@ export const useBaseWidget = (options: UseBaseWidgetOptions) => {
       } else {
         depValue = values[dataSource.dependsOn];
       }
-      
+
       // If dependency is empty, don't load (will load when dependency has value)
       if (depValue === null || depValue === undefined || depValue === '') {
         return;
@@ -347,18 +352,18 @@ export const useBaseWidget = (options: UseBaseWidgetOptions) => {
       // Get current handler from ref to avoid stale closures
       // Also check prop directly as fallback (for initial render or when ref not updated yet)
       const currentHandler = handlerRef.current || dataSourceRequestHandler;
-      
+
       // Only check for handler when we actually need it (inside the async function)
       // This avoids false errors during React Strict Mode double-invocation
       // If handler isn't available yet, silently skip - React will retry when it's ready
-      
+
       try {
         if (dataSource.type === 'api' && !currentHandler) {
           // Silently skip if handler isn't available yet (common during React Strict Mode double-invocation)
           // React will call this effect again when the handler is ready
           return;
         }
-        
+
         dispatch(setLoading({ widgetId, loading: true }));
 
         let data: any[] = [];
@@ -383,7 +388,7 @@ export const useBaseWidget = (options: UseBaseWidgetOptions) => {
         // For geo widgets, default to level_value_id and level_value_mnemonic
         let valueKey: string | undefined;
         let labelKey: string | undefined;
-        
+
         if (dataSource.type === 'static') {
           valueKey = undefined;
           labelKey = undefined;
@@ -396,7 +401,7 @@ export const useBaseWidget = (options: UseBaseWidgetOptions) => {
           valueKey = dataSource.valueKey;
           labelKey = dataSource.labelKey;
         }
-        
+
         const transformed = transformDataSourceOptions(
           data,
           valueKey,
