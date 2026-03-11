@@ -31,7 +31,7 @@ export interface SectionRendererProps {
   gridColumnSpan?: number; // Number of grid columns this section should span
   onSectionSave?: (changes: SectionChanges) => Promise<void> | void;
   hideEditButton?: boolean; // Hide the edit button band below the section
-  mode?: SectionMode; // Display mode: 'RegistryView' (default) or 'CRView'
+  mode?: SectionMode; // Display mode: 'RegistryView' (default), 'CRView', or 'IntakeForm'
   namespace?: string; // Optional namespace prefix for widget IDs (ensures uniqueness when same section is rendered multiple times)
   changeRequestType?: 'new' | 'old'; // For CRView mode: indicates if this is a new or old change request
   showChangeRequestLabel?: boolean; // Show "New" or "Old" label badge (default: true when changeRequestType is set)

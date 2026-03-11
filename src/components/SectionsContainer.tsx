@@ -4,7 +4,7 @@ import { UseBaseWidgetOptions } from '../hooks/useBaseWidget';
 import { SectionRenderer, SectionChanges } from './SectionRenderer';
 import { useWidgetContext } from './WidgetProvider';
 
-export type SectionMode = 'RegistryView' | 'CRView';
+export type SectionMode = 'RegistryView' | 'CRView' | 'IntakeForm';
 
 export interface SectionsContainerProps {
   sections: SectionConfig[];
@@ -14,9 +14,9 @@ export interface SectionsContainerProps {
   className?: string;
   onSectionSave?: (changes: SectionChanges) => Promise<void> | void;
   hideEditButton?: boolean; // Hide the edit button band below sections
-  mode?: SectionMode; // Display mode: 'RegistryView' (default) or 'CRView'
+  mode?: SectionMode; // Display mode: 'RegistryView' (default), 'CRView', or 'IntakeForm'
   namespace?: string | ((sectionId: string, index: number) => string); // Optional namespace for widget IDs. If string, applied to all sections. If function, called per section.
-  // CRView data is read from schemaData with keys: createdBy, createdDate, approvedBy, approvedDate
+  // CRView data is read from schemaData with keys: createdBy, createdDate, approvedBy, approvedDate. IntakeForm displays sections as accordion for registration forms.
   /** Called when a section's dirty (has unsaved changes) status changes. Only fires while the section is in edit mode. */
   onSectionDirtyChange?: (sectionId: string, isDirty: boolean) => void;
 }
