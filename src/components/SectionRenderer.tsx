@@ -31,7 +31,7 @@ export interface SectionRendererProps {
   gridColumnSpan?: number; // Number of grid columns this section should span
   onSectionSave?: (changes: SectionChanges) => Promise<void> | void;
   hideEditButton?: boolean; // Hide the edit button band below the section
-  mode?: SectionMode; // Display mode: 'RegistryView' (default) or 'CRView'
+  mode?: SectionMode; // Display mode: 'RegistryView' (default), 'CRView', or 'IntakeForm'
   namespace?: string; // Optional namespace prefix for widget IDs (ensures uniqueness when same section is rendered multiple times)
   changeRequestType?: 'new' | 'old'; // For CRView mode: indicates if this is a new or old change request
   showChangeRequestLabel?: boolean; // Show "New" or "Old" label badge (default: true when changeRequestType is set)
@@ -40,6 +40,23 @@ export interface SectionRendererProps {
   dbSectionId?: string;
   sectionRegisterId?: string;
 
+  /** Called when the section's dirty (has unsaved changes) status changes. Only fires while in edit mode. */
+  onSectionDirtyChange?: (sectionId: string, isDirty: boolean) => void;
+
+  /** IntakeForm mode: 0-based index of this section within the form */
+  sectionIndex?: number;
+  /** IntakeForm mode: total number of sections in the form */
+  sectionCount?: number;
+  /** IntakeForm mode: index of the currently expanded section (null = all collapsed) */
+  expandedSectionIndex?: number | null;
+  /** IntakeForm mode: called when user requests to expand a section (e.g. clicks accordion header) */
+  onExpandSection?: (index: number) => void;
+  /** IntakeForm mode: called when section save completes successfully (collapse current, expand next) */
+  onSectionSaveSuccess?: (index: number) => void;
+  /** IntakeForm mode: called when user clicks Previous (collapse current, expand previous) */
+  onPreviousSection?: (index: number) => void;
+  /** IntakeForm mode: when true or undefined, sections are editable; when false, sections are readonly */
+  isDraft?: boolean;
 }
 
 
@@ -65,6 +82,14 @@ export const SectionRenderer = ({
   showChangeRequestLabel = true,
   dbSectionId,
   sectionRegisterId,
+  onSectionDirtyChange,
+  sectionIndex,
+  sectionCount,
+  expandedSectionIndex,
+  onExpandSection,
+  onSectionSaveSuccess,
+  onPreviousSection,
+  isDraft,
 }: SectionRendererProps) => {
   const { translateConfig, translate } = useWidgetTranslation();
   const { schemaData: contextSchemaData, dataSourceRequestHandler: contextDataSourceRequestHandler } = useWidgetContext();
@@ -147,6 +172,21 @@ export const SectionRenderer = ({
   const sectionId = sectionToRender['section-id'];
   const gridId = `section-panels-${sectionId}`;
   const sectionClassId = `section-${sectionId}`;
+
+  // IntakeForm mode: accordion expand/collapse state (supports toggle)
+  const [standaloneExpanded, setStandaloneExpanded] = useState(true); // For sectionIndex undefined (standalone use)
+  const isExpandedFromContainer = typeof sectionIndex === 'number' && expandedSectionIndex === sectionIndex;
+  const isExpandedStandalone = sectionIndex === undefined && standaloneExpanded;
+  const isExpanded = mode === 'IntakeForm' && (isExpandedFromContainer || isExpandedStandalone);
+
+  const handleAccordionToggle = useCallback(() => {
+    if (mode !== 'IntakeForm') return;
+    if (typeof sectionIndex === 'number' && onExpandSection) {
+      onExpandSection(sectionIndex);
+    } else if (sectionIndex === undefined) {
+      setStandaloneExpanded(prev => !prev);
+    }
+  }, [mode, sectionIndex, onExpandSection]);
 
   // Recursively count all vertical panels, especially those nested inside horizontal panels
   // Typically: horizontal panels at first level contain vertical panels at second level
@@ -299,13 +339,15 @@ export const SectionRenderer = ({
   };
 
   // Create section with widgets readonly/editable based on edit mode
+  // IntakeForm: editable when isDraft is true or undefined; readonly when isDraft is false. Edit Details never shown.
+  // RegistryView/CRView: use isEditMode (edit overlay flow)
+  const widgetsEditable = mode === 'IntakeForm' ? (isDraft !== false) : isEditMode;
   const editableSection = useMemo(() => {
-    // Always apply readonly/editable state based on edit mode
     return {
       ...sectionToRender,
-      panels: makePanelsEditable(sectionToRender.panels, isEditMode),
+      panels: makePanelsEditable(sectionToRender.panels, widgetsEditable),
     };
-  }, [sectionToRender, isEditMode]);
+  }, [sectionToRender, widgetsEditable]);
 
 
   // Handle edit button click
@@ -319,8 +361,9 @@ export const SectionRenderer = ({
   };
 
   // Render the edit section (absolutely positioned duplicate via portal)
+  // IntakeForm never uses this overlay - content is shown inline in accordion
   const renderEditSection = () => {
-    if (!isEditMode || !editSectionPosition) return null;
+    if (mode === 'IntakeForm' || !isEditMode || !editSectionPosition) return null;
 
     const editGridId = `${gridId}-edit`;
 
@@ -451,7 +494,8 @@ export const SectionRenderer = ({
                 </button>
                 <button
                   onClick={handleSave}
-                  className="bg-gray-900 hover:bg-gray-800 text-white text-sm font-medium px-6 py-2 transition-colors"
+                  disabled={!isDirty}
+                  className="bg-gray-900 hover:bg-gray-800 text-white text-sm font-medium px-6 py-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   style={{ fontFamily: 'Roboto, sans-serif', borderRadius: '10px' }}
                 >
                   {translate('common.save') || 'Save'}
@@ -466,12 +510,14 @@ export const SectionRenderer = ({
   };
 
 
-  const trackSectionChages = (widgets: any[], sourceData: any) => {
+  const trackSectionChages = (widgets: any[], sourceData: any, pathPrefix?: string) => {
     if (!widgets || widgets.length === 0) return [];
 
     const snapshot: Record<string, any> = {};
     let hasTable = false;
     if (!sectionRegisterId) return [];
+
+    const resolvePath = (path: string) => (pathPrefix ? `${pathPrefix}.${path}` : path);
 
     widgets.forEach(widget => {
       const widgetPath = widget['widget-data-path'];
@@ -486,13 +532,13 @@ export const SectionRenderer = ({
       }
 
       if (typeof widgetPath === 'object') {
-        Object.values(widgetPath).forEach(path => {
+        Object.values(widgetPath).forEach((path: unknown) => {
           if (typeof path === 'string' && path.length > 0) {
-            snapshot[path] = getValueByPath(sourceData, path);
+            snapshot[path] = getValueByPath(sourceData, resolvePath(path));
           }
         });
       } else if (typeof widgetPath === 'string') {
-        snapshot[widgetPath] = getValueByPath(sourceData, widgetPath);
+        snapshot[widgetPath] = getValueByPath(sourceData, resolvePath(widgetPath));
       }
     });
 
@@ -507,9 +553,13 @@ export const SectionRenderer = ({
         cleanedSnapshot[fieldPath] = value;
       });
 
+      const sectionData = pathPrefix
+        ? getValueByPath(sourceData, resolvePath(sectionRegisterId))
+        : sourceData[sectionRegisterId];
+
       return [
         {
-          ...sourceData[sectionRegisterId],
+          ...sectionData,
           ...cleanedSnapshot,
           edit_action: "UPDATE",
         },
@@ -528,6 +578,69 @@ export const SectionRenderer = ({
   // Get original section (without namespace) for building snapshots
   // This ensures we use the original data paths when saving
   const originalSection = section;
+
+  /** Build a full section snapshot (records + files) for dirty comparison */
+  const buildSectionSnapshot = useCallback((
+    sourceData: Record<string, any>,
+    pathPrefix?: string
+  ): { records: unknown[]; files: unknown[] } => {
+    const sectionWidgets = collectWidgets(originalSection.panels);
+    const records = trackSectionChages(sectionWidgets, sourceData, pathPrefix);
+
+    const files: unknown[] = [];
+    if (hasSupportingDocuments) {
+      const originalSupportingDocuments = originalSection['section-supporting-documents'] || [];
+      originalSupportingDocuments.forEach((doc) => {
+        const originalDataPath = doc['document-data-path'];
+        const storeDataPath = pathPrefix && originalDataPath
+          ? `${pathPrefix}.${originalDataPath}`
+          : originalDataPath;
+        files.push(getValueByPath(sourceData, storeDataPath));
+      });
+    }
+
+    return { records, files };
+  }, [originalSection, hasSupportingDocuments]);
+
+  // Capture baseline when entering edit mode (used for isDirty comparison)
+  const baselineSnapshotRef = useRef<{ records: unknown[]; files: unknown[] } | null>(null);
+
+  // Compute isDirty: compare current store state to baseline (only when in edit mode)
+  const isDirty = useMemo(() => {
+    if (!isEditMode) return false;
+    const baseline = baselineSnapshotRef.current;
+    if (!baseline) return false;
+
+    const currentSnapshot = buildSectionSnapshot(storeValues, namespace);
+
+    return JSON.stringify(baseline) !== JSON.stringify(currentSnapshot);
+  }, [isEditMode, storeValues, namespace, buildSectionSnapshot]);
+
+  // Set baseline when entering edit mode; clear when leaving (baseline captured only on entry)
+  useEffect(() => {
+    if (isEditMode) {
+      const oldSchemaData = schemaData || contextSchemaData || {};
+      if (namespace) {
+        const namespacedSchema = getValueByPath(oldSchemaData, namespace);
+        baselineSnapshotRef.current = namespacedSchema
+          ? buildSectionSnapshot(namespacedSchema as Record<string, any>)
+          : buildSectionSnapshot(oldSchemaData);
+      } else {
+        baselineSnapshotRef.current = buildSectionSnapshot(oldSchemaData);
+      }
+    } else {
+      baselineSnapshotRef.current = null;
+      onSectionDirtyChange?.(sectionId, false);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- baseline must be captured only when isEditMode toggles
+  }, [isEditMode]);
+
+  // Notify parent when isDirty changes (only while in edit mode)
+  useEffect(() => {
+    if (isEditMode && onSectionDirtyChange) {
+      onSectionDirtyChange(sectionId, isDirty);
+    }
+  }, [isEditMode, isDirty, sectionId, onSectionDirtyChange]);
 
   // Handle save button click
   const handleSave = async () => {
@@ -553,10 +666,11 @@ export const SectionRenderer = ({
 
     // schema data before section change
     const oldSchemaData = schemaData || contextSchemaData
-    // schema data after section change
+    // schema data after section change (use namespace when store has namespaced paths)
     const newSchemaData = trackSectionChages(
       sectionWidgets,
       currentSchemaData,
+      namespace
     )
 
     // Include supporting documents in the snapshot if they exist
@@ -591,6 +705,48 @@ export const SectionRenderer = ({
     setIsEditMode(false)
 
   };
+
+  // IntakeForm: save section then collapse current and expand next (or stay on final section)
+  const handleIntakeFormSave = useCallback(async () => {
+    if (!store || !onSectionSave || sectionIndex === undefined) return;
+    const sectionWidgets = collectWidgets(originalSection.panels);
+    const currentState = (store.getState() as any).widget;
+    const currentSchemaData = currentState.values || {};
+
+    const isSectionValid = sectionValidate(originalSection, currentSchemaData, dispatch);
+    if (!isSectionValid) return;
+
+    const oldSchemaData = schemaData || contextSchemaData;
+    const newSchemaData = trackSectionChages(sectionWidgets, currentSchemaData, namespace);
+
+    const sectionFiles: unknown[] = [];
+    if (hasSupportingDocuments) {
+      const originalSupportingDocuments = originalSection['section-supporting-documents'] || [];
+      originalSupportingDocuments.forEach((doc) => {
+        const originalDataPath = doc['document-data-path'];
+        const storeDataPath = namespace && originalDataPath
+          ? `${namespace}.${originalDataPath}`
+          : originalDataPath;
+        sectionFiles.push(getValueByPath(currentSchemaData, storeDataPath));
+      });
+    }
+
+    if (JSON.stringify(oldSchemaData) !== JSON.stringify(newSchemaData)) {
+      try {
+        await onSectionSave({
+          section_id: dbSectionId,
+          section_register_id: sectionRegisterId,
+          records: [...newSchemaData],
+          files: [...sectionFiles],
+        });
+      } catch (error) {
+        console.error('Section Changes Save failed', error);
+        return;
+      }
+    }
+
+    onSectionSaveSuccess?.(sectionIndex);
+  }, [store, onSectionSave, onSectionSaveSuccess, sectionIndex, originalSection, schemaData, contextSchemaData, namespace, hasSupportingDocuments, dbSectionId, sectionRegisterId, dispatch]);
 
   // Handle cancel button click
   const handleCancel = () => {
@@ -838,16 +994,50 @@ export const SectionRenderer = ({
           align-items: center;
           gap: 0.5rem;
         }
+
+        /* IntakeForm accordion */
+        .${sectionClassId}.intake-form-accordion-item {
+          border-color: #E5E7EB;
+          transition: box-shadow 0.2s ease, border-color 0.2s ease;
+        }
+        .${sectionClassId}.intake-form-accordion-item:hover {
+          border-color: #D1D5DB;
+        }
+        .${sectionClassId}.intake-form-accordion-item .intake-form-accordion-header {
+          transition: opacity 0.2s ease, background-color 0.2s ease;
+        }
+        .${sectionClassId}.intake-form-accordion-item .intake-form-accordion-header:hover {
+          opacity: 0.85;
+        }
+        .${sectionClassId}.intake-form-accordion-item .intake-form-accordion-header:focus-visible {
+          outline: 2px solid #F2BA1A;
+          outline-offset: 2px;
+        }
+        .${sectionClassId}.intake-form-accordion-item .intake-form-accordion-content {
+          padding-top: 8px;
+          padding-bottom: 4px;
+        }
+        .${sectionClassId}.intake-form-accordion-item .intake-form-edit-controls {
+          justify-content: flex-end;
+        }
+        .${sectionClassId}.intake-form-accordion-item .intake-form-prev-btn:hover:not(:disabled) {
+          background-color: #F9FAFB;
+        }
+        .${sectionClassId}.intake-form-accordion-item .intake-form-save-btn:hover:not(:disabled) {
+          background-color: #1F2937;
+        }
       `}</style>
       <div
         ref={sectionRef}
-        className={`section ${sectionClassId} px-4 sm:px-6 lg:px-8 border-2 border-white `}
+        className={`section ${sectionClassId} px-4 sm:px-6 lg:px-8 border-2 border-white ${mode === 'IntakeForm' ? 'intake-form-accordion-item' : ''}`}
         data-section-id={sectionId}
         data-has-table={hasTableWidget ? 'true' : 'false'}
         data-has-explicit-span={hasExplicitTableSpan ? 'true' : 'false'}
         data-edit-mode={isEditMode ? 'true' : 'false'}
+        data-section-dirty={isEditMode && isDirty ? 'true' : 'false'}
         data-column-span={columnSpan}
         data-change-request-type={changeRequestType}
+        data-intake-form-expanded={mode === 'IntakeForm' ? (isExpanded ? 'true' : 'false') : undefined}
         style={{
           gridColumn: `span ${columnSpan}`,
           width: '100%',
@@ -864,47 +1054,205 @@ export const SectionRenderer = ({
           }),
         }}
       >
-        {/* Section Title with Change Request Label */}
-        {sectionToRender['section-title'] && (
-          <div style={{
-            marginTop: '35px',
-            marginBottom: '16px',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '12px',
-            flexWrap: 'wrap',
-          }}>
-            <h2 className="text-xl font-semibold" style={{ margin: 0 }}>
-              {translateConfig(sectionToRender['section-title'])}
-            </h2>
-            {/* Change Request Label Badge */}
-            {mode === 'CRView' && changeRequestType && showChangeRequestLabel && (
-              <span
-                style={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  padding: '4px 12px',
-                  borderRadius: '4px',
-                  fontSize: '12px',
-                  fontWeight: 600,
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.5px',
-                  backgroundColor: changeRequestType === 'new' ? '#28a745' : '#ffcccc', // Green for new, faded red for old
-                  color: changeRequestType === 'new' ? '#FFFFFF' : '#cc0000',
-                  whiteSpace: 'nowrap',
-                  boxShadow: changeRequestType === 'new' ? '0 2px 4px rgba(40, 167, 69, 0.3)' : 'none',
-                }}
+        {mode === 'IntakeForm' ? (
+          /* IntakeForm: accordion layout - header always visible, content only when expanded */
+          <>
+            <button
+              type="button"
+              id={`intake-form-accordion-header-${sectionId}`}
+              className="intake-form-accordion-header"
+              onClick={handleAccordionToggle}
+              aria-expanded={isExpanded}
+              aria-controls={isExpanded ? `intake-form-accordion-content-${sectionId}` : undefined}
+              style={{
+                width: '100%',
+                display: 'flex',
+                alignItems: 'flex-start',
+                justifyContent: 'space-between',
+                padding: '16px 0',
+                marginTop: '16px',
+                marginBottom: 0,
+                background: 'none',
+                border: 'none',
+                cursor: 'pointer',
+                textAlign: 'left',
+                fontFamily: 'Roboto, sans-serif',
+              }}
+            >
+              <h2 className="text-xl font-semibold" style={{ margin: 0, flex: 1 }}>
+                {sectionToRender['section-title']
+                  ? translateConfig(sectionToRender['section-title'])
+                  : `Section ${(sectionIndex ?? 0) + 1}`}
+              </h2>
+              <img
+                src={isExpanded ? downArrowIcon : rightArrowIcon}
+                alt={isExpanded ? 'Collapse' : 'Expand'}
+                className="w-5 h-5 transition-transform"
+                style={{ flexShrink: 0, marginLeft: '12px' }}
+                aria-hidden
+              />
+            </button>
+            {isExpanded && (
+              <div
+                id={`intake-form-accordion-content-${sectionId}`}
+                className="intake-form-accordion-content"
+                role="region"
+                aria-labelledby={`intake-form-accordion-header-${sectionId}`}
               >
-                {changeRequestType === 'new' ? 'New' : 'Old'}
-              </span>
+                <div
+                  id={gridId}
+                  className="section-panels"
+                  style={{ paddingTop: '8px' }}
+                >
+                  {editableSection.panels.map((panel, index) => (
+                    <div
+                      key={panel['panel-id'] || `section-panel-${index}`}
+                      className="panel-wrapper"
+                    >
+                      <PanelRenderer
+                        panel={panel}
+                        dataSourceRequestHandler={dataSourceRequestHandler}
+                        schemaData={namespacedSchemaData}
+                        onValueChange={onValueChange}
+                      />
+                    </div>
+                  ))}
+                  {hasSupportingDocuments && (
+                    <>
+                      <hr className="my-4 w-full" style={{ height: '1px', backgroundColor: '#E5E7EB', border: 'none' }} />
+                      <div className="supporting-documents-container">
+                        <span className="font-semibold" style={{ fontFamily: 'Roboto, sans-serif', fontSize: '16px' }}>
+                          {translate('common.supportedDocuments') || 'Supported Documents'}
+                        </span>
+                        <div className="supporting-documents-grid mt-4">
+                          {supportingDocuments.map((doc, docIndex) => {
+                            const docConfig = createDocumentWidgetConfig(doc, sectionId, docIndex);
+                            return (
+                              <div key={`${sectionId}-doc-${docIndex}`} className="supporting-document-item">
+                                <FileInputWidget config={docConfig} />
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    </>
+                  )}
+                  <hr className="my-4 w-full" style={{ height: '1px', backgroundColor: '#E5E7EB', border: 'none' }} />
+                  <div
+                    className="intake-form-edit-controls"
+                    style={{
+                      display: 'flex',
+                      justifyContent: 'flex-end',
+                      alignItems: 'center',
+                      gap: '0.5rem',
+                      marginBottom: '20px',
+                    }}
+                  >
+                    <button
+                      type="button"
+                      onClick={() => onPreviousSection?.(sectionIndex!)}
+                      disabled={sectionIndex === 0}
+                      className="intake-form-prev-btn"
+                      style={{
+                        fontFamily: 'Roboto, sans-serif',
+                        fontSize: '14px',
+                        fontWeight: 500,
+                        padding: '8px 24px',
+                        borderRadius: '10px',
+                        border: '1px solid #D1D5DB',
+                        background: '#FFFFFF',
+                        color: sectionIndex === 0 ? '#9CA3AF' : '#374151',
+                        cursor: sectionIndex === 0 ? 'not-allowed' : 'pointer',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '8px',
+                      }}
+                    >
+                      <img
+                        src={rightArrowIcon}
+                        alt=""
+                        aria-hidden
+                        style={{ width: '14px', height: '14px', transform: 'rotate(180deg)' }}
+                      />
+                      {translate('common.previous') || 'Previous'}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleIntakeFormSave}
+                      disabled={isDraft === false}
+                      className="intake-form-save-btn"
+                      style={{
+                        fontFamily: 'Roboto, sans-serif',
+                        fontSize: '14px',
+                        fontWeight: 500,
+                        padding: '8px 24px',
+                        borderRadius: '10px',
+                        border: 'none',
+                        background: isDraft === false ? '#9CA3AF' : '#111827',
+                        color: '#FFFFFF',
+                        cursor: isDraft === false ? 'not-allowed' : 'pointer',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '8px',
+                      }}
+                    >
+                      {translate('common.save') || 'Save'}
+                      <img
+                        src={rightArrowIcon}
+                        alt=""
+                        aria-hidden
+                        style={{ width: '14px', height: '14px' }}
+                      />
+                    </button>
+                  </div>
+                </div>
+              </div>
             )}
-          </div>
-        )}
-        <div
-          id={gridId}
-          className="section-panels"
-          style={mode === 'RegistryView' && hideEditButton ? { paddingBottom: '40px' } : {}}
-        >
+          </>
+        ) : (
+          /* RegistryView / CRView: standard layout */
+          <>
+            {/* Section Title with Change Request Label */}
+            {sectionToRender['section-title'] && (
+              <div style={{
+                marginTop: '35px',
+                marginBottom: '16px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '12px',
+                flexWrap: 'wrap',
+              }}>
+                <h2 className="text-xl font-semibold" style={{ margin: 0 }}>
+                  {translateConfig(sectionToRender['section-title'])}
+                </h2>
+                {/* Change Request Label Badge */}
+                {mode === 'CRView' && changeRequestType && showChangeRequestLabel && (
+                  <span
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      padding: '4px 12px',
+                      borderRadius: '4px',
+                      fontSize: '12px',
+                      fontWeight: 600,
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.5px',
+                      backgroundColor: changeRequestType === 'new' ? '#28a745' : '#ffcccc', // Green for new, faded red for old
+                      color: changeRequestType === 'new' ? '#FFFFFF' : '#cc0000',
+                      whiteSpace: 'nowrap',
+                      boxShadow: changeRequestType === 'new' ? '0 2px 4px rgba(40, 167, 69, 0.3)' : 'none',
+                    }}
+                  >
+                    {changeRequestType === 'new' ? 'New' : 'Old'}
+                  </span>
+                )}
+              </div>
+            )}
+            <div
+              id={gridId}
+              className="section-panels"
+              style={mode === 'RegistryView' && hideEditButton ? { paddingBottom: '40px' } : {}}
+            >
           {editableSection.panels.map((panel, index) => (
             <div
               key={panel['panel-id'] || `section-panel-${index}`}
@@ -1035,7 +1383,9 @@ export const SectionRenderer = ({
               </button>
             </div>
           )}
-        </div>
+            </div>
+          </>
+        )}
       </div>
     </>
   );

@@ -1,10 +1,10 @@
-import { useEffect } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { SectionConfig, DataSourceRequestHandler } from '../types';
 import { UseBaseWidgetOptions } from '../hooks/useBaseWidget';
 import { SectionRenderer, SectionChanges } from './SectionRenderer';
 import { useWidgetContext } from './WidgetProvider';
 
-export type SectionMode = 'RegistryView' | 'CRView';
+export type SectionMode = 'RegistryView' | 'CRView' | 'IntakeForm';
 
 export interface SectionsContainerProps {
   sections: SectionConfig[];
@@ -14,9 +14,13 @@ export interface SectionsContainerProps {
   className?: string;
   onSectionSave?: (changes: SectionChanges) => Promise<void> | void;
   hideEditButton?: boolean; // Hide the edit button band below sections
-  mode?: SectionMode; // Display mode: 'RegistryView' (default) or 'CRView'
+  mode?: SectionMode; // Display mode: 'RegistryView' (default), 'CRView', or 'IntakeForm'
+  /** IntakeForm mode: when true or undefined, sections are editable; when false, sections are readonly */
+  isDraft?: boolean;
   namespace?: string | ((sectionId: string, index: number) => string); // Optional namespace for widget IDs. If string, applied to all sections. If function, called per section.
-  // CRView data is read from schemaData with keys: createdBy, createdDate, approvedBy, approvedDate
+  // CRView data is read from schemaData with keys: createdBy, createdDate, approvedBy, approvedDate. IntakeForm displays sections as accordion for registration forms.
+  /** Called when a section's dirty (has unsaved changes) status changes. Only fires while the section is in edit mode. */
+  onSectionDirtyChange?: (sectionId: string, isDirty: boolean) => void;
 }
 
 /**
@@ -112,11 +116,56 @@ export const SectionsContainer = ({
   onSectionSave,
   hideEditButton = false,
   mode = 'RegistryView',
+  isDraft,
   namespace,
+  onSectionDirtyChange,
 }: SectionsContainerProps) => {
   // Get dataSourceRequestHandler from context if not provided as prop
   const { dataSourceRequestHandler: contextDataSourceRequestHandler } = useWidgetContext();
   const dataSourceRequestHandler = propDataSourceRequestHandler || contextDataSourceRequestHandler;
+
+  // IntakeForm mode: accordion state - which section is expanded (null = none; first expanded by default)
+  const [expandedSectionIndex, setExpandedSectionIndex] = useState<number | null>(0);
+  const safeSections = sections ?? [];
+  const prevSectionsLengthRef = useRef(safeSections.length);
+
+  // Toggle: click expanded section to collapse; click collapsed section to expand
+  const handleExpandSection = useCallback((index: number) => {
+    setExpandedSectionIndex(prev => (prev === index ? null : index));
+  }, []);
+
+  // IntakeForm mode: called after section save - collapse current, expand next
+  const handleSectionSaveSuccess = useCallback((index: number) => {
+    if (index + 1 < safeSections.length) {
+      setExpandedSectionIndex(index + 1);
+    }
+    // Last section: stay expanded (no action)
+  }, [safeSections.length]);
+
+  // IntakeForm mode: called when Previous clicked - collapse current, expand previous
+  const handlePreviousSection = useCallback((index: number) => {
+    if (index > 0) {
+      setExpandedSectionIndex(index - 1);
+    }
+  }, []);
+
+  // Reset/init expanded section when sections change or first load (e.g. async form load)
+  useEffect(() => {
+    if (mode !== 'IntakeForm') return;
+    const currentLength = safeSections.length;
+    const prevLength = prevSectionsLengthRef.current;
+
+    // Clamp when sections shrink or invalid index
+    if (currentLength > 0 && expandedSectionIndex !== null && expandedSectionIndex >= currentLength) {
+      setExpandedSectionIndex(0);
+    }
+    // When sections first load (0 -> N), ensure first section is expanded
+    if (prevLength === 0 && currentLength > 0) {
+      setExpandedSectionIndex(0);
+    }
+
+    prevSectionsLengthRef.current = currentLength;
+  }, [mode, safeSections.length, expandedSectionIndex]);
   
   // Warn if dataSourceRequestHandler is missing
   useEffect(() => {
@@ -132,7 +181,7 @@ export const SectionsContainer = ({
   // This determines the grid size (minimum 3 columns)
   // Also account for table widgets and their explicit column spans
   const maxVerticalPanels = Math.max(
-    ...sections.map(section => {
+    ...safeSections.map(section => {
       const panelCount = countVerticalPanels(section.panels);
       const tableWidgetSpan = getTableWidgetColumnSpan(section.panels);
       // Use explicit table widget span if specified, otherwise use default logic
@@ -175,16 +224,41 @@ export const SectionsContainer = ({
             grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
           }
         }
+
+        /* IntakeForm mode: vertical accordion list instead of grid */
+        #${containerId}.sections-container-intake-form {
+          display: flex;
+          flex-direction: column;
+          gap: 0.75rem;
+          grid-template-columns: unset;
+        }
+        #${containerId}.sections-container-intake-form > .section {
+          grid-column: unset;
+          width: 100%;
+        }
       `}</style>
       <div
         id={containerId}
-        className={`sections-container ${className}`}
+        className={`sections-container ${className}${mode === 'IntakeForm' ? ' sections-container-intake-form' : ''}`}
       >
-        {sections.map((section, index) => {
+        {safeSections.map((section, index) => {
           // Determine namespace for this section
           const sectionNamespace = namespace 
             ? (typeof namespace === 'string' ? namespace : namespace(section['section-id'], index))
             : undefined;
+
+          // IntakeForm mode: pass accordion state and handlers
+          const intakeFormProps = mode === 'IntakeForm'
+            ? {
+                sectionIndex: index,
+                sectionCount: safeSections.length,
+                expandedSectionIndex,
+                onExpandSection: handleExpandSection,
+                onSectionSaveSuccess: handleSectionSaveSuccess,
+                onPreviousSection: handlePreviousSection,
+                isDraft,
+              }
+            : {};
 
           // Check if section has explicit column span
           if (section['section-column-span']) {
@@ -200,6 +274,8 @@ export const SectionsContainer = ({
                 hideEditButton={hideEditButton}
                 mode={mode}
                 namespace={sectionNamespace}
+                onSectionDirtyChange={onSectionDirtyChange}
+                {...intakeFormProps}
               />
             );
           }
@@ -225,6 +301,8 @@ export const SectionsContainer = ({
               hideEditButton={hideEditButton}
               mode={mode}
               namespace={sectionNamespace}
+              onSectionDirtyChange={onSectionDirtyChange}
+              {...intakeFormProps}
             />
           );
         })}
