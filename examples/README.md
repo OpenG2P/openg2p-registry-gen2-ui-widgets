@@ -1,6 +1,6 @@
-# Running Section Builder Examples
+# Running Examples
 
-This guide explains how to run the SectionBuilder example component.
+This guide explains how to run the Section Builder and Intake Form examples. The app includes tabs to switch between them.
 
 ## Option 1: Quick Setup with Vite (Recommended)
 
@@ -28,7 +28,7 @@ Create `examples/index.html`:
 </head>
 <body>
     <div id="root"></div>
-    <script type="module" src="/examples/section-builder-app.tsx"></script>
+    <script type="module" src="/section-builder-app.tsx"></script>
 </body>
 </html>
 ```
@@ -80,6 +80,28 @@ npm install @openg2p/registry-widgets json-edit-react
 ## Option 3: Simple HTML with CDN (Limited)
 
 For a quick test, you can use React via CDN, but this has limitations with TypeScript and module imports.
+
+## Intake Form Mode
+
+`examples/intake-form-example.tsx` demonstrates `SectionsContainer` with `mode="IntakeForm"`:
+
+- Accordion layout: sections expand/collapse on header click
+- First section open by default
+- Previous / Save buttons for stepwise navigation
+- `isDraft`: when `true` or `undefined`, sections are editable; when `false`, readonly
+
+Usage:
+
+```tsx
+import { SectionsContainer, createWidgetStore, WidgetProvider } from '@openg2p/registry-widgets';
+
+<SectionsContainer
+  sections={sections}
+  mode="IntakeForm"
+  isDraft={true}
+  onSectionSave={handleSectionSave}
+/>
+```
 
 ## Option 4: Build and Import in Another Project
 

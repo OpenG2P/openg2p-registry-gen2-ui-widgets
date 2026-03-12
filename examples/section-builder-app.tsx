@@ -20,6 +20,7 @@ import React, { useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { Provider } from 'react-redux';
 import { SectionBuilder } from '../src/components/SectionBuilder';
+import { IntakeFormExample } from './intake-form-example';
 import { SectionConfig } from '../src/types';
 import { createWidgetStore } from '../src/store';
 import { WidgetProvider } from '../src/components/WidgetProvider';
@@ -92,8 +93,11 @@ const initialSection: SectionConfig = {
   ],
 };
 
+type TabId = 'section-builder' | 'intake-form';
+
 function App() {
   const [section, setSection] = useState<SectionConfig>(initialSection);
+  const [activeTab, setActiveTab] = useState<TabId>('section-builder');
 
   const handleSectionChange = (updatedSection: SectionConfig) => {
     setSection(updatedSection);
@@ -108,34 +112,77 @@ function App() {
   return (
     <Provider store={store}>
       <WidgetProvider store={store}>
-        <div style={{ 
-          width: '100%', 
+        <div style={{
+          width: '100%',
           height: '100vh',
           display: 'flex',
           flexDirection: 'column',
-          justifyContent: 'center',
-          alignItems: 'stretch',
           background: '#f5f5f5',
-          padding: '20px',
           boxSizing: 'border-box',
           overflow: 'hidden',
         }}>
-          <div style={{ 
-            width: '100%',
-            maxWidth: '1400px',
-            margin: '0 auto',
-            boxSizing: 'border-box',
+          <div style={{
+            display: 'flex',
+            gap: '8px',
+            padding: '12px 20px',
+            background: '#fff',
+            borderBottom: '1px solid #e5e5e5',
+          }}>
+            <button
+              type="button"
+              onClick={() => setActiveTab('section-builder')}
+              style={{
+                padding: '8px 16px',
+                fontWeight: activeTab === 'section-builder' ? 600 : 400,
+                background: activeTab === 'section-builder' ? '#e5e7eb' : 'transparent',
+                border: 'none',
+                borderRadius: '6px',
+                cursor: 'pointer',
+              }}
+            >
+              Section Builder
+            </button>
+            <button
+              type="button"
+              onClick={() => setActiveTab('intake-form')}
+              style={{
+                padding: '8px 16px',
+                fontWeight: activeTab === 'intake-form' ? 600 : 400,
+                background: activeTab === 'intake-form' ? '#e5e7eb' : 'transparent',
+                border: 'none',
+                borderRadius: '6px',
+                cursor: 'pointer',
+              }}
+            >
+              Intake Form
+            </button>
+          </div>
+          <div style={{
+            flex: 1,
+            overflow: 'auto',
+            padding: '20px',
             display: 'flex',
             flexDirection: 'column',
-            flex: '1 1 0',
-            minHeight: 0,
-            overflow: 'hidden',
+            alignItems: 'stretch',
           }}>
-            <SectionBuilder
-              initialSection={section}
-              onChange={handleSectionChange}
-              onSave={handleSave}
-            />
+            {activeTab === 'section-builder' && (
+              <div style={{
+                width: '100%',
+                maxWidth: '1400px',
+                margin: '0 auto',
+                flex: '1 1 0',
+                minHeight: 0,
+                display: 'flex',
+                flexDirection: 'column',
+              }}>
+                <SectionBuilder
+                  initialSection={section}
+                  onChange={handleSectionChange}
+                  onSave={handleSave}
+                />
+              </div>
+            )}
+            {activeTab === 'intake-form' && <IntakeFormExample />}
           </div>
         </div>
       </WidgetProvider>

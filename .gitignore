@@ -33,21 +33,23 @@ dev-debug.log
 .cursor/rules/self_improve.mdc
 .cursor/rules/taskmaster/dev_workflow.mdc
 .cursor/rules/taskmaster/taskmaster.mdc
-.taskmaster/config.json
-.taskmaster/state.json
-.taskmaster/docs/prd.txt
-.taskmaster/templates/example_prd.txt
-.taskmaster/tasks/task_001.txt
-.taskmaster/tasks/task_002.txt
-.taskmaster/tasks/task_003.txt
-.taskmaster/tasks/task_004.txt
-.taskmaster/tasks/task_005.txt
-.taskmaster/tasks/task_006.txt
-.taskmaster/tasks/task_007.txt
-.taskmaster/tasks/task_008.txt
-.taskmaster/tasks/task_009.txt
-.taskmaster/tasks/task_010.txt
-.taskmaster/tasks/task_011.txt
-.taskmaster/tasks/task_012.txt
-.taskmaster/tasks/tasks.json
-.env.example
+.taskmaster/
+# .taskmaster/config.json
+# .taskmaster/state.json
+# .taskmaster/docs/prd.txt
+# .taskmaster/templates/example_prd.txt
+# .taskmaster/tasks/task_001.txt
+# .taskmaster/tasks/task_002.txt
+# .taskmaster/tasks/task_003.txt
+# .taskmaster/tasks/task_004.txt
+# .taskmaster/tasks/task_005.txt
+# .taskmaster/tasks/task_006.txt
+# .taskmaster/tasks/task_007.txt
+# .taskmaster/tasks/task_008.txt
+# .taskmaster/tasks/task_009.txt
+# .taskmaster/tasks/task_010.txt
+# .taskmaster/tasks/task_011.txt
+# .taskmaster/tasks/task_012.txt
+# .taskmaster/tasks/tasks.json
+# .env.example
+# .taskmaster/tasks/task_013.txt
