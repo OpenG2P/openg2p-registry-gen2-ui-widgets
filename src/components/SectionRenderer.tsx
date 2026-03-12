@@ -579,13 +579,37 @@ export const SectionRenderer = ({
   // This ensures we use the original data paths when saving
   const originalSection = section;
 
-  /** Build a full section snapshot (records + files) for dirty comparison */
+  /** Build a full section snapshot (records + files) for dirty comparison. Works with or without sectionRegisterId (e.g. IntakeForm). */
   const buildSectionSnapshot = useCallback((
     sourceData: Record<string, any>,
     pathPrefix?: string
   ): { records: unknown[]; files: unknown[] } => {
     const sectionWidgets = collectWidgets(originalSection.panels);
-    const records = trackSectionChages(sectionWidgets, sourceData, pathPrefix);
+    const resolvePath = (path: string) => (pathPrefix ? `${pathPrefix}.${path}` : path);
+
+    let records: unknown[];
+    const recordsFromTrack = trackSectionChages(sectionWidgets, sourceData, pathPrefix);
+
+    if (recordsFromTrack.length > 0) {
+      records = recordsFromTrack;
+    } else {
+      // IntakeForm / no sectionRegisterId: build comparable snapshot from widget values
+      const snapshot: Record<string, any> = {};
+      sectionWidgets.forEach((widget) => {
+        const widgetPath = widget['widget-data-path'];
+        if (!widgetPath) return;
+        if (typeof widgetPath === 'object') {
+          Object.values(widgetPath).forEach((path: unknown) => {
+            if (typeof path === 'string' && path.length > 0) {
+              snapshot[path] = getValueByPath(sourceData, resolvePath(path));
+            }
+          });
+        } else if (typeof widgetPath === 'string') {
+          snapshot[widgetPath] = getValueByPath(sourceData, resolvePath(widgetPath));
+        }
+      });
+      records = [{ ...snapshot }];
+    }
 
     const files: unknown[] = [];
     if (hasSupportingDocuments) {
@@ -605,20 +629,23 @@ export const SectionRenderer = ({
   // Capture baseline when entering edit mode (used for isDirty comparison)
   const baselineSnapshotRef = useRef<{ records: unknown[]; files: unknown[] } | null>(null);
 
+  // IntakeForm: treat as edit mode for dirty tracking when isDraft. RegistryView: use isEditMode.
+  const effectiveEditModeForDirty = mode === 'IntakeForm' ? (isDraft !== false) : isEditMode;
+
   // Compute isDirty: compare current store state to baseline (only when in edit mode)
   const isDirty = useMemo(() => {
-    if (!isEditMode) return false;
+    if (!effectiveEditModeForDirty) return false;
     const baseline = baselineSnapshotRef.current;
     if (!baseline) return false;
 
     const currentSnapshot = buildSectionSnapshot(storeValues, namespace);
 
     return JSON.stringify(baseline) !== JSON.stringify(currentSnapshot);
-  }, [isEditMode, storeValues, namespace, buildSectionSnapshot]);
+  }, [effectiveEditModeForDirty, storeValues, namespace, buildSectionSnapshot]);
 
   // Set baseline when entering edit mode; clear when leaving (baseline captured only on entry)
   useEffect(() => {
-    if (isEditMode) {
+    if (effectiveEditModeForDirty) {
       const oldSchemaData = schemaData || contextSchemaData || {};
       if (namespace) {
         const namespacedSchema = getValueByPath(oldSchemaData, namespace);
@@ -632,15 +659,15 @@ export const SectionRenderer = ({
       baselineSnapshotRef.current = null;
       onSectionDirtyChange?.(sectionId, false);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- baseline must be captured only when isEditMode toggles
-  }, [isEditMode]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- baseline must be captured only when effectiveEditModeForDirty toggles
+  }, [effectiveEditModeForDirty]);
 
   // Notify parent when isDirty changes (only while in edit mode)
   useEffect(() => {
-    if (isEditMode && onSectionDirtyChange) {
+    if (effectiveEditModeForDirty && onSectionDirtyChange) {
       onSectionDirtyChange(sectionId, isDirty);
     }
-  }, [isEditMode, isDirty, sectionId, onSectionDirtyChange]);
+  }, [effectiveEditModeForDirty, isDirty, sectionId, onSectionDirtyChange]);
 
   // Handle save button click
   const handleSave = async () => {
@@ -745,8 +772,12 @@ export const SectionRenderer = ({
       }
     }
 
+    // Update baseline so section is no longer dirty after successful save
+    baselineSnapshotRef.current = buildSectionSnapshot(currentSchemaData, namespace);
+    onSectionDirtyChange?.(sectionId, false);
+
     onSectionSaveSuccess?.(sectionIndex);
-  }, [store, onSectionSave, onSectionSaveSuccess, sectionIndex, originalSection, schemaData, contextSchemaData, namespace, hasSupportingDocuments, dbSectionId, sectionRegisterId, dispatch]);
+  }, [store, onSectionSave, onSectionSaveSuccess, sectionIndex, originalSection, schemaData, contextSchemaData, namespace, hasSupportingDocuments, dbSectionId, sectionRegisterId, dispatch, buildSectionSnapshot, sectionId, onSectionDirtyChange]);
 
   // Handle cancel button click
   const handleCancel = () => {

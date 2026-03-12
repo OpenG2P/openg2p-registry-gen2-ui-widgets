@@ -1,10 +1,25 @@
-import { useEffect, useState, useCallback, useRef } from 'react';
+import { useEffect, useState, useCallback, useRef, useMemo } from 'react';
+import { useStore, useDispatch, useSelector } from 'react-redux';
 import { SectionConfig, DataSourceRequestHandler } from '../types';
 import { UseBaseWidgetOptions } from '../hooks/useBaseWidget';
 import { SectionRenderer, SectionChanges } from './SectionRenderer';
 import { useWidgetContext } from './WidgetProvider';
+import { WidgetRootState } from '../store';
+import { sectionValidate } from '../utils/sectionValidate';
+import { namespaceSectionConfig } from '../utils/schemaNamespace';
+import { buildSectionChanges } from '../utils/buildSectionChanges';
 
 export type SectionMode = 'RegistryView' | 'CRView' | 'IntakeForm';
+
+/** Form controls passed to host via onFormReady. Allows host to validate and get all section data (e.g. on Submit). */
+export interface SectionsFormHandle {
+  /** Validate all sections. Returns true if valid, false otherwise. */
+  validate(): Promise<boolean>;
+  /** Get raw form data from store for all sections (no validation). */
+  getFormData(): Record<string, unknown>;
+  /** Validate all sections. If valid, returns SectionChanges[]; if invalid, throws. */
+  validateAndGetData(): Promise<SectionChanges[]>;
+}
 
 export interface SectionsContainerProps {
   sections: SectionConfig[];
@@ -21,6 +36,8 @@ export interface SectionsContainerProps {
   // CRView data is read from schemaData with keys: createdBy, createdDate, approvedBy, approvedDate. IntakeForm displays sections as accordion for registration forms.
   /** Called when a section's dirty (has unsaved changes) status changes. Only fires while the section is in edit mode. */
   onSectionDirtyChange?: (sectionId: string, isDirty: boolean) => void;
+  /** Called when the form is ready. Passes form controls (validate, getFormData, validateAndGetData) so the host can trigger submit from its own button. */
+  onFormReady?: (handle: SectionsFormHandle) => void;
 }
 
 /**
@@ -119,15 +136,28 @@ export const SectionsContainer = ({
   isDraft,
   namespace,
   onSectionDirtyChange,
+  onFormReady,
 }: SectionsContainerProps) => {
+  const store = useStore();
+  const dispatch = useDispatch();
+  const storeValues = useSelector((state: WidgetRootState) => state.widget?.values || {});
+
   // Get dataSourceRequestHandler from context if not provided as prop
-  const { dataSourceRequestHandler: contextDataSourceRequestHandler } = useWidgetContext();
+  const { dataSourceRequestHandler: contextDataSourceRequestHandler, schemaData: contextSchemaData } = useWidgetContext();
   const dataSourceRequestHandler = propDataSourceRequestHandler || contextDataSourceRequestHandler;
+  const currentSchemaData = schemaData || contextSchemaData || {};
 
   // IntakeForm mode: accordion state - which section is expanded (null = none; first expanded by default)
   const [expandedSectionIndex, setExpandedSectionIndex] = useState<number | null>(0);
   const safeSections = sections ?? [];
   const prevSectionsLengthRef = useRef(safeSections.length);
+
+  // Track dirty (unsaved changes) per section for form handle validation
+  const sectionDirtyMapRef = useRef<Record<string, boolean>>({});
+  const handleSectionDirtyChange = useCallback((sectionId: string, isDirty: boolean) => {
+    sectionDirtyMapRef.current = { ...sectionDirtyMapRef.current, [sectionId]: isDirty };
+    onSectionDirtyChange?.(sectionId, isDirty);
+  }, [onSectionDirtyChange]);
 
   // Toggle: click expanded section to collapse; click collapsed section to expand
   const handleExpandSection = useCallback((index: number) => {
@@ -166,6 +196,66 @@ export const SectionsContainer = ({
 
     prevSectionsLengthRef.current = currentLength;
   }, [mode, safeSections.length, expandedSectionIndex]);
+
+  const UNSAVED_CHANGES_ERROR = 'Unsaved changes detected. Please save all sections before submitting.';
+
+  // Form handle for onFormReady - allows host to validate and get all section data from its own Submit button
+  const formHandle = useMemo<SectionsFormHandle>(() => {
+    const getValues = () => (store.getState() as { widget?: { values?: Record<string, unknown> } }).widget?.values || {};
+    const getNamespace = (section: SectionConfig, index: number) =>
+      namespace
+        ? typeof namespace === 'string'
+          ? namespace
+          : namespace(section['section-id'], index)
+        : undefined;
+
+    const checkNoUnsavedChanges = () => {
+      const hasDirty = Object.values(sectionDirtyMapRef.current).some(Boolean);
+      if (hasDirty) {
+        throw new Error(UNSAVED_CHANGES_ERROR);
+      }
+    };
+
+    return {
+      validate: async () => {
+        checkNoUnsavedChanges();
+        const values = getValues() as Record<string, unknown>;
+        let allValid = true;
+        for (let i = 0; i < safeSections.length; i++) {
+          const section = safeSections[i];
+          const ns = getNamespace(section, i);
+          const sectionToValidate = ns ? namespaceSectionConfig(section, ns) : section;
+          const valid = sectionValidate(sectionToValidate, values, dispatch);
+          if (!valid) allValid = false;
+        }
+        return allValid;
+      },
+      getFormData: () => getValues(),
+      validateAndGetData: async () => {
+        checkNoUnsavedChanges();
+        const values = getValues() as Record<string, unknown>;
+        const results: SectionChanges[] = [];
+        for (let i = 0; i < safeSections.length; i++) {
+          const section = safeSections[i];
+          const ns = getNamespace(section, i);
+          const sectionToValidate = ns ? namespaceSectionConfig(section, ns) : section;
+          const valid = sectionValidate(sectionToValidate, values, dispatch);
+          if (!valid) {
+            throw new Error('Validation failed');
+          }
+          results.push(buildSectionChanges(section, values, ns));
+        }
+        return results;
+      },
+    };
+  }, [store, dispatch, safeSections, namespace]);
+
+  // Call onFormReady when form is ready (sections loaded)
+  useEffect(() => {
+    if (onFormReady && safeSections.length > 0) {
+      onFormReady(formHandle);
+    }
+  }, [onFormReady, formHandle, safeSections.length]);
   
   // Warn if dataSourceRequestHandler is missing
   useEffect(() => {
@@ -274,7 +364,7 @@ export const SectionsContainer = ({
                 hideEditButton={hideEditButton}
                 mode={mode}
                 namespace={sectionNamespace}
-                onSectionDirtyChange={onSectionDirtyChange}
+                onSectionDirtyChange={handleSectionDirtyChange}
                 {...intakeFormProps}
               />
             );
@@ -301,7 +391,7 @@ export const SectionsContainer = ({
               hideEditButton={hideEditButton}
               mode={mode}
               namespace={sectionNamespace}
-              onSectionDirtyChange={onSectionDirtyChange}
+              onSectionDirtyChange={handleSectionDirtyChange}
               {...intakeFormProps}
             />
           );
