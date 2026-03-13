@@ -13,7 +13,7 @@ import { FileInputWidget } from '../widgets/FileInputWidget';
 import { SectionMode } from './SectionsContainer';
 import { namespaceSectionConfig } from '../utils/schemaNamespace';
 import { sectionValidate, collectWidgets } from '../utils/sectionValidate';
-import { downArrowIcon, personIcon, calendarIcon, rightArrowIcon } from '../assets';
+import { downArrowIcon, personIcon, calendarIcon, rightArrowIcon, arrowUpIcon, arrowDownIcon, arrowLeftIcon, arrowRightIcon } from '../assets';
 
 // Track section changes for change request creation
 export interface SectionChanges {
@@ -461,10 +461,9 @@ export const SectionRenderer = ({
                       {translate('common.supportedDocuments') || 'Supported Documents'}
                     </span>
                     <img
-                      src={downArrowIcon}
+                      src={isDocumentsExpanded ? arrowUpIcon : arrowDownIcon}
                       alt="Toggle Documents"
-                      className={`w-4 h-2.25 transition-transform ml-2 ${isDocumentsExpanded ? 'rotate-180' : ''
-                        }`}
+                      className="w-4 h-2.25 transition-transform ml-2"
                     />
                   </button>
                   {isDocumentsExpanded && (
@@ -628,6 +627,8 @@ export const SectionRenderer = ({
 
   // Capture baseline when entering edit mode (used for isDirty comparison)
   const baselineSnapshotRef = useRef<{ records: unknown[]; files: unknown[] } | null>(null);
+  // IntakeForm only: increment when baseline is updated after save - forces badge to update (refs don't trigger re-renders)
+  const [intakeFormBaselineTrigger, setIntakeFormBaselineTrigger] = useState(0);
 
   // IntakeForm: treat as edit mode for dirty tracking when isDraft. RegistryView: use isEditMode.
   const effectiveEditModeForDirty = mode === 'IntakeForm' ? (isDraft !== false) : isEditMode;
@@ -641,7 +642,7 @@ export const SectionRenderer = ({
     const currentSnapshot = buildSectionSnapshot(storeValues, namespace);
 
     return JSON.stringify(baseline) !== JSON.stringify(currentSnapshot);
-  }, [effectiveEditModeForDirty, storeValues, namespace, buildSectionSnapshot]);
+  }, [effectiveEditModeForDirty, storeValues, namespace, buildSectionSnapshot, intakeFormBaselineTrigger]);
 
   // Set baseline when entering edit mode; clear when leaving (baseline captured only on entry)
   useEffect(() => {
@@ -668,6 +669,22 @@ export const SectionRenderer = ({
       onSectionDirtyChange(sectionId, isDirty);
     }
   }, [effectiveEditModeForDirty, isDirty, sectionId, onSectionDirtyChange]);
+
+  // IntakeForm only: section status badge (Saved / Modified and not saved / no badge when pristine)
+  const intakeFormSectionStatus = useMemo<'saved' | 'modified' | null>(() => {
+    if (mode !== 'IntakeForm') return null;
+    const hasValue = (v: unknown) =>
+      v !== undefined && v !== null && (typeof v !== 'string' || v.trim().length > 0);
+    const currentSnapshot = buildSectionSnapshot(storeValues, namespace);
+    const record = currentSnapshot.records?.[0];
+    const hasData =
+      record &&
+      typeof record === 'object' &&
+      Object.values(record).some((v) => hasValue(v));
+    if (isDirty) return 'modified';
+    if (hasData) return 'saved';
+    return null;
+  }, [mode, isDirty, storeValues, namespace, buildSectionSnapshot]);
 
   // Handle save button click
   const handleSave = async () => {
@@ -772,12 +789,15 @@ export const SectionRenderer = ({
       }
     }
 
-    // Update baseline so section is no longer dirty after successful save
-    baselineSnapshotRef.current = buildSectionSnapshot(currentSchemaData, namespace);
+    // IntakeForm only: update baseline so section is no longer dirty; trigger re-render so badge updates to "Saved"
+    if (mode === 'IntakeForm') {
+      baselineSnapshotRef.current = buildSectionSnapshot(currentSchemaData, namespace);
+      setIntakeFormBaselineTrigger((prev) => prev + 1);
+    }
     onSectionDirtyChange?.(sectionId, false);
 
     onSectionSaveSuccess?.(sectionIndex);
-  }, [store, onSectionSave, onSectionSaveSuccess, sectionIndex, originalSection, schemaData, contextSchemaData, namespace, hasSupportingDocuments, dbSectionId, sectionRegisterId, dispatch, buildSectionSnapshot, sectionId, onSectionDirtyChange]);
+  }, [store, onSectionSave, onSectionSaveSuccess, sectionIndex, originalSection, schemaData, contextSchemaData, namespace, hasSupportingDocuments, dbSectionId, sectionRegisterId, dispatch, buildSectionSnapshot, sectionId, onSectionDirtyChange, mode]);
 
   // Handle cancel button click
   const handleCancel = () => {
@@ -1050,12 +1070,20 @@ export const SectionRenderer = ({
         }
         .${sectionClassId}.intake-form-accordion-item .intake-form-edit-controls {
           justify-content: flex-end;
+          width: 100%;
+        }
+        .${sectionClassId}.intake-form-accordion-item .intake-form-prev-btn {
+          color: rgba(0, 0, 0, 0.5) !important;
+        }
+        .${sectionClassId}.intake-form-accordion-item .intake-form-prev-btn:disabled {
+          color: rgba(0, 0, 0, 0.3) !important;
         }
         .${sectionClassId}.intake-form-accordion-item .intake-form-prev-btn:hover:not(:disabled) {
-          background-color: #F9FAFB;
+          background-color: #F3F4F6;
+          border-color: #FD8C3E;
         }
         .${sectionClassId}.intake-form-accordion-item .intake-form-save-btn:hover:not(:disabled) {
-          background-color: #1F2937;
+          background-color: #E5E7EB;
         }
       `}</style>
       <div
@@ -1073,8 +1101,13 @@ export const SectionRenderer = ({
           gridColumn: `span ${columnSpan}`,
           width: '100%',
           borderRadius: '10px',
-          backgroundColor: changeRequestType === 'old' ? '#F9F9F9' : '#FFFFFF', // Faded background for old change requests
-          opacity: changeRequestType === 'old' ? 0.95 : 1, // Slight opacity reduction for old sections
+          // IntakeForm expanded: edit-mode colors. Others: normal or faded for old CR
+          ...(mode === 'IntakeForm' && isExpanded
+            ? { backgroundColor: '#F3E6BC', border: '1px dashed #ED7C22' }
+            : {
+                backgroundColor: changeRequestType === 'old' ? '#F9F9F9' : '#FFFFFF',
+                opacity: changeRequestType === 'old' ? 0.95 : 1,
+              }),
           ...(isEditMode && sectionHeight ? {
             height: `${sectionHeight}px`,
             minHeight: `${sectionHeight}px`
@@ -1110,13 +1143,46 @@ export const SectionRenderer = ({
                 fontFamily: 'Roboto, sans-serif',
               }}
             >
-              <h2 className="text-xl font-semibold" style={{ margin: 0, flex: 1 }}>
-                {sectionToRender['section-title']
-                  ? translateConfig(sectionToRender['section-title'])
-                  : `Section ${(sectionIndex ?? 0) + 1}`}
-              </h2>
+              <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '12px', minWidth: 0 }}>
+                <h2 className="text-xl font-semibold" style={{ margin: 0 }}>
+                  {sectionToRender['section-title']
+                    ? translateConfig(sectionToRender['section-title'])
+                    : `Section ${(sectionIndex ?? 0) + 1}`}
+                </h2>
+                {/* IntakeForm only: Saved/Modified badges */}
+                {intakeFormSectionStatus === 'saved' && (
+                  <span
+                    style={{
+                      display: 'inline-block',
+                      padding: '4px 10px',
+                      borderRadius: '9999px',
+                      fontSize: '12px',
+                      fontWeight: 500,
+                      backgroundColor: '#D1FAE5',
+                      color: '#047857',
+                    }}
+                  >
+                    {translate('common.sectionSaved') || 'Saved'}
+                  </span>
+                )}
+                {intakeFormSectionStatus === 'modified' && (
+                  <span
+                    style={{
+                      display: 'inline-block',
+                      padding: '4px 10px',
+                      borderRadius: '9999px',
+                      fontSize: '12px',
+                      fontWeight: 500,
+                      backgroundColor: '#FEE2E2',
+                      color: '#B91C1C',
+                    }}
+                  >
+                    {translate('common.sectionModified') || 'Modified and not saved'}
+                  </span>
+                )}
+              </div>
               <img
-                src={isExpanded ? downArrowIcon : rightArrowIcon}
+                src={isExpanded ? arrowUpIcon : arrowDownIcon}
                 alt={isExpanded ? 'Collapse' : 'Expand'}
                 className="w-5 h-5 transition-transform"
                 style={{ flexShrink: 0, marginLeft: '12px' }}
@@ -1175,8 +1241,9 @@ export const SectionRenderer = ({
                       display: 'flex',
                       justifyContent: 'flex-end',
                       alignItems: 'center',
-                      gap: '0.5rem',
+                      gap: '12px',
                       marginBottom: '20px',
+                      width: '100%',
                     }}
                   >
                     <button
@@ -1187,12 +1254,12 @@ export const SectionRenderer = ({
                       style={{
                         fontFamily: 'Roboto, sans-serif',
                         fontSize: '14px',
-                        fontWeight: 500,
+                        fontWeight: 400,
                         padding: '8px 24px',
                         borderRadius: '10px',
-                        border: '1px solid #D1D5DB',
-                        background: '#FFFFFF',
-                        color: sectionIndex === 0 ? '#9CA3AF' : '#374151',
+                        border: '1px solid #FD8C3E',
+                        background: '#F3F4F6',
+                        color: sectionIndex === 0 ? 'rgba(0, 0, 0, 0.3)' : 'rgba(0, 0, 0, 0.5)',
                         cursor: sectionIndex === 0 ? 'not-allowed' : 'pointer',
                         display: 'inline-flex',
                         alignItems: 'center',
@@ -1200,12 +1267,12 @@ export const SectionRenderer = ({
                       }}
                     >
                       <img
-                        src={rightArrowIcon}
+                        src={arrowLeftIcon}
                         alt=""
                         aria-hidden
-                        style={{ width: '14px', height: '14px', transform: 'rotate(180deg)' }}
+                        style={{ width: '14px', height: '14px', opacity: sectionIndex === 0 ? 0.5 : 0.5 }}
                       />
-                      {translate('common.previous') || 'Previous'}
+                      {translate('common.previous') || 'Prev'}
                     </button>
                     <button
                       type="button"
@@ -1215,12 +1282,12 @@ export const SectionRenderer = ({
                       style={{
                         fontFamily: 'Roboto, sans-serif',
                         fontSize: '14px',
-                        fontWeight: 500,
+                        fontWeight: 400,
                         padding: '8px 24px',
                         borderRadius: '10px',
-                        border: 'none',
-                        background: isDraft === false ? '#9CA3AF' : '#111827',
-                        color: '#FFFFFF',
+                        border: '1px solid #FD8C3E',
+                        background: isDraft === false ? '#9CA3AF' : '#F3F4F6',
+                        color: isDraft === false ? 'rgba(0, 0, 0, 0.3)' : 'rgba(0, 0, 0, 0.5)',
                         cursor: isDraft === false ? 'not-allowed' : 'pointer',
                         display: 'inline-flex',
                         alignItems: 'center',
@@ -1229,7 +1296,7 @@ export const SectionRenderer = ({
                     >
                       {translate('common.save') || 'Save'}
                       <img
-                        src={rightArrowIcon}
+                        src={arrowRightIcon}
                         alt=""
                         aria-hidden
                         style={{ width: '14px', height: '14px' }}
