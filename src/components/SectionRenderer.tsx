@@ -13,7 +13,7 @@ import { FileInputWidget } from '../widgets/FileInputWidget';
 import { SectionMode } from './SectionsContainer';
 import { namespaceSectionConfig } from '../utils/schemaNamespace';
 import { sectionValidate, collectWidgets } from '../utils/sectionValidate';
-import { downArrowIcon, personIcon, calendarIcon, rightArrowIcon } from '../assets';
+import { downArrowIcon, personIcon, calendarIcon, rightArrowIcon, arrowUpIcon, arrowDownIcon, arrowLeftIcon, arrowRightIcon } from '../assets';
 
 // Track section changes for change request creation
 export interface SectionChanges {
@@ -461,10 +461,9 @@ export const SectionRenderer = ({
                       {translate('common.supportedDocuments') || 'Supported Documents'}
                     </span>
                     <img
-                      src={downArrowIcon}
+                      src={isDocumentsExpanded ? arrowUpIcon : arrowDownIcon}
                       alt="Toggle Documents"
-                      className={`w-4 h-2.25 transition-transform ml-2 ${isDocumentsExpanded ? 'rotate-180' : ''
-                        }`}
+                      className="w-4 h-2.25 transition-transform ml-2"
                     />
                   </button>
                   {isDocumentsExpanded && (
@@ -1071,12 +1070,20 @@ export const SectionRenderer = ({
         }
         .${sectionClassId}.intake-form-accordion-item .intake-form-edit-controls {
           justify-content: flex-end;
+          width: 100%;
+        }
+        .${sectionClassId}.intake-form-accordion-item .intake-form-prev-btn {
+          color: rgba(0, 0, 0, 0.5) !important;
+        }
+        .${sectionClassId}.intake-form-accordion-item .intake-form-prev-btn:disabled {
+          color: rgba(0, 0, 0, 0.3) !important;
         }
         .${sectionClassId}.intake-form-accordion-item .intake-form-prev-btn:hover:not(:disabled) {
-          background-color: #F9FAFB;
+          background-color: #F3F4F6;
+          border-color: #FD8C3E;
         }
         .${sectionClassId}.intake-form-accordion-item .intake-form-save-btn:hover:not(:disabled) {
-          background-color: #1F2937;
+          background-color: #E5E7EB;
         }
       `}</style>
       <div
@@ -1094,8 +1101,13 @@ export const SectionRenderer = ({
           gridColumn: `span ${columnSpan}`,
           width: '100%',
           borderRadius: '10px',
-          backgroundColor: changeRequestType === 'old' ? '#F9F9F9' : '#FFFFFF', // Faded background for old change requests
-          opacity: changeRequestType === 'old' ? 0.95 : 1, // Slight opacity reduction for old sections
+          // IntakeForm expanded: edit-mode colors. Others: normal or faded for old CR
+          ...(mode === 'IntakeForm' && isExpanded
+            ? { backgroundColor: '#F3E6BC', border: '1px dashed #ED7C22' }
+            : {
+                backgroundColor: changeRequestType === 'old' ? '#F9F9F9' : '#FFFFFF',
+                opacity: changeRequestType === 'old' ? 0.95 : 1,
+              }),
           ...(isEditMode && sectionHeight ? {
             height: `${sectionHeight}px`,
             minHeight: `${sectionHeight}px`
@@ -1170,7 +1182,7 @@ export const SectionRenderer = ({
                 )}
               </div>
               <img
-                src={isExpanded ? downArrowIcon : rightArrowIcon}
+                src={isExpanded ? arrowUpIcon : arrowDownIcon}
                 alt={isExpanded ? 'Collapse' : 'Expand'}
                 className="w-5 h-5 transition-transform"
                 style={{ flexShrink: 0, marginLeft: '12px' }}
@@ -1229,8 +1241,9 @@ export const SectionRenderer = ({
                       display: 'flex',
                       justifyContent: 'flex-end',
                       alignItems: 'center',
-                      gap: '0.5rem',
+                      gap: '12px',
                       marginBottom: '20px',
+                      width: '100%',
                     }}
                   >
                     <button
@@ -1241,12 +1254,12 @@ export const SectionRenderer = ({
                       style={{
                         fontFamily: 'Roboto, sans-serif',
                         fontSize: '14px',
-                        fontWeight: 500,
+                        fontWeight: 400,
                         padding: '8px 24px',
                         borderRadius: '10px',
-                        border: '1px solid #D1D5DB',
-                        background: '#FFFFFF',
-                        color: sectionIndex === 0 ? '#9CA3AF' : '#374151',
+                        border: '1px solid #FD8C3E',
+                        background: '#F3F4F6',
+                        color: sectionIndex === 0 ? 'rgba(0, 0, 0, 0.3)' : 'rgba(0, 0, 0, 0.5)',
                         cursor: sectionIndex === 0 ? 'not-allowed' : 'pointer',
                         display: 'inline-flex',
                         alignItems: 'center',
@@ -1254,12 +1267,12 @@ export const SectionRenderer = ({
                       }}
                     >
                       <img
-                        src={rightArrowIcon}
+                        src={arrowLeftIcon}
                         alt=""
                         aria-hidden
-                        style={{ width: '14px', height: '14px', transform: 'rotate(180deg)' }}
+                        style={{ width: '14px', height: '14px', opacity: sectionIndex === 0 ? 0.5 : 0.5 }}
                       />
-                      {translate('common.previous') || 'Previous'}
+                      {translate('common.previous') || 'Prev'}
                     </button>
                     <button
                       type="button"
@@ -1269,12 +1282,12 @@ export const SectionRenderer = ({
                       style={{
                         fontFamily: 'Roboto, sans-serif',
                         fontSize: '14px',
-                        fontWeight: 500,
+                        fontWeight: 400,
                         padding: '8px 24px',
                         borderRadius: '10px',
-                        border: 'none',
-                        background: isDraft === false ? '#9CA3AF' : '#111827',
-                        color: '#FFFFFF',
+                        border: '1px solid #FD8C3E',
+                        background: isDraft === false ? '#9CA3AF' : '#F3F4F6',
+                        color: isDraft === false ? 'rgba(0, 0, 0, 0.3)' : 'rgba(0, 0, 0, 0.5)',
                         cursor: isDraft === false ? 'not-allowed' : 'pointer',
                         display: 'inline-flex',
                         alignItems: 'center',
@@ -1283,7 +1296,7 @@ export const SectionRenderer = ({
                     >
                       {translate('common.save') || 'Save'}
                       <img
-                        src={rightArrowIcon}
+                        src={arrowRightIcon}
                         alt=""
                         aria-hidden
                         style={{ width: '14px', height: '14px' }}
