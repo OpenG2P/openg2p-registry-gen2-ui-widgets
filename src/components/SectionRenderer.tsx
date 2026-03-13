@@ -628,6 +628,8 @@ export const SectionRenderer = ({
 
   // Capture baseline when entering edit mode (used for isDirty comparison)
   const baselineSnapshotRef = useRef<{ records: unknown[]; files: unknown[] } | null>(null);
+  // IntakeForm only: increment when baseline is updated after save - forces badge to update (refs don't trigger re-renders)
+  const [intakeFormBaselineTrigger, setIntakeFormBaselineTrigger] = useState(0);
 
   // IntakeForm: treat as edit mode for dirty tracking when isDraft. RegistryView: use isEditMode.
   const effectiveEditModeForDirty = mode === 'IntakeForm' ? (isDraft !== false) : isEditMode;
@@ -641,7 +643,7 @@ export const SectionRenderer = ({
     const currentSnapshot = buildSectionSnapshot(storeValues, namespace);
 
     return JSON.stringify(baseline) !== JSON.stringify(currentSnapshot);
-  }, [effectiveEditModeForDirty, storeValues, namespace, buildSectionSnapshot]);
+  }, [effectiveEditModeForDirty, storeValues, namespace, buildSectionSnapshot, intakeFormBaselineTrigger]);
 
   // Set baseline when entering edit mode; clear when leaving (baseline captured only on entry)
   useEffect(() => {
@@ -668,6 +670,22 @@ export const SectionRenderer = ({
       onSectionDirtyChange(sectionId, isDirty);
     }
   }, [effectiveEditModeForDirty, isDirty, sectionId, onSectionDirtyChange]);
+
+  // IntakeForm only: section status badge (Saved / Modified and not saved / no badge when pristine)
+  const intakeFormSectionStatus = useMemo<'saved' | 'modified' | null>(() => {
+    if (mode !== 'IntakeForm') return null;
+    const hasValue = (v: unknown) =>
+      v !== undefined && v !== null && (typeof v !== 'string' || v.trim().length > 0);
+    const currentSnapshot = buildSectionSnapshot(storeValues, namespace);
+    const record = currentSnapshot.records?.[0];
+    const hasData =
+      record &&
+      typeof record === 'object' &&
+      Object.values(record).some((v) => hasValue(v));
+    if (isDirty) return 'modified';
+    if (hasData) return 'saved';
+    return null;
+  }, [mode, isDirty, storeValues, namespace, buildSectionSnapshot]);
 
   // Handle save button click
   const handleSave = async () => {
@@ -772,12 +790,15 @@ export const SectionRenderer = ({
       }
     }
 
-    // Update baseline so section is no longer dirty after successful save
-    baselineSnapshotRef.current = buildSectionSnapshot(currentSchemaData, namespace);
+    // IntakeForm only: update baseline so section is no longer dirty; trigger re-render so badge updates to "Saved"
+    if (mode === 'IntakeForm') {
+      baselineSnapshotRef.current = buildSectionSnapshot(currentSchemaData, namespace);
+      setIntakeFormBaselineTrigger((prev) => prev + 1);
+    }
     onSectionDirtyChange?.(sectionId, false);
 
     onSectionSaveSuccess?.(sectionIndex);
-  }, [store, onSectionSave, onSectionSaveSuccess, sectionIndex, originalSection, schemaData, contextSchemaData, namespace, hasSupportingDocuments, dbSectionId, sectionRegisterId, dispatch, buildSectionSnapshot, sectionId, onSectionDirtyChange]);
+  }, [store, onSectionSave, onSectionSaveSuccess, sectionIndex, originalSection, schemaData, contextSchemaData, namespace, hasSupportingDocuments, dbSectionId, sectionRegisterId, dispatch, buildSectionSnapshot, sectionId, onSectionDirtyChange, mode]);
 
   // Handle cancel button click
   const handleCancel = () => {
@@ -1110,11 +1131,44 @@ export const SectionRenderer = ({
                 fontFamily: 'Roboto, sans-serif',
               }}
             >
-              <h2 className="text-xl font-semibold" style={{ margin: 0, flex: 1 }}>
-                {sectionToRender['section-title']
-                  ? translateConfig(sectionToRender['section-title'])
-                  : `Section ${(sectionIndex ?? 0) + 1}`}
-              </h2>
+              <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '12px', minWidth: 0 }}>
+                <h2 className="text-xl font-semibold" style={{ margin: 0 }}>
+                  {sectionToRender['section-title']
+                    ? translateConfig(sectionToRender['section-title'])
+                    : `Section ${(sectionIndex ?? 0) + 1}`}
+                </h2>
+                {/* IntakeForm only: Saved/Modified badges */}
+                {intakeFormSectionStatus === 'saved' && (
+                  <span
+                    style={{
+                      display: 'inline-block',
+                      padding: '4px 10px',
+                      borderRadius: '9999px',
+                      fontSize: '12px',
+                      fontWeight: 500,
+                      backgroundColor: '#D1FAE5',
+                      color: '#047857',
+                    }}
+                  >
+                    {translate('common.sectionSaved') || 'Saved'}
+                  </span>
+                )}
+                {intakeFormSectionStatus === 'modified' && (
+                  <span
+                    style={{
+                      display: 'inline-block',
+                      padding: '4px 10px',
+                      borderRadius: '9999px',
+                      fontSize: '12px',
+                      fontWeight: 500,
+                      backgroundColor: '#FEE2E2',
+                      color: '#B91C1C',
+                    }}
+                  >
+                    {translate('common.sectionModified') || 'Modified and not saved'}
+                  </span>
+                )}
+              </div>
               <img
                 src={isExpanded ? downArrowIcon : rightArrowIcon}
                 alt={isExpanded ? 'Collapse' : 'Expand'}
