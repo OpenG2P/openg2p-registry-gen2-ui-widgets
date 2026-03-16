@@ -19,6 +19,11 @@ export interface SectionsFormHandle {
   getFormData(): Record<string, unknown>;
   /** Validate all sections. If valid, returns SectionChanges[]; if invalid, throws. */
   validateAndGetData(): Promise<SectionChanges[]>;
+/**
+ * Used for form save-draft functionality.
+ * Retrieves record and file changes without validation.
+ */
+  getStructuredData(): SectionChanges[];
 }
 
 export interface SectionsContainerProps {
@@ -247,6 +252,16 @@ export const SectionsContainer = ({
         }
         return results;
       },
+      getStructuredData: () => {
+        const values = getValues() as Record<string, unknown>;
+        const results: SectionChanges[] = [];
+        for (let i = 0; i < safeSections.length; i++) {
+          const section = safeSections[i];
+          const ns = getNamespace(section, i);
+          results.push(buildSectionChanges(section, values, ns));
+        }
+        return results;
+      },
     };
   }, [store, dispatch, safeSections, namespace]);
 
@@ -256,7 +271,7 @@ export const SectionsContainer = ({
       onFormReady(formHandle);
     }
   }, [onFormReady, formHandle, safeSections.length]);
-  
+
   // Warn if dataSourceRequestHandler is missing
   useEffect(() => {
     if (!dataSourceRequestHandler) {
@@ -275,7 +290,7 @@ export const SectionsContainer = ({
       const panelCount = countVerticalPanels(section.panels);
       const tableWidgetSpan = getTableWidgetColumnSpan(section.panels);
       // Use explicit table widget span if specified, otherwise use default logic
-      return tableWidgetSpan !== null 
+      return tableWidgetSpan !== null
         ? Math.max(panelCount, tableWidgetSpan)
         : (hasTableWidget(section.panels) ? Math.max(panelCount, 2) : panelCount);
     }),
@@ -333,21 +348,21 @@ export const SectionsContainer = ({
       >
         {safeSections.map((section, index) => {
           // Determine namespace for this section
-          const sectionNamespace = namespace 
+          const sectionNamespace = namespace
             ? (typeof namespace === 'string' ? namespace : namespace(section['section-id'], index))
             : undefined;
 
           // IntakeForm mode: pass accordion state and handlers
           const intakeFormProps = mode === 'IntakeForm'
             ? {
-                sectionIndex: index,
-                sectionCount: safeSections.length,
-                expandedSectionIndex,
-                onExpandSection: handleExpandSection,
-                onSectionSaveSuccess: handleSectionSaveSuccess,
-                onPreviousSection: handlePreviousSection,
-                isDraft,
-              }
+              sectionIndex: index,
+              sectionCount: safeSections.length,
+              expandedSectionIndex,
+              onExpandSection: handleExpandSection,
+              onSectionSaveSuccess: handleSectionSaveSuccess,
+              onPreviousSection: handlePreviousSection,
+              isDraft,
+            }
             : {};
 
           // Check if section has explicit column span
@@ -369,15 +384,15 @@ export const SectionsContainer = ({
               />
             );
           }
-          
+
           const verticalPanelsCount = countVerticalPanels(section.panels);
           const tableWidgetColumnSpan = getTableWidgetColumnSpan(section.panels);
           const containsTable = hasTableWidget(section.panels);
           // If section contains a table widget with explicit column span, use it
           // Otherwise, if it has a table widget, ensure it spans at least 2 columns
           // Otherwise, use the vertical panel count
-          const columnSpan = tableWidgetColumnSpan !== null 
-            ? tableWidgetColumnSpan 
+          const columnSpan = tableWidgetColumnSpan !== null
+            ? tableWidgetColumnSpan
             : (containsTable ? Math.max(verticalPanelsCount, 2) : verticalPanelsCount);
           return (
             <SectionRenderer
