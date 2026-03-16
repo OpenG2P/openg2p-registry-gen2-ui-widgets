@@ -64,7 +64,7 @@ export type DataSource = StaticDataSource | ApiDataSource | SchemaDataSource;
 /**
  * Allowed character types for text input
  */
-export type CharacterType = 
+export type CharacterType =
   | 'any'           // Any text (default)
   | 'alphabetic'     // Alphabetic only (a-z, A-Z)
   | 'alphanumeric'   // Alphanumeric (a-z, A-Z, 0-9)
@@ -75,7 +75,7 @@ export type CharacterType =
 /**
  * Case control options
  */
-export type CaseControl = 
+export type CaseControl =
   | 'none'           // No restriction (default)
   | 'lowercase'      // Force lowercase
   | 'uppercase'      // Force uppercase
@@ -93,11 +93,11 @@ export interface InputMask {
 /**
  * Validation type options for common patterns
  */
-export type ValidationType = 
+export type ValidationType =
   | 'email'      // Email address validation
   | 'phone'      // Phone number validation
   | 'url';       // URL validation
-  // Additional types can be added here in the future
+// Additional types can be added here in the future
 
 /**
  * Validation configuration
@@ -118,28 +118,28 @@ export interface WidgetValidation {
 /**
  * Numeric type options
  */
-export type NumericType = 
+export type NumericType =
   | 'integer'      // Integer only
   | 'decimal';     // Decimal number
 
 /**
  * Rounding mode for decimal numbers
  */
-export type RoundingMode = 
+export type RoundingMode =
   | 'round'        // Round to nearest (default)
   | 'truncate';    // Truncate (floor for positive, ceil for negative)
 
 /**
  * Text alignment options
  */
-export type TextAlign = 
+export type TextAlign =
   | 'left'         // Left-aligned
   | 'right';       // Right-aligned (default for numbers)
 
 /**
  * Boolean representation options
  */
-export type BooleanRepresentation = 
+export type BooleanRepresentation =
   | 'true-false'   // true / false
   | 'yes-no'       // yes / no
   | 'on-off'       // on / off
@@ -148,7 +148,7 @@ export type BooleanRepresentation =
 /**
  * Boolean control type options
  */
-export type BooleanControlType = 
+export type BooleanControlType =
   | 'checkbox'     // Single checkbox
   | 'radio'        // Two radio buttons
   | 'toggle';      // Toggle / switch
