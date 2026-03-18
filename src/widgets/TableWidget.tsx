@@ -146,6 +146,34 @@ const TableCellNumber = ({ config, value, onValueChange }: TableCellNumberProps)
   );
 };
 
+interface TableCellDateProps {
+  config: BaseWidgetConfig;
+  value: any;
+  onValueChange: (value: any) => void;
+}
+
+const TableCellDate = ({ config, value, onValueChange }: TableCellDateProps) => {
+  const isReadonly = config['widget-readonly'] || false;
+  const placeholder = config['widget-data-placeholder'] || '';
+
+  // input type="date" requires YYYY-MM-DD format
+  const displayValue = value && typeof value === 'string' ? value.split('T')[0] : '';
+
+  return (
+    <input
+      type="date"
+      value={displayValue}
+      onChange={(e) => onValueChange(e.target.value)}
+      disabled={isReadonly}
+      placeholder={placeholder}
+      className={`w-full h-[28px] px-2 text-sm border focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 ${
+        isReadonly ? 'bg-gray-100 cursor-not-allowed' : 'bg-white'
+      } border-gray-300`}
+      style={{ borderRadius: '10px' }}
+    />
+  );
+};
+
 /**
  * Table widget with record-level inline editing
  * 
@@ -634,6 +662,12 @@ export const TableWidget = ({ config }: TableWidgetProps) => {
       />;
     } else if (widgetType === 'number') {
       return <TableCellNumber 
+        config={cellConfig}
+        value={cellValue}
+        onValueChange={(newValue) => updateCellValue(columnKey, newValue, rowIndex)}
+      />;
+    } else if (widgetType === 'date') {
+      return <TableCellDate
         config={cellConfig}
         value={cellValue}
         onValueChange={(newValue) => updateCellValue(columnKey, newValue, rowIndex)}
