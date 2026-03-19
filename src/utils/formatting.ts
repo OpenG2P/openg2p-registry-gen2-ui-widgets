@@ -1,17 +1,20 @@
 import { WidgetFormat } from '../types';
 import { formatNumber } from './numberInput';
+import { parseDate } from './dateInput';
 
 /**
  * Format date value
  */
 export const formatDate = (value: any, format: WidgetFormat | undefined): string => {
-  if (!value || !format?.dateFormat) {
-    return value?.toString() || '';
+  if (!value) {
+    return '';
   }
 
+  const dateFormat = format?.dateFormat || 'DD-MM-YYYY'
+
   try {
-    const date = new Date(value);
-    if (isNaN(date.getTime())) {
+    const date = typeof value === 'string' ? parseDate(value) : new Date(value);
+    if (!date || isNaN(date.getTime())) {
       return value?.toString() || '';
     }
 
@@ -20,7 +23,7 @@ export const formatDate = (value: any, format: WidgetFormat | undefined): string
     const month = (date.getMonth() + 1).toString().padStart(2, '0');
     const year = date.getFullYear();
 
-    return format.dateFormat
+    return dateFormat
       .replace('DD', day)
       .replace('MM', month)
       .replace('YYYY', year.toString())
