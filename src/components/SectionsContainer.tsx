@@ -173,8 +173,9 @@ export const SectionsContainer = ({
   const handleSectionSaveSuccess = useCallback((index: number) => {
     if (index + 1 < safeSections.length) {
       setExpandedSectionIndex(index + 1);
+    } else {
+      setExpandedSectionIndex(null);
     }
-    // Last section: stay expanded (no action)
   }, [safeSections.length]);
 
   // IntakeForm mode: called when Previous clicked - collapse current, expand previous
