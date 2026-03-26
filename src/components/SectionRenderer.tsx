@@ -752,52 +752,56 @@ export const SectionRenderer = ({
 
   // IntakeForm: save section then collapse current and expand next (or stay on final section)
   const handleIntakeFormSave = useCallback(async () => {
-    if (!store || !onSectionSave || sectionIndex === undefined) return;
-    const sectionWidgets = collectWidgets(originalSection.panels);
-    const currentState = (store.getState() as any).widget;
-    const currentSchemaData = currentState.values || {};
+    if (sectionIndex === undefined) return;
 
-    const isSectionValid = sectionValidate(originalSection, currentSchemaData, dispatch);
-    if (!isSectionValid) return;
+    // Only run save/validation logic when in draft mode and handlers are available
+    if (isDraft !== false && store && onSectionSave) {
+      const sectionWidgets = collectWidgets(originalSection.panels);
+      const currentState = (store.getState() as any).widget;
+      const currentSchemaData = currentState.values || {};
 
-    const oldSchemaData = schemaData || contextSchemaData;
-    const newSchemaData = trackSectionChages(sectionWidgets, currentSchemaData, namespace);
+      const isSectionValid = sectionValidate(originalSection, currentSchemaData, dispatch);
+      if (!isSectionValid) return;
 
-    const sectionFiles: unknown[] = [];
-    if (hasSupportingDocuments) {
-      const originalSupportingDocuments = originalSection['section-supporting-documents'] || [];
-      originalSupportingDocuments.forEach((doc) => {
-        const originalDataPath = doc['document-data-path'];
-        const storeDataPath = namespace && originalDataPath
-          ? `${namespace}.${originalDataPath}`
-          : originalDataPath;
-        sectionFiles.push(getValueByPath(currentSchemaData, storeDataPath));
-      });
-    }
+      const oldSchemaData = schemaData || contextSchemaData;
+      const newSchemaData = trackSectionChages(sectionWidgets, currentSchemaData, namespace);
 
-    if (JSON.stringify(oldSchemaData) !== JSON.stringify(newSchemaData)) {
-      try {
-        await onSectionSave({
-          section_id: dbSectionId,
-          section_register_id: sectionRegisterId,
-          records: [...newSchemaData],
-          files: [...sectionFiles],
+      const sectionFiles: unknown[] = [];
+      if (hasSupportingDocuments) {
+        const originalSupportingDocuments = originalSection['section-supporting-documents'] || [];
+        originalSupportingDocuments.forEach((doc) => {
+          const originalDataPath = doc['document-data-path'];
+          const storeDataPath = namespace && originalDataPath
+            ? `${namespace}.${originalDataPath}`
+            : originalDataPath;
+          sectionFiles.push(getValueByPath(currentSchemaData, storeDataPath));
         });
-      } catch (error) {
-        console.error('Section Changes Save failed', error);
-        return;
       }
+
+      if (JSON.stringify(oldSchemaData) !== JSON.stringify(newSchemaData)) {
+        try {
+          await onSectionSave({
+            section_id: dbSectionId,
+            section_register_id: sectionRegisterId,
+            records: [...newSchemaData],
+            files: [...sectionFiles],
+          });
+        } catch (error) {
+          console.error('Section Changes Save failed', error);
+          return;
+        }
+      }
+
+      if (mode === 'IntakeForm') {
+        baselineSnapshotRef.current = buildSectionSnapshot(currentSchemaData, namespace);
+        setIntakeFormBaselineTrigger((prev) => prev + 1);
+      }
+      onSectionDirtyChange?.(sectionId, false);
     }
 
-    // IntakeForm only: update baseline so section is no longer dirty; trigger re-render so badge updates to "Saved"
-    if (mode === 'IntakeForm') {
-      baselineSnapshotRef.current = buildSectionSnapshot(currentSchemaData, namespace);
-      setIntakeFormBaselineTrigger((prev) => prev + 1);
-    }
-    onSectionDirtyChange?.(sectionId, false);
-
+    // Always navigate to the next section
     onSectionSaveSuccess?.(sectionIndex);
-  }, [store, onSectionSave, onSectionSaveSuccess, sectionIndex, originalSection, schemaData, contextSchemaData, namespace, hasSupportingDocuments, dbSectionId, sectionRegisterId, dispatch, buildSectionSnapshot, sectionId, onSectionDirtyChange, mode]);
+  }, [store, onSectionSave, onSectionSaveSuccess, sectionIndex, originalSection, schemaData, contextSchemaData, namespace, hasSupportingDocuments, dbSectionId, sectionRegisterId, dispatch, buildSectionSnapshot, sectionId, onSectionDirtyChange, mode, isDraft]);
 
   // Handle cancel button click
   const handleCancel = () => {
@@ -1246,38 +1250,38 @@ export const SectionRenderer = ({
                       width: '100%',
                     }}
                   >
-                    <button
-                      type="button"
-                      onClick={() => onPreviousSection?.(sectionIndex!)}
-                      disabled={sectionIndex === 0}
-                      className="intake-form-prev-btn"
-                      style={{
-                        fontFamily: 'Roboto, sans-serif',
-                        fontSize: '14px',
-                        fontWeight: 400,
-                        padding: '8px 24px',
-                        borderRadius: '10px',
-                        border: '1px solid #FD8C3E',
-                        background: '#F3F4F6',
-                        color: sectionIndex === 0 ? 'rgba(0, 0, 0, 0.3)' : 'rgba(0, 0, 0, 0.5)',
-                        cursor: sectionIndex === 0 ? 'not-allowed' : 'pointer',
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        gap: '8px',
-                      }}
-                    >
-                      <img
-                        src={arrowLeftIcon}
-                        alt=""
-                        aria-hidden
-                        style={{ width: '14px', height: '14px', opacity: sectionIndex === 0 ? 0.5 : 0.5 }}
-                      />
-                      {translate('common.previous') || 'Prev'}
-                    </button>
+                    {typeof sectionIndex === 'number' && sectionIndex > 0 && (
+                      <button
+                        type="button"
+                        onClick={() => onPreviousSection?.(sectionIndex)}
+                        className="intake-form-prev-btn"
+                        style={{
+                          fontFamily: 'Roboto, sans-serif',
+                          fontSize: '14px',
+                          fontWeight: 400,
+                          padding: '8px 24px',
+                          borderRadius: '10px',
+                          border: '1px solid #FD8C3E',
+                          background: '#F3F4F6',
+                          color: 'rgba(0, 0, 0, 0.5)',
+                          cursor: 'pointer',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '8px',
+                        }}
+                      >
+                        <img
+                          src={arrowLeftIcon}
+                          alt=""
+                          aria-hidden
+                          style={{ width: '14px', height: '14px', opacity: 0.5 }}
+                        />
+                        {translate('common.previous') || 'Prev'}
+                      </button>
+                    )}
                     <button
                       type="button"
                       onClick={handleIntakeFormSave}
-                      disabled={isDraft === false}
                       className="intake-form-save-btn"
                       style={{
                         fontFamily: 'Roboto, sans-serif',
@@ -1286,15 +1290,15 @@ export const SectionRenderer = ({
                         padding: '8px 24px',
                         borderRadius: '10px',
                         border: '1px solid #FD8C3E',
-                        background: isDraft === false ? '#9CA3AF' : '#F3F4F6',
-                        color: isDraft === false ? 'rgba(0, 0, 0, 0.3)' : 'rgba(0, 0, 0, 0.5)',
-                        cursor: isDraft === false ? 'not-allowed' : 'pointer',
+                        background: '#F3F4F6',
+                        color: 'rgba(0, 0, 0, 0.5)',
+                        cursor: 'pointer',
                         display: 'inline-flex',
                         alignItems: 'center',
                         gap: '8px',
                       }}
                     >
-                      {translate('common.save') || 'Save'}
+                      {translate('common.next') || 'Next'}
                       <img
                         src={arrowRightIcon}
                         alt=""
