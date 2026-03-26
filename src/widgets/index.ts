@@ -17,3 +17,4 @@ export { DisplayWidget } from './DisplayWidget';
 export { TableWidget } from './TableWidget';
 export { ProfileWidget } from './ProfileWidget';
 export { TextAreaWidget } from './TextAreaWidget';
+export { HeaderSectionWidget } from './HeaderSectionWidget';

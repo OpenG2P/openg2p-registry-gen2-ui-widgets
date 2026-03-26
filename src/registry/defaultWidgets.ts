@@ -17,7 +17,8 @@ import {
   DisplayWidget,
   TableWidget,
   ProfileWidget,
-  TextAreaWidget
+  TextAreaWidget,
+  HeaderSectionWidget,
 } from '../widgets';
 
 /**
@@ -73,6 +74,9 @@ export const registerDefaultWidgets = () => {
 
   // Profile widget for displaying user identity (image, name, ID)
   widgetRegistry.register({ widget: 'profile', component: ProfileWidget });
+
+  // Header section widget for full-width registry header with profile, status, and metadata
+  widgetRegistry.register({ widget: 'header-section', component: HeaderSectionWidget });
 };
 
 // Auto-register on import
