@@ -190,7 +190,7 @@ export const HeaderSectionExample = () => {
 
   const handleSectionSave = async (changes: SectionChanges) => {
     console.log('Section saved:', changes);
-    alert(`Section "${changes.sectionId}" saved!\nCheck console for details.`);
+    alert(`Section "${changes.section_id}" saved!\nRecords: ${JSON.stringify(changes.records, null, 2)}\nCheck console for details.`);
   };
 
   return (

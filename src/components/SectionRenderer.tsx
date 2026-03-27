@@ -514,7 +514,6 @@ export const SectionRenderer = ({
 
     const snapshot: Record<string, any> = {};
     let hasTable = false;
-    if (!sectionRegisterId) return [];
 
     const resolvePath = (path: string) => (pathPrefix ? `${pathPrefix}.${path}` : path);
 
@@ -552,9 +551,11 @@ export const SectionRenderer = ({
         cleanedSnapshot[fieldPath] = value;
       });
 
-      const sectionData = pathPrefix
-        ? getValueByPath(sourceData, resolvePath(sectionRegisterId))
-        : sourceData[sectionRegisterId];
+      const sectionData = sectionRegisterId
+        ? (pathPrefix
+            ? getValueByPath(sourceData, resolvePath(sectionRegisterId))
+            : sourceData[sectionRegisterId])
+        : {};
 
       return [
         {
@@ -735,7 +736,7 @@ export const SectionRenderer = ({
     if (JSON.stringify(oldSchemaData) !== JSON.stringify(newSchemaData)) {
       try {
         const sectionchanges: SectionChanges = {
-          section_id: dbSectionId,
+          section_id: dbSectionId ?? originalSection['section-id'],
           section_register_id: sectionRegisterId,
           records: [...newSchemaData],
           files: [...sectionFiles]
@@ -781,7 +782,7 @@ export const SectionRenderer = ({
       if (JSON.stringify(oldSchemaData) !== JSON.stringify(newSchemaData)) {
         try {
           await onSectionSave({
-            section_id: dbSectionId,
+            section_id: dbSectionId ?? originalSection['section-id'],
             section_register_id: sectionRegisterId,
             records: [...newSchemaData],
             files: [...sectionFiles],

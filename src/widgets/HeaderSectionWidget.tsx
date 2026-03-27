@@ -328,7 +328,7 @@ export const HeaderSectionWidget = ({ config }: HeaderSectionWidgetProps) => {
           gap: 1.5rem;
           width: 100%;
           font-family: Roboto, sans-serif;
-          padding: 24px 0 16px 0;
+          padding: 35px 0 16px 0;
         }
 
         .${cls} .hdr-left {
