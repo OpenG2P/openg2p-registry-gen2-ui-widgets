@@ -68,9 +68,9 @@ export const PanelRenderer = ({
     }
     return {
       className: orientation === 'horizontal'
-        ? 'flex flex-row space-x-4'
-        : 'flex flex-col space-y-4',
-      style: {},
+        ? 'flex flex-row'
+        : 'flex flex-col',
+      style: { gap: orientation === 'horizontal' ? '16px' : '0px' },
     };
   };
 
