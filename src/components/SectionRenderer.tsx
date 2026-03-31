@@ -400,6 +400,13 @@ export const SectionRenderer = ({
             }
           }
           
+          /* Widget labels in edit mode */
+          .${sectionClassId}-edit label.text-gray-700,
+          .${sectionClassId}-edit .text-gray-600 {
+            color: rgba(0, 0, 0, 0.5) !important;
+            font-weight: 400 !important;
+          }
+
           /* Vertical dividers between vertical panels in edit mode */
           #${editGridId} > .panel-wrapper {
             position: relative;
@@ -1062,6 +1069,9 @@ export const SectionRenderer = ({
         .${sectionClassId}.intake-form-accordion-item .intake-form-accordion-header {
           transition: opacity 0.2s ease, background-color 0.2s ease;
         }
+        .${sectionClassId}.intake-form-accordion-item .intake-form-accordion-header h2 {
+          color: #ED7C22;
+        }
         .${sectionClassId}.intake-form-accordion-item .intake-form-accordion-header:hover {
           opacity: 0.85;
         }
@@ -1071,7 +1081,12 @@ export const SectionRenderer = ({
         }
         .${sectionClassId}.intake-form-accordion-item .intake-form-accordion-content {
           padding-top: 8px;
-          padding-bottom: 4px;
+          padding-bottom: 0px;
+        }
+        .${sectionClassId}.intake-form-accordion-item label.text-gray-700,
+        .${sectionClassId}.intake-form-accordion-item .text-gray-600 {
+          color: rgba(0, 0, 0, 0.5) !important;
+          font-weight: 400 !important;
         }
         .${sectionClassId}.intake-form-accordion-item .intake-form-edit-controls {
           justify-content: flex-end;
@@ -1216,30 +1231,28 @@ export const SectionRenderer = ({
                         dataSourceRequestHandler={dataSourceRequestHandler}
                         schemaData={namespacedSchemaData}
                         onValueChange={onValueChange}
+                        isEditMode={isDraft !== false}
                       />
                     </div>
                   ))}
+                  <hr className="w-full" style={{ height: '1px', backgroundColor: '#F2BA1A', border: 'none', margin: '0' }} />
                   {hasSupportingDocuments && (
-                    <>
-                      <hr className="my-4 w-full" style={{ height: '1px', backgroundColor: '#E5E7EB', border: 'none' }} />
-                      <div className="supporting-documents-container">
-                        <span className="font-semibold" style={{ fontFamily: 'Roboto, sans-serif', fontSize: '16px' }}>
-                          {translate('common.supportedDocuments') || 'Supported Documents'}
-                        </span>
-                        <div className="supporting-documents-grid mt-4">
-                          {supportingDocuments.map((doc, docIndex) => {
-                            const docConfig = createDocumentWidgetConfig(doc, sectionId, docIndex);
-                            return (
-                              <div key={`${sectionId}-doc-${docIndex}`} className="supporting-document-item">
-                                <FileInputWidget config={docConfig} />
-                              </div>
-                            );
-                          })}
-                        </div>
+                    <div className="supporting-documents-container">
+                      <span className="font-semibold" style={{ fontFamily: 'Roboto, sans-serif', fontSize: '16px' }}>
+                        {translate('common.supportedDocuments') || 'Supported Documents'}
+                      </span>
+                      <div className="supporting-documents-grid mt-4">
+                        {supportingDocuments.map((doc, docIndex) => {
+                          const docConfig = createDocumentWidgetConfig(doc, sectionId, docIndex);
+                          return (
+                            <div key={`${sectionId}-doc-${docIndex}`} className="supporting-document-item">
+                              <FileInputWidget config={docConfig} />
+                            </div>
+                          );
+                        })}
                       </div>
-                    </>
+                    </div>
                   )}
-                  <hr className="my-4 w-full" style={{ height: '1px', backgroundColor: '#E5E7EB', border: 'none' }} />
                   <div
                     className="intake-form-edit-controls"
                     style={{
@@ -1247,7 +1260,8 @@ export const SectionRenderer = ({
                       justifyContent: 'flex-end',
                       alignItems: 'center',
                       gap: '12px',
-                      marginBottom: '20px',
+                      marginTop: '10px',
+                      marginBottom: '10px',
                       width: '100%',
                     }}
                   >
@@ -1263,7 +1277,7 @@ export const SectionRenderer = ({
                           padding: '8px 24px',
                           borderRadius: '10px',
                           border: '1px solid #FD8C3E',
-                          background: '#F3F4F6',
+                          background: '#FFFFFF',
                           color: 'rgba(0, 0, 0, 0.5)',
                           cursor: 'pointer',
                           display: 'inline-flex',
@@ -1291,7 +1305,7 @@ export const SectionRenderer = ({
                         padding: '8px 24px',
                         borderRadius: '10px',
                         border: '1px solid #FD8C3E',
-                        background: '#F3F4F6',
+                        background: '#FFFFFF',
                         color: 'rgba(0, 0, 0, 0.5)',
                         cursor: 'pointer',
                         display: 'inline-flex',

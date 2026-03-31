@@ -19,13 +19,27 @@ const schemaData = {
   registrant: {
     record_name: 'Sarah Elizabeth',
     functional_record_id: '1234567890',
-    record_image_storage_id: '', // empty → shows placeholder
+    record_image_storage_id: '',
     record_status: 'active',
     record_status_reason: 'Reason text here',
     created_by: 'Robert David',
     created_at: '14 Jan 2025',
     last_approved_by: 'Linda Susan',
     last_approved_at: '20 Mar 2026',
+    first_name: 'Sarah',
+    last_name: 'Elizabeth',
+    date_of_birth: '1990-05-15',
+    gender: 'Female',
+    email: 'sarah.elizabeth@example.com',
+    phone: '+1 (555) 012-3456',
+    nationality: 'American',
+    language: 'English',
+    address: {
+      street: '123 Main Street',
+      city: 'Springfield',
+      state: 'Illinois',
+      postal_code: '62704',
+    },
   },
 };
 
@@ -83,14 +97,15 @@ const headerSection: SectionConfig = {
   ],
 };
 
-// ── Additional sections (to show the header spanning all 3 cols) ─
-const personalInfoSection: SectionConfig = {
-  'section-id': 'personal-info',
-  'section-title': 'Personal Information',
+// ── Registrant details section with 3 vertical panels ───────────
+const registrantDetailsSection: SectionConfig = {
+  'section-id': 'registrant-details',
+  'section-title': 'Registrant Details',
   'section-editable': true,
+  'section-column-span': 3,
   panels: [
     {
-      'panel-id': 'personal-details',
+      'panel-id': 'personal-info',
       'panel-orientation': 'vertical',
       widgets: [
         {
@@ -114,18 +129,17 @@ const personalInfoSection: SectionConfig = {
           'widget-label': 'Date of Birth',
           'widget-data-path': 'registrant.date_of_birth',
         },
+        {
+          widget: 'text',
+          'widget-type': 'input',
+          'widget-id': 'gender',
+          'widget-label': 'Gender',
+          'widget-data-path': 'registrant.gender',
+        },
       ],
     },
-  ],
-};
-
-const contactInfoSection: SectionConfig = {
-  'section-id': 'contact-info',
-  'section-title': 'Contact Information',
-  'section-editable': true,
-  panels: [
     {
-      'panel-id': 'contact-details',
+      'panel-id': 'contact-info',
       'panel-orientation': 'vertical',
       widgets: [
         {
@@ -143,18 +157,24 @@ const contactInfoSection: SectionConfig = {
           'widget-label': 'Phone Number',
           'widget-data-path': 'registrant.phone',
         },
+        {
+          widget: 'text',
+          'widget-type': 'input',
+          'widget-id': 'nationality',
+          'widget-label': 'Nationality',
+          'widget-data-path': 'registrant.nationality',
+        },
+        {
+          widget: 'text',
+          'widget-type': 'input',
+          'widget-id': 'language',
+          'widget-label': 'Language',
+          'widget-data-path': 'registrant.language',
+        },
       ],
     },
-  ],
-};
-
-const addressSection: SectionConfig = {
-  'section-id': 'address-info',
-  'section-title': 'Address',
-  'section-editable': true,
-  panels: [
     {
-      'panel-id': 'address-details',
+      'panel-id': 'address-info',
       'panel-orientation': 'vertical',
       widgets: [
         {
@@ -171,17 +191,29 @@ const addressSection: SectionConfig = {
           'widget-label': 'City',
           'widget-data-path': 'registrant.address.city',
         },
+        {
+          widget: 'text',
+          'widget-type': 'input',
+          'widget-id': 'state',
+          'widget-label': 'State',
+          'widget-data-path': 'registrant.address.state',
+        },
+        {
+          widget: 'text',
+          'widget-type': 'input',
+          'widget-id': 'postal-code',
+          'widget-label': 'Postal Code',
+          'widget-data-path': 'registrant.address.postal_code',
+        },
       ],
     },
   ],
 };
 
-// Header section first, then 3 regular sections below (each takes 1 column)
+// Header section first, then a 3-panel registrant details section below
 const allSections: SectionConfig[] = [
   headerSection,
-  personalInfoSection,
-  contactInfoSection,
-  addressSection,
+  registrantDetailsSection,
 ];
 
 // ── Example component ───────────────────────────────────────────
