@@ -57,6 +57,11 @@ export interface SectionRendererProps {
   onPreviousSection?: (index: number) => void;
   /** IntakeForm mode: when true or undefined, sections are editable; when false, sections are readonly */
   isDraft?: boolean;
+
+  /** RegistryView: called when this section enters or exits edit mode. Used by SectionsContainer to enforce single-edit. */
+  onEditModeChange?: (sectionId: string, editing: boolean) => void;
+  /** RegistryView: when true, forces this section out of edit mode (another section took over). */
+  forceExitEdit?: boolean;
 }
 
 
@@ -90,6 +95,8 @@ export const SectionRenderer = ({
   onSectionSaveSuccess,
   onPreviousSection,
   isDraft,
+  onEditModeChange,
+  forceExitEdit,
 }: SectionRendererProps) => {
   const { translateConfig, translate } = useWidgetTranslation();
   const { schemaData: contextSchemaData, dataSourceRequestHandler: contextDataSourceRequestHandler } = useWidgetContext();
@@ -166,6 +173,9 @@ export const SectionRenderer = ({
     };
     return result;
   }, [mode, currentSchemaData, storeValues]);
+
+  // Original (non-namespaced) section ID — used for edit mode coordination with SectionsContainer
+  const originalSectionId = section['section-id'];
 
   // Use namespaced section for rendering
   const sectionToRender = namespacedSection;
@@ -272,6 +282,13 @@ export const SectionRenderer = ({
 
   // Edit mode state
   const [isEditMode, setIsEditMode] = useState(false);
+
+  // RegistryView: force exit edit mode when another section takes over
+  useEffect(() => {
+    if (forceExitEdit && isEditMode) {
+      setIsEditMode(false);
+    }
+  }, [forceExitEdit]); // eslint-disable-line react-hooks/exhaustive-deps
   const [isDocumentsExpanded, setIsDocumentsExpanded] = useState(true);
   const sectionRef = useRef<HTMLDivElement>(null);
   const [sectionHeight, setSectionHeight] = useState<number | null>(null);
@@ -358,6 +375,7 @@ export const SectionRenderer = ({
       setSectionHeight(height);
     }
     setIsEditMode(true);
+    onEditModeChange?.(originalSectionId, true);
   };
 
   // Render the edit section (absolutely positioned duplicate via portal)
@@ -448,9 +466,9 @@ export const SectionRenderer = ({
                 </div>
               );
             })}
+            <hr className="w-full" style={{ height: '1px', backgroundColor: '#F2BA1A', border: 'none', margin: '25px 0 0 0' }} />
             {hasSupportingDocuments && (
               <>
-                <hr className="w-full" style={{ height: '1px', backgroundColor: '#F2BA1A', border: 'none', margin: '15px 0 0 0' }} />
                 <div className="supporting-documents-container">
                   <button
                     type="button"
@@ -673,7 +691,7 @@ export const SectionRenderer = ({
 
   // IntakeForm only: section status badge (Saved / Modified and not saved / no badge when pristine)
   const intakeFormSectionStatus = useMemo<'saved' | 'modified' | null>(() => {
-    if (mode !== 'IntakeForm') return null;
+    if (mode !== 'IntakeForm' || isDraft === false) return null;
     const hasValue = (v: unknown) =>
       v !== undefined && v !== null && (typeof v !== 'string' || v.trim().length > 0);
     const currentSnapshot = buildSectionSnapshot(storeValues, namespace);
@@ -692,6 +710,7 @@ export const SectionRenderer = ({
     if (!store || !onSectionSave) {
       console.warn('Missing store or onSectionSave in SectionRenderer');
       setIsEditMode(false);
+      onEditModeChange?.(originalSectionId, false);
       return;
     }
     // Use original section (without namespace) for collecting widgets
@@ -747,7 +766,8 @@ export const SectionRenderer = ({
       }
     }
 
-    setIsEditMode(false)
+    setIsEditMode(false);
+    onEditModeChange?.(originalSectionId, false);
 
   };
 
@@ -882,6 +902,7 @@ export const SectionRenderer = ({
     }
 
     setIsEditMode(false);
+    onEditModeChange?.(originalSectionId, false);
   };
 
   // Create widget config for supporting document
@@ -906,7 +927,7 @@ export const SectionRenderer = ({
       'widget-id': widgetId,
       'widget-data-path': doc['document-data-path'],
       'widget-required': doc['document-required'] || false,
-      'widget-readonly': false,
+      'widget-readonly': mode === 'IntakeForm' && isDraft === false,
       'widget-data-options': {
         accept,
         multiple: false,
@@ -932,6 +953,19 @@ export const SectionRenderer = ({
         .${sectionClassId} .text-gray-600 {
           font-weight: 400 !important;
           color: rgba(0, 0, 0, 0.5) !important;
+          width: 50% !important;
+          min-width: 50% !important;
+          max-width: 50% !important;
+          flex-shrink: 0 !important;
+          overflow: hidden !important;
+          text-overflow: ellipsis !important;
+          white-space: nowrap !important;
+        }
+        /* Readonly value text truncation */
+        .${sectionClassId} .TextDisplayWidget > .flex-1 > .text-gray-900 {
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
         }
         
         /* Only apply fixed height when in edit mode */
