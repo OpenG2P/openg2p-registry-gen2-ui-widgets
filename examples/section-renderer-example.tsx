@@ -105,7 +105,7 @@ const personalInfoSection: SectionConfig = {
               widget: 'select',
               'widget-id': 'has_personal_phone',
               'widget-type': 'input',
-              'widget-label': 'Has Personal Phone',
+              'widget-label': 'Has Personal Phone with you?',
               'widget-data-path': `${REG_ID}.has_personal_phone`,
               'widget-data-format': { layout: 'vertical', sortOptions: false },
               'widget-data-source': {

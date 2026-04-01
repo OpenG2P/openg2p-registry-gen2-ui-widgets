@@ -125,12 +125,12 @@ export const TextAreaWidget = ({ config }: TextAreaWidgetProps) => {
     return (
       <div className="mb-[10px] TextAreaDisplayWidget flex flex-col sm:flex-row sm:items-start">
         {label && (
-          <div className="text-base text-gray-600 font-medium md:min-w-[120px] sm:pr-4 mb-1 sm:mb-0" style={{ fontFamily: 'Roboto, sans-serif' }}>
+          <div className="text-base text-gray-600 font-medium md:min-w-[120px] sm:pr-4 mb-1 sm:mb-0" style={{ fontFamily: 'Roboto, sans-serif' }} title={label}>
             {label}:
           </div>
         )}
         <div className="flex-1">
-          <pre className="text-base text-gray-900 font-medium whitespace-pre-wrap" style={{ 
+          <pre className="text-base text-gray-900 font-medium whitespace-pre-wrap" title={String(displayValue || '')} style={{ 
             fontFamily: 'Roboto, sans-serif',
             margin: 0,
             padding: 0,
@@ -147,7 +147,7 @@ export const TextAreaWidget = ({ config }: TextAreaWidgetProps) => {
   return (
     <div className="mb-[10px]">
       <div className="flex flex-col sm:flex-row sm:items-start">
-        <label className="text-base font-medium text-gray-700 md:min-w-[120px] sm:pr-4 sm:pt-1 mb-1 sm:mb-0" style={{ fontFamily: 'Roboto, sans-serif' }}>
+        <label className="text-base font-medium text-gray-700 md:min-w-[120px] sm:pr-4 sm:pt-1 mb-1 sm:mb-0" style={{ fontFamily: 'Roboto, sans-serif' }} title={translateConfig(widgetConfig['widget-label'])}>
           {label}
           {isRequired && (
             <span className="text-red-500 ml-1">*</span>

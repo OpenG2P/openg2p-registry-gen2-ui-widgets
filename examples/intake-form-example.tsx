@@ -381,7 +381,7 @@ export const IntakeFormExample = () => {
   const schemaData = useMemo(() => ({}), []);
   const [formHandle, setFormHandle] = useState<SectionsFormHandle | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const showActions = false;
+  const showActions = true;
 
   const handleSectionSave = async (changes: SectionChanges) => {
     console.log('Section saved (per-section):', changes);

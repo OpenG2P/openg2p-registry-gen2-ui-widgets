@@ -65,7 +65,7 @@ export const DisplayWidget = ({ config }: DisplayWidgetProps) => {
   // If no label, render as paragraph text
   if (!label || label.trim() === '') {
     return (
-      <div className="mb-3 text-base text-gray-700">
+      <div className="mb-3 text-base text-gray-700" title={String(displayValue ?? '')}>
         {displayValue}
       </div>
     );
@@ -74,10 +74,10 @@ export const DisplayWidget = ({ config }: DisplayWidgetProps) => {
   // With label, render as key-value pair
   return (
     <div className="mb-[10px] flex flex-col sm:flex-row sm:items-start">
-      <div className="text-base text-gray-600 font-medium md:min-w-[120px] sm:pr-4 mb-1 sm:mb-0" style={{ fontFamily: 'Roboto, sans-serif' }}>
+      <div className="text-base text-gray-600 font-medium md:min-w-[120px] sm:pr-4 mb-1 sm:mb-0" style={{ fontFamily: 'Roboto, sans-serif' }} title={label}>
         {label}:
       </div>
-      <div className="flex-1 text-base text-gray-900 font-medium">
+      <div className="flex-1 text-base text-gray-900 font-medium" title={String(displayValue ?? '')}>
         {displayValue}
       </div>
     </div>

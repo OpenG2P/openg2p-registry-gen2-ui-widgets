@@ -48,12 +48,12 @@ export const SelectWidget = ({ config }: SelectWidgetProps) => {
     return (
       <div className="mb-[10px] SelectDisplayWidget flex flex-col sm:flex-row sm:items-start">
         {label && (
-          <div className="text-base text-gray-600 font-medium md:min-w-[120px] sm:pr-4 mb-1 sm:mb-0" style={{ fontFamily: 'Roboto, sans-serif' }}>
+          <div className="text-base text-gray-600 font-medium md:min-w-[120px] sm:pr-4 mb-1 sm:mb-0" style={{ fontFamily: 'Roboto, sans-serif' }} title={label}>
             {label}:
           </div>
         )}
         <div className="flex-1">
-          <div className="text-base text-gray-900 font-medium">
+          <div className="text-base text-gray-900 font-medium" title={String(displayValue ?? '')}>
             {displayValue}
           </div>
         </div>
@@ -64,7 +64,7 @@ export const SelectWidget = ({ config }: SelectWidgetProps) => {
   return (
     <div className="mb-[10px]">
       <div className="flex flex-col sm:flex-row sm:items-start">
-        <label className="text-base font-medium text-gray-700 md:min-w-[120px] sm:pr-4 sm:pt-1 mb-1 sm:mb-0" style={{ fontFamily: 'Roboto, sans-serif' }}>
+        <label className="text-base font-medium text-gray-700 md:min-w-[120px] sm:pr-4 sm:pt-1 mb-1 sm:mb-0" style={{ fontFamily: 'Roboto, sans-serif' }} title={translateConfig(widgetConfig['widget-label'])}>
           {translateConfig(widgetConfig['widget-label'])}
           {widgetConfig['widget-required'] && (
             <span className="text-red-500 ml-1">*</span>

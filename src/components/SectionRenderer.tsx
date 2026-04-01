@@ -953,6 +953,19 @@ export const SectionRenderer = ({
         .${sectionClassId} .text-gray-600 {
           font-weight: 400 !important;
           color: rgba(0, 0, 0, 0.5) !important;
+          width: 50% !important;
+          min-width: 50% !important;
+          max-width: 50% !important;
+          flex-shrink: 0 !important;
+          overflow: hidden !important;
+          text-overflow: ellipsis !important;
+          white-space: nowrap !important;
+        }
+        /* Readonly value text truncation */
+        .${sectionClassId} .TextDisplayWidget > .flex-1 > .text-gray-900 {
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
         }
         
         /* Only apply fixed height when in edit mode */
