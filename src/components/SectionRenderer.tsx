@@ -400,13 +400,6 @@ export const SectionRenderer = ({
             }
           }
           
-          /* Widget labels in edit mode */
-          .${sectionClassId}-edit label.text-gray-700,
-          .${sectionClassId}-edit .text-gray-600 {
-            color: rgba(0, 0, 0, 0.5) !important;
-            font-weight: 400 !important;
-          }
-
           /* Vertical dividers between vertical panels in edit mode */
           #${editGridId} > .panel-wrapper {
             position: relative;
@@ -417,7 +410,7 @@ export const SectionRenderer = ({
             position: absolute;
             right: 0;
             top: 0;
-            bottom: 0;
+            bottom: 5px;
             width: 1px;
             background-color: #F2BA1A;
           }
@@ -457,7 +450,7 @@ export const SectionRenderer = ({
             })}
             {hasSupportingDocuments && (
               <>
-                <hr className="my-4 w-full" style={{ height: '1px', backgroundColor: '#F2BA1A', border: 'none' }} />
+                <hr className="w-full" style={{ height: '1px', backgroundColor: '#F2BA1A', border: 'none', margin: '15px 0 0 0' }} />
                 <div className="supporting-documents-container">
                   <button
                     type="button"
@@ -935,6 +928,11 @@ export const SectionRenderer = ({
           min-height: auto !important;
           height: auto !important;
         }
+        .${sectionClassId} label.text-gray-700,
+        .${sectionClassId} .text-gray-600 {
+          font-weight: 400 !important;
+          color: rgba(0, 0, 0, 0.5) !important;
+        }
         
         /* Only apply fixed height when in edit mode */
         .${sectionClassId}[data-edit-mode="true"] {
@@ -1083,11 +1081,6 @@ export const SectionRenderer = ({
           padding-top: 8px;
           padding-bottom: 0px;
         }
-        .${sectionClassId}.intake-form-accordion-item label.text-gray-700,
-        .${sectionClassId}.intake-form-accordion-item .text-gray-600 {
-          color: rgba(0, 0, 0, 0.5) !important;
-          font-weight: 400 !important;
-        }
         .${sectionClassId}.intake-form-accordion-item .intake-form-edit-controls {
           justify-content: flex-end;
           width: 100%;
@@ -1235,7 +1228,7 @@ export const SectionRenderer = ({
                       />
                     </div>
                   ))}
-                  <hr className="w-full" style={{ height: '1px', backgroundColor: '#F2BA1A', border: 'none', margin: '0' }} />
+                  <hr className="w-full" style={{ height: '1px', backgroundColor: '#F2BA1A', border: 'none', margin: '15px 0 0 0' }} />
                   {hasSupportingDocuments && (
                     <div className="supporting-documents-container">
                       <span className="font-semibold" style={{ fontFamily: 'Roboto, sans-serif', fontSize: '16px' }}>

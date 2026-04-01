@@ -22,6 +22,7 @@ import { Provider } from 'react-redux';
 import { SectionBuilder } from '../src/components/SectionBuilder';
 import { IntakeFormExample } from './intake-form-example';
 import { HeaderSectionExample } from './header-section-example';
+import { SectionRendererExample } from './section-renderer-example';
 import { SectionConfig } from '../src/types';
 import { createWidgetStore } from '../src/store';
 import { WidgetProvider } from '../src/components/WidgetProvider';
@@ -94,7 +95,7 @@ const initialSection: SectionConfig = {
   ],
 };
 
-type TabId = 'section-builder' | 'intake-form' | 'header-section';
+type TabId = 'section-builder' | 'intake-form' | 'header-section' | 'section-renderer';
 
 function App() {
   const [section, setSection] = useState<SectionConfig>(initialSection);
@@ -171,6 +172,20 @@ function App() {
             >
               Header Section
             </button>
+            <button
+              type="button"
+              onClick={() => setActiveTab('section-renderer')}
+              style={{
+                padding: '8px 16px',
+                fontWeight: activeTab === 'section-renderer' ? 600 : 400,
+                background: activeTab === 'section-renderer' ? '#e5e7eb' : 'transparent',
+                border: 'none',
+                borderRadius: '6px',
+                cursor: 'pointer',
+              }}
+            >
+              Section Renderer
+            </button>
           </div>
           <div style={{
             flex: 1,
@@ -199,6 +214,7 @@ function App() {
             )}
             {activeTab === 'intake-form' && <IntakeFormExample />}
             {activeTab === 'header-section' && <HeaderSectionExample />}
+            {activeTab === 'section-renderer' && <SectionRendererExample />}
           </div>
         </div>
       </WidgetProvider>
