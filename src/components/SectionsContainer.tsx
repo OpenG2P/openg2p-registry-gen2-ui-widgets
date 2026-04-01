@@ -154,6 +154,13 @@ export const SectionsContainer = ({
 
   // IntakeForm mode: accordion state - which section is expanded (null = none; first expanded by default)
   const [expandedSectionIndex, setExpandedSectionIndex] = useState<number | null>(0);
+
+  // RegistryView: track which section is currently in edit mode (by section-id); null = none
+  const [editingSectionId, setEditingSectionId] = useState<string | null>(null);
+
+  const handleEditModeChange = useCallback((sectionId: string, editing: boolean) => {
+    setEditingSectionId(editing ? sectionId : null);
+  }, []);
   const safeSections = sections ?? [];
   const prevSectionsLengthRef = useRef(safeSections.length);
 
@@ -366,6 +373,14 @@ export const SectionsContainer = ({
             }
             : {};
 
+          // RegistryView: single-edit coordination props
+          const registryViewEditProps = mode === 'RegistryView'
+            ? {
+              onEditModeChange: handleEditModeChange,
+              forceExitEdit: editingSectionId !== null && editingSectionId !== section['section-id'],
+            }
+            : {};
+
           // Check if section has explicit column span
           if (section['section-column-span']) {
             return (
@@ -382,6 +397,7 @@ export const SectionsContainer = ({
                 namespace={sectionNamespace}
                 onSectionDirtyChange={handleSectionDirtyChange}
                 {...intakeFormProps}
+                {...registryViewEditProps}
               />
             );
           }
@@ -389,9 +405,6 @@ export const SectionsContainer = ({
           const verticalPanelsCount = countVerticalPanels(section.panels);
           const tableWidgetColumnSpan = getTableWidgetColumnSpan(section.panels);
           const containsTable = hasTableWidget(section.panels);
-          // If section contains a table widget with explicit column span, use it
-          // Otherwise, if it has a table widget, ensure it spans at least 2 columns
-          // Otherwise, use the vertical panel count
           const columnSpan = tableWidgetColumnSpan !== null
             ? tableWidgetColumnSpan
             : (containsTable ? Math.max(verticalPanelsCount, 2) : verticalPanelsCount);
@@ -409,6 +422,7 @@ export const SectionsContainer = ({
               namespace={sectionNamespace}
               onSectionDirtyChange={handleSectionDirtyChange}
               {...intakeFormProps}
+              {...registryViewEditProps}
             />
           );
         })}
