@@ -152,7 +152,7 @@ export const PanelRenderer = ({
                     position: 'absolute',
                     right: 0,
                     top: 0,
-                    bottom: 0,
+                    bottom: '5px',
                     width: '1px',
                     backgroundColor: isEditMode ? '#F2BA1A' : '#D1D5DB',
                   }}

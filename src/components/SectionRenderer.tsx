@@ -417,7 +417,7 @@ export const SectionRenderer = ({
             position: absolute;
             right: 0;
             top: 0;
-            bottom: 0;
+            bottom: 5px;
             width: 1px;
             background-color: #F2BA1A;
           }
@@ -457,7 +457,7 @@ export const SectionRenderer = ({
             })}
             {hasSupportingDocuments && (
               <>
-                <hr className="my-4 w-full" style={{ height: '1px', backgroundColor: '#F2BA1A', border: 'none' }} />
+                <hr className="w-full" style={{ height: '1px', backgroundColor: '#F2BA1A', border: 'none', margin: '15px 0 0 0' }} />
                 <div className="supporting-documents-container">
                   <button
                     type="button"
@@ -1235,7 +1235,7 @@ export const SectionRenderer = ({
                       />
                     </div>
                   ))}
-                  <hr className="w-full" style={{ height: '1px', backgroundColor: '#F2BA1A', border: 'none', margin: '0' }} />
+                  <hr className="w-full" style={{ height: '1px', backgroundColor: '#F2BA1A', border: 'none', margin: '15px 0 0 0' }} />
                   {hasSupportingDocuments && (
                     <div className="supporting-documents-container">
                       <span className="font-semibold" style={{ fontFamily: 'Roboto, sans-serif', fontSize: '16px' }}>
