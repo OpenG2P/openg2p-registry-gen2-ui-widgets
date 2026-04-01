@@ -400,13 +400,6 @@ export const SectionRenderer = ({
             }
           }
           
-          /* Widget labels in edit mode */
-          .${sectionClassId}-edit label.text-gray-700,
-          .${sectionClassId}-edit .text-gray-600 {
-            color: rgba(0, 0, 0, 0.5) !important;
-            font-weight: 400 !important;
-          }
-
           /* Vertical dividers between vertical panels in edit mode */
           #${editGridId} > .panel-wrapper {
             position: relative;
@@ -935,6 +928,11 @@ export const SectionRenderer = ({
           min-height: auto !important;
           height: auto !important;
         }
+        .${sectionClassId} label.text-gray-700,
+        .${sectionClassId} .text-gray-600 {
+          font-weight: 400 !important;
+          color: rgba(0, 0, 0, 0.5) !important;
+        }
         
         /* Only apply fixed height when in edit mode */
         .${sectionClassId}[data-edit-mode="true"] {
@@ -1082,11 +1080,6 @@ export const SectionRenderer = ({
         .${sectionClassId}.intake-form-accordion-item .intake-form-accordion-content {
           padding-top: 8px;
           padding-bottom: 0px;
-        }
-        .${sectionClassId}.intake-form-accordion-item label.text-gray-700,
-        .${sectionClassId}.intake-form-accordion-item .text-gray-600 {
-          color: rgba(0, 0, 0, 0.5) !important;
-          font-weight: 400 !important;
         }
         .${sectionClassId}.intake-form-accordion-item .intake-form-edit-controls {
           justify-content: flex-end;
