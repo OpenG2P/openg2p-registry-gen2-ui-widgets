@@ -961,6 +961,15 @@ export const SectionRenderer = ({
           text-overflow: ellipsis !important;
           white-space: nowrap !important;
         }
+        /* Readonly: prevent flex row from overflowing panel */
+        .${sectionClassId} .TextDisplayWidget {
+          min-width: 0 !important;
+          overflow: hidden !important;
+        }
+        .${sectionClassId} .TextDisplayWidget > .flex-1 {
+          min-width: 0 !important;
+          overflow: hidden !important;
+        }
         /* Readonly value text truncation */
         .${sectionClassId} .TextDisplayWidget > .flex-1 > .text-gray-900 {
           overflow: hidden;
@@ -1509,7 +1518,7 @@ export const SectionRenderer = ({
           )}
           {/* RegistryView Mode - Show edit button (if not hidden) */}
           {mode === 'RegistryView' && !hideEditButton && (
-            <hr className="border-gray-300 w-full" style={{ height: '1px', marginTop: !isEditMode ? '20px' : 0, marginBottom: '14px' }} />
+            <hr className="border-gray-300 w-full" style={{ height: '1px', marginTop: !isEditMode ? '10px' : 0, marginBottom: '14px' }} />
           )}
           {mode === 'RegistryView' && !isEditMode && !hideEditButton && (
             <div className="flex justify-center items-center" style={{ marginBottom: '20px' }}>
