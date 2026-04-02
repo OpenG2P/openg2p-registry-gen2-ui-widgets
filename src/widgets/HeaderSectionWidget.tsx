@@ -270,7 +270,7 @@ export const HeaderSectionWidget = ({ config }: HeaderSectionWidgetProps) => {
 
   // ── Format options ────────────────────────────────────────────
   const format = (widgetConfig['widget-data-format'] || {}) as Record<string, any>;
-  const imageSize = format.imageSize || 90;
+  const imageSize = format.imageSize || 120;
   const nameColor = format.nameColor || '#ED7C22';
   const statusColors: Record<string, string> = {
     ...DEFAULT_STATUS_COLORS,
@@ -336,7 +336,7 @@ export const HeaderSectionWidget = ({ config }: HeaderSectionWidgetProps) => {
           flex-direction: row;
           align-items: flex-start;
           gap: 1rem;
-          flex: 1 1 55%;
+          flex: 1 1 50%;
           min-width: 0;
         }
 
@@ -344,7 +344,7 @@ export const HeaderSectionWidget = ({ config }: HeaderSectionWidgetProps) => {
           display: flex;
           flex-direction: column;
           gap: 0.5rem;
-          flex: 0 0 auto;
+          flex: 1 1 40%;
           min-width: 220px;
         }
 
@@ -398,19 +398,19 @@ export const HeaderSectionWidget = ({ config }: HeaderSectionWidgetProps) => {
           display: flex;
           align-items: flex-start;
           gap: 0.5rem;
-          font-size: 0.875rem;
+          font-size: 1rem;
           line-height: 1.6;
         }
 
         .${cls} .hdr-field-label {
-          color: #6b7280;
-          font-weight: 500;
+          color: rgba(0, 0, 0, 0.5);
+          font-weight: 400;
           white-space: nowrap;
         }
 
         .${cls} .hdr-field-value {
           color: #111827;
-          font-weight: 600;
+          font-weight: 500;
         }
 
         .${cls} .hdr-status-badge {
@@ -426,18 +426,18 @@ export const HeaderSectionWidget = ({ config }: HeaderSectionWidgetProps) => {
           display: flex;
           align-items: baseline;
           gap: 0.35rem;
-          font-size: 0.875rem;
+          font-size: 1rem;
           line-height: 1.6;
         }
 
         .${cls} .hdr-meta-label {
-          color: #6b7280;
+          color: rgba(0, 0, 0, 0.5);
           font-weight: 400;
         }
 
         .${cls} .hdr-meta-value {
           color: #111827;
-          font-weight: 600;
+          font-weight: 500;
         }
 
         .${cls} .hdr-select {

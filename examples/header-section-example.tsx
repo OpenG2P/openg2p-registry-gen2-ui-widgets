@@ -83,7 +83,7 @@ const headerSection: SectionConfig = {
             },
           },
           'widget-data-format': {
-            imageSize: 90,
+            imageSize: 120,
             nameColor: '#ED7C22',
             statusColors: {
               active: '#16A34A',
@@ -227,7 +227,7 @@ export const HeaderSectionExample = () => {
 
   return (
     <WidgetProvider store={store} schemaData={schemaData}>
-      <div style={{ padding: '24px', maxWidth: '1200px', margin: '0 auto' }}>
+      <div style={{ padding: '24px', maxWidth: '1241px', margin: '0 auto' }}>
         <h1 style={{ marginBottom: '24px', fontSize: '24px', fontFamily: 'Roboto, sans-serif' }}>
           Registry View — Header Section Widget
         </h1>
