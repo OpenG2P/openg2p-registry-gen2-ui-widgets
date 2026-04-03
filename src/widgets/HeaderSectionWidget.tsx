@@ -256,12 +256,22 @@ export const HeaderSectionWidget = ({ config }: HeaderSectionWidgetProps) => {
   const isReadonly = widgetConfig['widget-readonly'] !== false;
   const dataPath = widgetConfig['widget-data-path'];
 
-  // ── Resolve labels: config overrides → translateConfig → English defaults
+  // ── Resolve labels ──────────────────────────────────────────────
+  // Priority: widget-labels override → translateConfig(English default) → English default
+  // The host's locale JSON files should use the English text as keys,
+  // e.g. { "Functional Record ID": "ID fonctionnel" }
   const configLabels = (widgetConfig as any)['widget-labels'] as Record<string, string> | undefined;
   const getLabel = useCallback(
     (key: string): string => {
-      const raw = configLabels?.[key] || DEFAULT_LABELS[key] || key;
-      return translateConfig(raw) || raw;
+      const englishDefault = DEFAULT_LABELS[key] || key;
+
+      if (configLabels?.[key]) {
+        const translated = translateConfig(configLabels[key]);
+        if (translated && translated !== configLabels[key]) return translated;
+      }
+
+      const translated = translateConfig(englishDefault);
+      return translated || englishDefault;
     },
     [configLabels, translateConfig],
   );

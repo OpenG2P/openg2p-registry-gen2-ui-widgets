@@ -6,7 +6,10 @@
  * - View mode: profile image, name, functional ID, status badge, metadata
  * - Edit mode: status dropdown + status reason text input become editable
  * - widget-field-config for explicit per-field data source mapping
- * - Language switcher to test host-driven i18n via widget-labels
+ * - Language switcher to test host-driven i18n
+ *
+ * Translation keys: The host locale JSON files should use the English label
+ * text as keys. See the `translations` object below for the full list.
  */
 
 import React, { useMemo, useState, useCallback } from 'react';
@@ -15,18 +18,22 @@ import { WidgetProvider, SectionsContainer } from '../src';
 import type { SectionConfig } from '../src/types';
 import type { SectionChanges } from '../src/components/SectionRenderer';
 
-// ── Translation dictionaries per language ────────────────────────
+// ── Simulates the host app's locale JSON files ──────────────────
+// In a real app these come from /locales/en.json, /locales/fr.json, etc.
+// Keys are the English label text — same keys the widget passes to translate().
 const translations: Record<string, Record<string, string>> = {
   en: {
-    'header.functionalRecordId': 'Functional Record ID',
-    'header.recordStatus': 'Record Status',
-    'header.statusReason': 'Status Reason',
-    'header.select': 'Select',
-    'header.enterReason': 'Enter Reason',
-    'header.createdBy': 'Created by',
-    'header.createdAt': 'Created at',
-    'header.lastApprovedBy': 'Last Approved by',
-    'header.lastApprovedAt': 'Last Approved at',
+    // Header section labels
+    'Functional Record ID': 'Functional Record ID',
+    'Record Status': 'Record Status',
+    'Status Reason': 'Status Reason',
+    'Select': 'Select',
+    'Enter Reason': 'Enter Reason',
+    'Created by': 'Created by',
+    'Created at': 'Created at',
+    'Last Approved by': 'Last Approved by',
+    'Last Approved at': 'Last Approved at',
+    // Other widget labels
     'Registrant Details': 'Registrant Details',
     'First Name': 'First Name',
     'Last Name': 'Last Name',
@@ -42,15 +49,17 @@ const translations: Record<string, Record<string, string>> = {
     'Postal Code': 'Postal Code',
   },
   fr: {
-    'header.functionalRecordId': 'ID fonctionnel',
-    'header.recordStatus': 'Statut du registre',
-    'header.statusReason': 'Raison du statut',
-    'header.select': 'Sélectionner',
-    'header.enterReason': 'Entrer la raison',
-    'header.createdBy': 'Créé par',
-    'header.createdAt': 'Créé le',
-    'header.lastApprovedBy': 'Dernier approbateur',
-    'header.lastApprovedAt': 'Dernière approbation le',
+    // Header section labels
+    'Functional Record ID': 'ID fonctionnel',
+    'Record Status': 'Statut du registre',
+    'Status Reason': 'Raison du statut',
+    'Select': 'Sélectionner',
+    'Enter Reason': 'Entrer la raison',
+    'Created by': 'Créé par',
+    'Created at': 'Créé le',
+    'Last Approved by': 'Dernier approbateur',
+    'Last Approved at': 'Dernière approbation le',
+    // Other widget labels
     'Registrant Details': 'Détails du déclarant',
     'First Name': 'Prénom',
     'Last Name': 'Nom de famille',
@@ -66,15 +75,17 @@ const translations: Record<string, Record<string, string>> = {
     'Postal Code': 'Code postal',
   },
   ar: {
-    'header.functionalRecordId': 'المعرف الوظيفي',
-    'header.recordStatus': 'حالة السجل',
-    'header.statusReason': 'سبب الحالة',
-    'header.select': 'اختر',
-    'header.enterReason': 'أدخل السبب',
-    'header.createdBy': 'أنشأه',
-    'header.createdAt': 'تاريخ الإنشاء',
-    'header.lastApprovedBy': 'آخر موافقة بواسطة',
-    'header.lastApprovedAt': 'تاريخ آخر موافقة',
+    // Header section labels
+    'Functional Record ID': 'المعرف الوظيفي',
+    'Record Status': 'حالة السجل',
+    'Status Reason': 'سبب الحالة',
+    'Select': 'اختر',
+    'Enter Reason': 'أدخل السبب',
+    'Created by': 'أنشأه',
+    'Created at': 'تاريخ الإنشاء',
+    'Last Approved by': 'آخر موافقة بواسطة',
+    'Last Approved at': 'تاريخ آخر موافقة',
+    // Other widget labels
     'Registrant Details': 'تفاصيل المسجل',
     'First Name': 'الاسم الأول',
     'Last Name': 'اسم العائلة',
@@ -121,6 +132,9 @@ const schemaData = {
 };
 
 // ── Header section config ───────────────────────────────────────
+// NOTE: No "widget-labels" needed — the widget uses the English text
+// as translation keys by default. The host just needs those keys in
+// its locale JSON files.
 const headerSection: SectionConfig = {
   'section-id': 'header-section',
   'section-title': '',
@@ -158,17 +172,6 @@ const headerSection: SectionConfig = {
                 ],
               },
             },
-          },
-          'widget-labels': {
-            functionalId: 'header.functionalRecordId',
-            status: 'header.recordStatus',
-            statusReason: 'header.statusReason',
-            select: 'header.select',
-            enterReason: 'header.enterReason',
-            createdBy: 'header.createdBy',
-            createdAt: 'header.createdAt',
-            lastApprovedBy: 'header.lastApprovedBy',
-            lastApprovedAt: 'header.lastApprovedAt',
           },
           'widget-data-format': {
             imageSize: 120,
@@ -298,7 +301,6 @@ const registrantDetailsSection: SectionConfig = {
   ],
 };
 
-// Header section first, then a 3-panel registrant details section below
 const allSections: SectionConfig[] = [
   headerSection,
   registrantDetailsSection,
@@ -309,6 +311,9 @@ export const HeaderSectionExample = () => {
   const store = useMemo(() => createWidgetStore(), []);
   const [language, setLanguage] = useState('en');
 
+  // Simulates the host app's t() function backed by locale JSON files.
+  // A new function reference is created on language change so the
+  // WidgetProvider context updates and all widgets re-render.
   const translateFn = useCallback(
     (key: string, options?: any): string => {
       const dict = translations[language] || translations.en;
@@ -331,6 +336,8 @@ export const HeaderSectionExample = () => {
           alignItems: 'center',
           justifyContent: 'space-between',
           marginBottom: '24px',
+          flexWrap: 'wrap',
+          gap: '12px',
         }}>
           <h1 style={{ fontSize: '24px', fontFamily: 'Roboto, sans-serif', margin: 0 }}>
             Registry View — Header Section Widget
