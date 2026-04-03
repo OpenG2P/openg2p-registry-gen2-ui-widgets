@@ -6,13 +6,90 @@
  * - View mode: profile image, name, functional ID, status badge, metadata
  * - Edit mode: status dropdown + status reason text input become editable
  * - widget-field-config for explicit per-field data source mapping
+ * - Language switcher to test host-driven i18n via widget-labels
  */
 
-import React, { useMemo } from 'react';
+import React, { useMemo, useState, useCallback } from 'react';
 import { createWidgetStore } from '../src/store';
 import { WidgetProvider, SectionsContainer } from '../src';
 import type { SectionConfig } from '../src/types';
 import type { SectionChanges } from '../src/components/SectionRenderer';
+
+// ── Translation dictionaries per language ────────────────────────
+const translations: Record<string, Record<string, string>> = {
+  en: {
+    'header.functionalRecordId': 'Functional Record ID',
+    'header.recordStatus': 'Record Status',
+    'header.statusReason': 'Status Reason',
+    'header.select': 'Select',
+    'header.enterReason': 'Enter Reason',
+    'header.createdBy': 'Created by',
+    'header.createdAt': 'Created at',
+    'header.lastApprovedBy': 'Last Approved by',
+    'header.lastApprovedAt': 'Last Approved at',
+    'Registrant Details': 'Registrant Details',
+    'First Name': 'First Name',
+    'Last Name': 'Last Name',
+    'Date of Birth': 'Date of Birth',
+    'Gender': 'Gender',
+    'Email': 'Email',
+    'Phone Number': 'Phone Number',
+    'Nationality': 'Nationality',
+    'Language': 'Language',
+    'Street': 'Street',
+    'City': 'City',
+    'State': 'State',
+    'Postal Code': 'Postal Code',
+  },
+  fr: {
+    'header.functionalRecordId': 'ID fonctionnel',
+    'header.recordStatus': 'Statut du registre',
+    'header.statusReason': 'Raison du statut',
+    'header.select': 'Sélectionner',
+    'header.enterReason': 'Entrer la raison',
+    'header.createdBy': 'Créé par',
+    'header.createdAt': 'Créé le',
+    'header.lastApprovedBy': 'Dernier approbateur',
+    'header.lastApprovedAt': 'Dernière approbation le',
+    'Registrant Details': 'Détails du déclarant',
+    'First Name': 'Prénom',
+    'Last Name': 'Nom de famille',
+    'Date of Birth': 'Date de naissance',
+    'Gender': 'Genre',
+    'Email': 'E-mail',
+    'Phone Number': 'Numéro de téléphone',
+    'Nationality': 'Nationalité',
+    'Language': 'Langue',
+    'Street': 'Rue',
+    'City': 'Ville',
+    'State': 'État',
+    'Postal Code': 'Code postal',
+  },
+  ar: {
+    'header.functionalRecordId': 'المعرف الوظيفي',
+    'header.recordStatus': 'حالة السجل',
+    'header.statusReason': 'سبب الحالة',
+    'header.select': 'اختر',
+    'header.enterReason': 'أدخل السبب',
+    'header.createdBy': 'أنشأه',
+    'header.createdAt': 'تاريخ الإنشاء',
+    'header.lastApprovedBy': 'آخر موافقة بواسطة',
+    'header.lastApprovedAt': 'تاريخ آخر موافقة',
+    'Registrant Details': 'تفاصيل المسجل',
+    'First Name': 'الاسم الأول',
+    'Last Name': 'اسم العائلة',
+    'Date of Birth': 'تاريخ الميلاد',
+    'Gender': 'الجنس',
+    'Email': 'البريد الإلكتروني',
+    'Phone Number': 'رقم الهاتف',
+    'Nationality': 'الجنسية',
+    'Language': 'اللغة',
+    'Street': 'الشارع',
+    'City': 'المدينة',
+    'State': 'الولاية',
+    'Postal Code': 'الرمز البريدي',
+  },
+};
 
 // ── Schema data (simulates API response) ────────────────────────
 const schemaData = {
@@ -81,6 +158,17 @@ const headerSection: SectionConfig = {
                 ],
               },
             },
+          },
+          'widget-labels': {
+            functionalId: 'header.functionalRecordId',
+            status: 'header.recordStatus',
+            statusReason: 'header.statusReason',
+            select: 'header.select',
+            enterReason: 'header.enterReason',
+            createdBy: 'header.createdBy',
+            createdAt: 'header.createdAt',
+            lastApprovedBy: 'header.lastApprovedBy',
+            lastApprovedAt: 'header.lastApprovedAt',
           },
           'widget-data-format': {
             imageSize: 120,
@@ -219,6 +307,15 @@ const allSections: SectionConfig[] = [
 // ── Example component ───────────────────────────────────────────
 export const HeaderSectionExample = () => {
   const store = useMemo(() => createWidgetStore(), []);
+  const [language, setLanguage] = useState('en');
+
+  const translateFn = useCallback(
+    (key: string, options?: any): string => {
+      const dict = translations[language] || translations.en;
+      return dict[key] || options?.defaultValue || key;
+    },
+    [language],
+  );
 
   const handleSectionSave = async (changes: SectionChanges) => {
     console.log('Section saved:', changes);
@@ -226,11 +323,46 @@ export const HeaderSectionExample = () => {
   };
 
   return (
-    <WidgetProvider store={store} schemaData={schemaData}>
+    <WidgetProvider store={store} schemaData={schemaData} translate={translateFn}>
       <div style={{ padding: '24px', maxWidth: '1241px', margin: '0 auto' }}>
-        <h1 style={{ marginBottom: '24px', fontSize: '24px', fontFamily: 'Roboto, sans-serif' }}>
-          Registry View — Header Section Widget
-        </h1>
+        {/* ── Language selector bar ─── */}
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          marginBottom: '24px',
+        }}>
+          <h1 style={{ fontSize: '24px', fontFamily: 'Roboto, sans-serif', margin: 0 }}>
+            Registry View — Header Section Widget
+          </h1>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <span style={{ fontSize: '14px', color: '#6B7280', fontFamily: 'Roboto, sans-serif' }}>
+              Language:
+            </span>
+            {(['en', 'fr', 'ar'] as const).map((lng) => (
+              <button
+                key={lng}
+                type="button"
+                onClick={() => setLanguage(lng)}
+                style={{
+                  padding: '6px 14px',
+                  fontSize: '13px',
+                  fontWeight: language === lng ? 700 : 400,
+                  background: language === lng ? '#ED7C22' : '#fff',
+                  color: language === lng ? '#fff' : '#374151',
+                  border: '1px solid ' + (language === lng ? '#ED7C22' : '#D1D5DB'),
+                  borderRadius: '6px',
+                  cursor: 'pointer',
+                  fontFamily: 'Roboto, sans-serif',
+                  transition: 'all 0.15s',
+                }}
+              >
+                {{ en: 'English', fr: 'Français', ar: 'العربية' }[lng]}
+              </button>
+            ))}
+          </div>
+        </div>
+
         <SectionsContainer
           sections={allSections}
           schemaData={schemaData}

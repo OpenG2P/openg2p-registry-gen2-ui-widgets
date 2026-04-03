@@ -62,6 +62,24 @@ import { dummyProfile } from '../assets';
  *   - status        → <select> dropdown, options from widget-field-config.status.data-source
  *   - statusReason  → <input type="text">
  *
+ * ── widget-labels (object, optional) ──────────────────────────────
+ *   Allows the host to override field labels with custom strings or
+ *   i18n translation keys. Each value is passed through the host's
+ *   translate function (via WidgetProvider), enabling full i18n support.
+ *   If a key is omitted, the built-in English default is used.
+ *
+ *   Key             | Default
+ *   --------------- | ---------------------------
+ *   functionalId    | "Functional Record ID"
+ *   status          | "Record Status"
+ *   statusReason    | "Status Reason"
+ *   select          | "Select"
+ *   enterReason     | "Enter Reason"
+ *   createdBy       | "Created by"
+ *   createdAt       | "Created at"
+ *   lastApprovedBy  | "Last Approved by"
+ *   lastApprovedAt  | "Last Approved at"
+ *
  * ── widget-data-format (object, optional) ────────────────────────
  *   Key           | Type                     | Default
  *   ------------- | ------------------------ | ----------------------------
@@ -85,6 +103,17 @@ import { dummyProfile } from '../assets';
  *     "createdAt": "created_at",
  *     "lastApprovedBy": "last_approved_by",
  *     "lastApprovedAt": "last_approved_at"
+ *   },
+ *   "widget-labels": {
+ *     "functionalId": "header.functionalRecordId",
+ *     "status": "header.recordStatus",
+ *     "statusReason": "header.statusReason",
+ *     "select": "common.select",
+ *     "enterReason": "header.enterReason",
+ *     "createdBy": "header.createdBy",
+ *     "createdAt": "header.createdAt",
+ *     "lastApprovedBy": "header.lastApprovedBy",
+ *     "lastApprovedAt": "header.lastApprovedAt"
  *   },
  *   "widget-field-config": {
  *     "status": {
@@ -124,6 +153,18 @@ const DEFAULT_STATUS_COLORS: Record<string, string> = {
   active: '#16A34A',
   inactive: '#D97706',
   archived: '#6B7280',
+};
+
+const DEFAULT_LABELS: Record<string, string> = {
+  functionalId: 'Functional Record ID',
+  status: 'Record Status',
+  statusReason: 'Status Reason',
+  select: 'Select',
+  enterReason: 'Enter Reason',
+  createdBy: 'Created by',
+  createdAt: 'Created at',
+  lastApprovedBy: 'Last Approved by',
+  lastApprovedAt: 'Last Approved at',
 };
 
 // ── Hook: load data-source options for a single field ────────────
@@ -214,6 +255,16 @@ export const HeaderSectionWidget = ({ config }: HeaderSectionWidgetProps) => {
 
   const isReadonly = widgetConfig['widget-readonly'] !== false;
   const dataPath = widgetConfig['widget-data-path'];
+
+  // ── Resolve labels: config overrides → translateConfig → English defaults
+  const configLabels = (widgetConfig as any)['widget-labels'] as Record<string, string> | undefined;
+  const getLabel = useCallback(
+    (key: string): string => {
+      const raw = configLabels?.[key] || DEFAULT_LABELS[key] || key;
+      return translateConfig(raw) || raw;
+    },
+    [configLabels, translateConfig],
+  );
 
   // ── Per-field config map ──────────────────────────────────────
   const fieldConfigMap = useMemo<Record<string, FieldConfig>>(() => {
@@ -518,7 +569,7 @@ export const HeaderSectionWidget = ({ config }: HeaderSectionWidgetProps) => {
             <div className="hdr-field-row">
               <Dot color="#9CA3AF" />
               <span className="hdr-field-label">
-                {translateConfig('Functional Record ID') || 'Functional Record ID'} :
+                {getLabel('functionalId')} :
               </span>
               <span className="hdr-field-value">{functionalId || '-'}</span>
             </div>
@@ -527,7 +578,7 @@ export const HeaderSectionWidget = ({ config }: HeaderSectionWidgetProps) => {
             <div className="hdr-field-row">
               <Dot color={isReadonly ? statusColor : '#F59E0B'} />
               <span className="hdr-field-label">
-                {translateConfig('Record Status') || 'Record Status'}
+                {getLabel('status')}
               </span>
               {isReadonly ? (
                 statusLabel ? (
@@ -547,7 +598,7 @@ export const HeaderSectionWidget = ({ config }: HeaderSectionWidgetProps) => {
                   onChange={(e) => updateFieldValue('status', e.target.value)}
                 >
                   <option value="">
-                    {translateConfig('Select') || 'Select'}
+                    {getLabel('select')}
                   </option>
                   {statusOptions.map((opt) => (
                     <option key={opt.value} value={opt.value}>
@@ -562,7 +613,7 @@ export const HeaderSectionWidget = ({ config }: HeaderSectionWidgetProps) => {
             <div className="hdr-field-row">
               <Dot color={isReadonly ? '#9CA3AF' : '#F59E0B'} />
               <span className="hdr-field-label">
-                {translateConfig('Status Reason') || 'Status Reason'} :
+                {getLabel('statusReason')} :
               </span>
               {isReadonly ? (
                 <span className="hdr-field-value">{statusReason || '-'}</span>
@@ -571,7 +622,7 @@ export const HeaderSectionWidget = ({ config }: HeaderSectionWidgetProps) => {
                   type="text"
                   className="hdr-input"
                   value={statusReason}
-                  placeholder={translateConfig('Enter Reason') || 'Enter Reason'}
+                  placeholder={getLabel('enterReason')}
                   onChange={(e) => updateFieldValue('statusReason', e.target.value)}
                 />
               )}
@@ -583,28 +634,28 @@ export const HeaderSectionWidget = ({ config }: HeaderSectionWidgetProps) => {
         <div className="hdr-right">
           <div className="hdr-meta-row">
             <span className="hdr-meta-label">
-              {translateConfig('Created by') || 'Created by'} :
+              {getLabel('createdBy')} :
             </span>
             <span className="hdr-meta-value">{createdBy || '-'}</span>
           </div>
 
           <div className="hdr-meta-row">
             <span className="hdr-meta-label">
-              {translateConfig('Created at') || 'Created at'} :
+              {getLabel('createdAt')} :
             </span>
             <span className="hdr-meta-value">{createdAt || '-'}</span>
           </div>
 
           <div className="hdr-meta-row">
             <span className="hdr-meta-label">
-              {translateConfig('Last Approved by') || 'Last Approved by'} :
+              {getLabel('lastApprovedBy')} :
             </span>
             <span className="hdr-meta-value">{lastApprovedBy || '-'}</span>
           </div>
 
           <div className="hdr-meta-row">
             <span className="hdr-meta-label">
-              {translateConfig('Last Approved at') || 'Last Approved at'} :
+              {getLabel('lastApprovedAt')} :
             </span>
             <span className="hdr-meta-value">{lastApprovedAt || '-'}</span>
           </div>
