@@ -1531,7 +1531,7 @@ export const SectionRenderer = ({
                   color: 'rgba(0, 0, 0, 0.50)'
                 }}
               >
-                Edit Details
+                {translate('common.editDetails') || 'Edit Details'}
                 <img src={rightArrowIcon} alt="right-arrow" className="w-3.5 h-3.5 brightness-0 opacity-50" />
               </button>
             </div>
