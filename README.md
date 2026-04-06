@@ -16,9 +16,14 @@ The Registry UI Widget Library is a layered, extensible system that enables you 
 - ✅ **Data Sources** (static, API, schema reference)
 - ✅ **Formatting** (dates, currency, phone numbers, numbers)
 - ✅ **Widget Registry** system for extensible plugin architecture
-- ✅ **19+ Pre-built Widgets** ready to use
+- ✅ **20 Pre-built Widgets** ready to use (including HeaderSection)
 - ✅ **Internationalization** support via i18next
 - ✅ **Tailwind CSS** ready (unstyled base, you provide styles)
+- ✅ **Multi-mode Section Rendering** (RegistryView, CRView, IntakeForm)
+- ✅ **Geo Hierarchy Cascading Dropdowns** for location-based fields
+- ✅ **Section Builder** with visual and JSON editor for UI schemas
+- ✅ **Form Handle API** for host-driven validation and submission
+- ✅ **Dirty Tracking** with unsaved changes detection per section
 
 ## Installation
 
@@ -77,7 +82,7 @@ The library follows a layered architecture that separates concerns and enables e
               ↓
 ┌─────────────────────────────────────────┐
 │     Widget Components Layer              │
-│  (19+ Pre-built Widgets)                 │
+│  (20 Pre-built Widgets)                  │
 └─────────────────────────────────────────┘
               ↓
 ┌─────────────────────────────────────────┐
@@ -102,7 +107,7 @@ The library follows a layered architecture that separates concerns and enables e
 
 **Widget Registry Layer** - A plugin system that maintains a catalog of available widgets. When a widget is requested by name, the registry looks it up and returns the corresponding React component. This enables dynamic widget loading and easy extensibility - new widgets can be registered without modifying core library code.
 
-**Widget Components Layer** - The actual React components that render UI elements (text inputs, selects, tables, etc.). These are the 19+ pre-built widgets that come with the library. Each widget is a React component that receives configuration and renders the appropriate UI. Custom widgets can be added by registering them in the registry.
+**Widget Components Layer** - The actual React components that render UI elements (text inputs, selects, tables, etc.). These are the 20 pre-built widgets that come with the library. Each widget is a React component that receives configuration and renders the appropriate UI. Custom widgets can be added by registering them in the registry.
 
 **Core Hooks Layer** - React hooks that provide all the business logic for widgets. The `useBaseWidget` hook handles state management, validation, conditional logic, data source loading, and formatting. The `useWidgetTranslation` hook provides internationalization support. Widget components use these hooks to get values, errors, visibility states, and change handlers without directly interacting with Redux or utilities.
 
@@ -224,25 +229,92 @@ Support for multiple validation strategies:
 
 ## Available Widgets
 
-The library includes 19+ pre-built widgets:
+The library includes 20 pre-built widgets:
 
 - **Input Widgets**: TextInput, TextArea, NumberInput, CurrencyInput, DateInput, DateTimeInput, PhoneInput, FileInput
 - **Selection Widgets**: Select, Radio, Checkbox, Boolean
 - **Layout Widgets**: Array, IterableAccordion
 - **Display Widgets**: Display, Profile
 - **Table Widgets**: Table, SimpleTable
+- **Section Widgets**: HeaderSection
 
-> 📚 **Widget documentation coming soon!** Detailed guides for each widget will be available in our tutorial pages.
+### HeaderSection Widget
+
+A full-width header card designed for registry record views. Displays a profile image, record name, functional ID, status badge, and audit metadata (created by / approved by) in a responsive two-column layout. Supports editable status and status-reason fields with data source-driven dropdowns, customisable label overrides via i18n, and configurable status-colour mapping.
+
+```json
+{
+  "widget": "header-section",
+  "widget-type": "group",
+  "widget-id": "registry-header",
+  "widget-data-path": {
+    "image": "record_image_storage_id",
+    "name": "record_name",
+    "functionalId": "functional_record_id",
+    "status": "record_status"
+  }
+}
+```
+
+## Section Modes
+
+`SectionsContainer` supports three display modes via the `mode` prop:
+
+### RegistryView (default)
+
+Standard registry display. Sections render in a CSS Grid layout with an inline **Edit Details** button. Only one section can be in edit mode at a time; editing a section opens it as a portal-based overlay with save/cancel controls.
+
+### CRView (Change Request View)
+
+Read-only comparison view for change requests. Sections display **Created by** / **Approved by** metadata and support `changeRequestType` labels (`"new"` / `"old"`) for side-by-side comparison.
+
+### IntakeForm
+
+Accordion-based registration form. Sections expand and collapse, with **Prev** / **Next** navigation buttons. Supports `isDraft` mode (editable vs read-only), per-section validation on save, and status badges (**Saved** / **Modified and not saved**).
+
+## Form Handle API
+
+`SectionsContainer` exposes a `SectionsFormHandle` via the `onFormReady` callback, enabling host applications to drive form submission externally:
+
+```tsx
+<SectionsContainer
+  sections={sections}
+  mode="IntakeForm"
+  onFormReady={(handle) => {
+    // handle.validate()            – validate all sections, returns boolean
+    // handle.getFormData()         – raw store data (no validation)
+    // handle.validateAndGetData()  – validate then return SectionChanges[]
+    // handle.getStructuredData()   – get records and files without validation
+  }}
+/>
+```
+
+## Geo Hierarchy Cascading Dropdowns
+
+The `useGeoWidgetCascade` hook and `geoHierarchyBuilder` utility provide cascading dropdown functionality for geographic location fields (e.g. Country > State > City). Changes in a parent level automatically reload and reset child dropdowns via the widget event bus.
+
+## Section Builder
+
+A visual UI schema editor shipped as `SectionBuilder`, with sub-components:
+
+- **JSONEditorPanel** — Live JSON editor (powered by `json-edit-react`) for direct schema manipulation
+- **VisualBuilderPanel** — Drag-and-drop visual layout editor
+- **SectionTree** — Tree view of the section/panel/widget hierarchy
+- **PropertyEditor** — Contextual property panel for the selected node
 
 ## Examples
 
 See the `examples/` directory for comprehensive examples demonstrating:
 
-- Basic widget usage
-- Layout widgets
-- Schema internationalization
-- Comparison views
-- And more...
+- Basic widget usage (`usage-example.tsx`)
+- Layout widgets (`LayoutWidgets.tsx`)
+- Schema internationalization (`schema-i18n-example.tsx`)
+- Comparison views (`comparison-view-example.tsx`)
+- Section rendering modes (`section-renderer-example.tsx`)
+- Intake form flow (`intake-form-example.tsx`)
+- Header section widget (`header-section-example.tsx`)
+- Section builder (`section-builder-example.tsx`)
+- JSON editor standalone (`jsoneditor-standalone-example.tsx`)
 
 ## API Reference
 
@@ -280,10 +352,36 @@ Registry for managing widget components.
 
 ### Components
 
-- `SectionsContainer` - Container for rendering sections
-- `SectionRenderer` - Renders individual sections
+- `SectionsContainer` - Container for rendering sections with mode support (RegistryView, CRView, IntakeForm)
+- `SectionRenderer` - Renders individual sections with edit mode, dirty tracking, and accordion support
 - `PanelRenderer` - Renders panels within sections
 - `FilePreviewModal` - Modal for file preview
+- `SectionBuilder` - Visual UI schema editor
+- `JSONEditorPanel` - JSON editor for UI schemas
+- `VisualBuilderPanel` - Visual layout builder
+- `SectionTree` - Tree view of section hierarchy
+- `PropertyEditor` - Property editor for selected nodes
+
+### Hooks
+
+- `useBaseWidget` - Core hook for widget state, validation, conditional logic, and formatting
+- `useWidgetTranslation` - i18n hook for widget labels and messages
+- `useWidgetEventBus` - Pub/sub event bus for inter-widget communication
+- `useWidgetCascade` - Cascading dropdown behaviour between linked widgets
+- `useGeoWidgetCascade` - Geo hierarchy cascading for location-based dropdowns
+
+### Utilities
+
+- `pathUtils` - Dot-notation path read/write for nested data structures
+- `validation` - Built-in, regex, and Zod validation
+- `formatting` - Date, currency, phone, number, and text formatting
+- `conditions` - Conditional show/hide and enable/disable evaluation
+- `dataSource` - Static, API, and schema reference data loading
+- `geoHierarchy` - Geo hierarchy builder for location cascades
+- `sectionValidate` - Section-level validation across all widgets
+- `buildSectionChanges` - Build change payloads from section data
+- `schemaNamespace` - Namespace section configs for multi-instance rendering
+- `schemaTranslation` - Translate UI schemas, widget configs, and panel configs
 
 ## Contributing
 
