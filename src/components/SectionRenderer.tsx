@@ -648,6 +648,8 @@ export const SectionRenderer = ({
   const baselineSnapshotRef = useRef<{ records: unknown[]; files: unknown[] } | null>(null);
   // IntakeForm only: increment when baseline is updated after save - forces badge to update (refs don't trigger re-renders)
   const [intakeFormBaselineTrigger, setIntakeFormBaselineTrigger] = useState(0);
+  // IntakeForm only: tracks whether the user has actually saved this section (prevents "Saved" badge on initial load)
+  const [hasBeenSavedByUser, setHasBeenSavedByUser] = useState(false);
 
   // IntakeForm: treat as edit mode for dirty tracking when isDraft. RegistryView: use isEditMode.
   const effectiveEditModeForDirty = mode === 'IntakeForm' ? (isDraft !== false) : isEditMode;
@@ -692,18 +694,10 @@ export const SectionRenderer = ({
   // IntakeForm only: section status badge (Saved / Modified and not saved / no badge when pristine)
   const intakeFormSectionStatus = useMemo<'saved' | 'modified' | null>(() => {
     if (mode !== 'IntakeForm' || isDraft === false) return null;
-    const hasValue = (v: unknown) =>
-      v !== undefined && v !== null && (typeof v !== 'string' || v.trim().length > 0);
-    const currentSnapshot = buildSectionSnapshot(storeValues, namespace);
-    const record = currentSnapshot.records?.[0];
-    const hasData =
-      record &&
-      typeof record === 'object' &&
-      Object.values(record).some((v) => hasValue(v));
     if (isDirty) return 'modified';
-    if (hasData) return 'saved';
+    if (hasBeenSavedByUser) return 'saved';
     return null;
-  }, [mode, isDirty, storeValues, namespace, buildSectionSnapshot]);
+  }, [mode, isDirty, hasBeenSavedByUser]);
 
   // Handle save button click
   const handleSave = async () => {
@@ -816,6 +810,7 @@ export const SectionRenderer = ({
       if (mode === 'IntakeForm') {
         baselineSnapshotRef.current = buildSectionSnapshot(currentSchemaData, namespace);
         setIntakeFormBaselineTrigger((prev) => prev + 1);
+        setHasBeenSavedByUser(true);
       }
       onSectionDirtyChange?.(sectionId, false);
     }
