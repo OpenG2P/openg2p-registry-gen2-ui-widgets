@@ -7,7 +7,7 @@ import { SectionConfig, PanelConfig, SupportingDocumentConfig } from '../types';
 import { UseBaseWidgetOptions } from '../hooks/useBaseWidget';
 import { PanelRenderer } from './PanelRenderer';
 import { useWidgetTranslation } from '../hooks/useWidgetTranslation';
-import { getValueByPath, setWidgetValue, setValueByPath } from '../utils/pathUtils';
+import { getValueByPath, setWidgetValue } from '../utils/pathUtils';
 import { useWidgetContext } from './WidgetProvider';
 import { FileInputWidget } from '../widgets/FileInputWidget';
 import { SectionMode } from './SectionsContainer';
@@ -119,44 +119,23 @@ export const SectionRenderer = ({
     return section;
   }, [section, namespace]);
 
-  // Create namespaced schemaData if namespace is provided
-  // This ensures widgets can read initial values from schemaData at namespaced paths
+  // Create namespaced schemaData if namespace is provided.
+  // Widgets with namespaced data-paths (e.g. "rv-section-0.a1a4d25a.birth_date")
+  // need a nested object at values[namespace] so getValueByPath can traverse it.
   const namespacedSchemaData = useMemo(() => {
     if (!namespace || !currentSchemaData) {
       return schemaData;
     }
-    // Create a namespaced version of schemaData by copying values to namespaced paths
-    const namespaced: Record<string, any> = { ...currentSchemaData };
-
-    // Copy all top-level keys to namespaced paths
-    Object.keys(currentSchemaData).forEach(key => {
-      const namespacedKey = `${namespace}.${key}`;
-      if (!(namespacedKey in namespaced)) {
-        namespaced[namespacedKey] = currentSchemaData[key];
-      }
-    });
-
-    // Also handle nested objects - copy nested values to namespaced paths
-    const copyNestedValues = (obj: any, prefix: string = '') => {
-      if (obj && typeof obj === 'object' && !Array.isArray(obj)) {
-        Object.keys(obj).forEach(key => {
-          const fullPath = prefix ? `${prefix}.${key}` : key;
-          const namespacedPath = `${namespace}.${fullPath}`;
-          if (typeof obj[key] === 'object' && obj[key] !== null && !Array.isArray(obj[key])) {
-            copyNestedValues(obj[key], fullPath);
-            // Also set the nested object at the namespaced path
-            setValueByPath(namespaced, namespacedPath, obj[key]);
-          } else {
-            setValueByPath(namespaced, namespacedPath, obj[key]);
-          }
-        });
-      }
-    };
-
-    copyNestedValues(currentSchemaData);
-
-    return namespaced;
+    return { ...currentSchemaData, [namespace]: currentSchemaData };
   }, [namespace, schemaData, currentSchemaData]);
+
+  // Populate the store with namespaced schema data so that namespaced widgets
+  // can read their initial values via getValueByPath on the namespaced paths.
+  useEffect(() => {
+    if (namespace && namespacedSchemaData) {
+      dispatch(setValues(namespacedSchemaData));
+    }
+  }, [namespace, namespacedSchemaData, dispatch]);
 
   const crViewData = useMemo(() => {
     if (mode !== 'CRView') return null;
@@ -648,6 +627,8 @@ export const SectionRenderer = ({
   const baselineSnapshotRef = useRef<{ records: unknown[]; files: unknown[] } | null>(null);
   // IntakeForm only: increment when baseline is updated after save - forces badge to update (refs don't trigger re-renders)
   const [intakeFormBaselineTrigger, setIntakeFormBaselineTrigger] = useState(0);
+  // IntakeForm only: tracks whether the user has actually saved this section (prevents "Saved" badge on initial load)
+  const [hasBeenSavedByUser, setHasBeenSavedByUser] = useState(false);
 
   // IntakeForm: treat as edit mode for dirty tracking when isDraft. RegistryView: use isEditMode.
   const effectiveEditModeForDirty = mode === 'IntakeForm' ? (isDraft !== false) : isEditMode;
@@ -692,18 +673,83 @@ export const SectionRenderer = ({
   // IntakeForm only: section status badge (Saved / Modified and not saved / no badge when pristine)
   const intakeFormSectionStatus = useMemo<'saved' | 'modified' | null>(() => {
     if (mode !== 'IntakeForm' || isDraft === false) return null;
-    const hasValue = (v: unknown) =>
-      v !== undefined && v !== null && (typeof v !== 'string' || v.trim().length > 0);
-    const currentSnapshot = buildSectionSnapshot(storeValues, namespace);
-    const record = currentSnapshot.records?.[0];
-    const hasData =
-      record &&
-      typeof record === 'object' &&
-      Object.values(record).some((v) => hasValue(v));
     if (isDirty) return 'modified';
-    if (hasData) return 'saved';
+    if (hasBeenSavedByUser) return 'saved';
     return null;
-  }, [mode, isDirty, storeValues, namespace, buildSectionSnapshot]);
+  }, [mode, isDirty, hasBeenSavedByUser]);
+
+  // Revert store values to the original schemaData for this section's widgets.
+  // Used by both handleSave (RegistryView raises a CR, so values should not persist)
+  // and handleCancel.
+  const revertToOriginalValues = useCallback(() => {
+    const sectionWidgets = collectWidgets(originalSection.panels);
+    const oldSchemaData = schemaData || contextSchemaData;
+    const currentStoreValues = (store.getState() as any).widget.values;
+    let newStoreValues = currentStoreValues;
+
+    sectionWidgets.forEach(widget => {
+      const originalWidgetId = widget['widget-id'];
+      const namespacedWidgetId = namespace ? `${namespace}__${originalWidgetId}` : originalWidgetId;
+      const widgetId = namespacedWidgetId;
+      const originalDataPath = widget['widget-data-path'];
+      const storeDataPath = namespace && originalDataPath
+        ? (typeof originalDataPath === 'string'
+          ? `${namespace}.${originalDataPath}`
+          : Object.fromEntries(
+            Object.entries(originalDataPath).map(([key, path]) => [key, `${namespace}.${path}`])
+          ))
+        : originalDataPath;
+
+      if (widgetId && originalDataPath) {
+        let oldValue: any;
+        if (typeof originalDataPath === 'object') {
+          oldValue = {};
+          Object.entries(originalDataPath).forEach(([key, path]) => {
+            if (typeof path === 'string') {
+              oldValue[key] = getValueByPath(oldSchemaData, path);
+            }
+          });
+        } else if (typeof originalDataPath === 'string') {
+          oldValue = getValueByPath(oldSchemaData, originalDataPath);
+        }
+
+        if (oldValue !== undefined) {
+          newStoreValues = setWidgetValue(
+            newStoreValues,
+            storeDataPath,
+            widgetId,
+            oldValue
+          );
+          // Also revert the widgetId-based entry — useBaseWidget.handleChange
+          // sets values[widgetId] during editing, and useBaseWidget.currentValue
+          // reads values[widgetId] first before falling through to the dataPath.
+          newStoreValues = { ...newStoreValues, [widgetId]: oldValue };
+        }
+      }
+    });
+
+    if (hasSupportingDocuments) {
+      const originalSupportingDocuments = originalSection['section-supporting-documents'] || [];
+      originalSupportingDocuments.forEach((doc, index) => {
+        const widgetId = `supporting-doc-${sectionId}-${index}`;
+        const originalDataPath = doc['document-data-path'];
+        const storeDataPath = namespace && originalDataPath
+          ? `${namespace}.${originalDataPath}`
+          : originalDataPath;
+        const oldValue = getValueByPath(oldSchemaData, originalDataPath);
+        newStoreValues = setWidgetValue(
+          newStoreValues,
+          storeDataPath,
+          widgetId,
+          oldValue
+        );
+      });
+    }
+
+    if (newStoreValues !== currentStoreValues) {
+      dispatch(setValues(newStoreValues));
+    }
+  }, [originalSection, schemaData, contextSchemaData, store, namespace, hasSupportingDocuments, sectionId, dispatch]);
 
   // Handle save button click
   const handleSave = async () => {
@@ -766,6 +812,13 @@ export const SectionRenderer = ({
       }
     }
 
+    // In RegistryView, save raises a CR — the actual data update follows a
+    // separate approval workflow, so revert the displayed values to the
+    // originals so the view doesn't show unapproved edits.
+    if (mode === 'RegistryView') {
+      revertToOriginalValues();
+    }
+
     setIsEditMode(false);
     onEditModeChange?.(originalSectionId, false);
 
@@ -816,6 +869,7 @@ export const SectionRenderer = ({
       if (mode === 'IntakeForm') {
         baselineSnapshotRef.current = buildSectionSnapshot(currentSchemaData, namespace);
         setIntakeFormBaselineTrigger((prev) => prev + 1);
+        setHasBeenSavedByUser(true);
       }
       onSectionDirtyChange?.(sectionId, false);
     }
@@ -826,81 +880,7 @@ export const SectionRenderer = ({
 
   // Handle cancel button click
   const handleCancel = () => {
-    // Revert values in store to original schema data
-    // Use original section (without namespace) for collecting widgets
-    const sectionWidgets = collectWidgets(originalSection.panels);
-    const oldSchemaData = schemaData || contextSchemaData;
-    const currentStoreValues = (store.getState() as any).widget.values;
-    let newStoreValues = currentStoreValues;
-
-    sectionWidgets.forEach(widget => {
-      const originalWidgetId = widget['widget-id'];
-      // If namespace was used, we need to use namespaced widget ID and data path
-      const namespacedWidgetId = namespace ? `${namespace}__${originalWidgetId}` : originalWidgetId;
-      const widgetId = namespacedWidgetId;
-      const originalDataPath = widget['widget-data-path'];
-      // If namespace was used, data path in store is namespaced, but we read from original schema using original path
-      const storeDataPath = namespace && originalDataPath
-        ? (typeof originalDataPath === 'string'
-          ? `${namespace}.${originalDataPath}`
-          : Object.fromEntries(
-            Object.entries(originalDataPath).map(([key, path]) => [key, `${namespace}.${path}`])
-          ))
-        : originalDataPath;
-
-      if (widgetId && originalDataPath) {
-        // Handle multi-path (object) or single path (string)
-        // Read from original schema data using original paths
-        let oldValue: any;
-        if (typeof originalDataPath === 'object') {
-          // Multi-path: get values for each path
-          oldValue = {};
-          Object.entries(originalDataPath).forEach(([key, path]) => {
-            if (typeof path === 'string') {
-              oldValue[key] = getValueByPath(oldSchemaData, path);
-            }
-          });
-        } else if (typeof originalDataPath === 'string') {
-          oldValue = getValueByPath(oldSchemaData, originalDataPath);
-        }
-
-        // Set in store using namespaced data path (if namespace was used)
-        if (oldValue !== undefined) {
-          newStoreValues = setWidgetValue(
-            newStoreValues,
-            storeDataPath,
-            widgetId,
-            oldValue
-          );
-        }
-      }
-    });
-
-    // Also revert supporting documents if any
-    if (hasSupportingDocuments) {
-      // Use original section's supporting documents to get original data paths
-      const originalSupportingDocuments = originalSection['section-supporting-documents'] || [];
-      originalSupportingDocuments.forEach((doc, index) => {
-        const widgetId = `supporting-doc-${sectionId}-${index}`;
-        const originalDataPath = doc['document-data-path'];
-        // If namespace was used, data path in store is namespaced
-        const storeDataPath = namespace && originalDataPath
-          ? `${namespace}.${originalDataPath}`
-          : originalDataPath;
-        const oldValue = getValueByPath(oldSchemaData, originalDataPath);
-        newStoreValues = setWidgetValue(
-          newStoreValues,
-          storeDataPath,
-          widgetId,
-          oldValue
-        );
-      });
-    }
-
-    if (newStoreValues !== currentStoreValues) {
-      dispatch(setValues(newStoreValues));
-    }
-
+    revertToOriginalValues();
     setIsEditMode(false);
     onEditModeChange?.(originalSectionId, false);
   };
