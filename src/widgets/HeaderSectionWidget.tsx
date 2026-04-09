@@ -364,21 +364,6 @@ export const HeaderSectionWidget = ({ config }: HeaderSectionWidgetProps) => {
   // ── Scoped class for CSS isolation ────────────────────────────
   const cls = `header-section-widget-${widgetConfig['widget-id']}`;
 
-  // ── Indicator dot component ───────────────────────────────────
-  const Dot = ({ color }: { color: string }) => (
-    <span
-      style={{
-        display: 'inline-block',
-        width: 8,
-        height: 8,
-        borderRadius: '50%',
-        backgroundColor: color,
-        flexShrink: 0,
-        marginTop: 6,
-      }}
-    />
-  );
-
   // ── RENDER ────────────────────────────────────────────────────
   return (
     <>
@@ -577,7 +562,6 @@ export const HeaderSectionWidget = ({ config }: HeaderSectionWidgetProps) => {
 
             {/* Functional Record ID */}
             <div className="hdr-field-row">
-              <Dot color="#9CA3AF" />
               <span className="hdr-field-label">
                 {getLabel('functionalId')} :
               </span>
@@ -586,7 +570,6 @@ export const HeaderSectionWidget = ({ config }: HeaderSectionWidgetProps) => {
 
             {/* Record Status */}
             <div className="hdr-field-row">
-              <Dot color={isReadonly ? statusColor : '#F59E0B'} />
               <span className="hdr-field-label">
                 {getLabel('status')}
               </span>
@@ -621,7 +604,6 @@ export const HeaderSectionWidget = ({ config }: HeaderSectionWidgetProps) => {
 
             {/* Status Reason */}
             <div className="hdr-field-row">
-              <Dot color={isReadonly ? '#9CA3AF' : '#F59E0B'} />
               <span className="hdr-field-label">
                 {getLabel('statusReason')} :
               </span>
