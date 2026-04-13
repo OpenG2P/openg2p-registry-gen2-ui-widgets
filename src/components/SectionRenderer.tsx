@@ -21,6 +21,7 @@ export interface SectionChanges {
   section_register_id?: string;
   records: unknown[];
   files?: unknown[];
+  image?: File | null;
 }
 
 export interface SectionRendererProps {
@@ -799,12 +800,25 @@ export const SectionRenderer = ({
     }
 
     if (JSON.stringify(oldSchemaData) !== JSON.stringify(newSchemaData)) {
+      let profileImage: File | null = null;
+      for (const record of newSchemaData) {
+        if (typeof record === 'object' && record !== null) {
+          for (const [key, value] of Object.entries(record as Record<string, unknown>)) {
+            if (value instanceof File) {
+              profileImage = value;
+              (record as Record<string, unknown>)[key] = '';
+            }
+          }
+        }
+      }
+
       try {
         const sectionchanges: SectionChanges = {
           section_id: dbSectionId ?? originalSection['section-id'],
           section_register_id: sectionRegisterId,
           records: [...newSchemaData],
-          files: [...sectionFiles]
+          files: [...sectionFiles],
+          ...(profileImage ? { image: profileImage } : {}),
         }
         await onSectionSave(sectionchanges)
       } catch (error) {
@@ -853,12 +867,25 @@ export const SectionRenderer = ({
       }
 
       if (JSON.stringify(oldSchemaData) !== JSON.stringify(newSchemaData)) {
+        let profileImage: File | null = null;
+        for (const record of newSchemaData) {
+          if (typeof record === 'object' && record !== null) {
+            for (const [key, value] of Object.entries(record as Record<string, unknown>)) {
+              if (value instanceof File) {
+                profileImage = value;
+                (record as Record<string, unknown>)[key] = '';
+              }
+            }
+          }
+        }
+
         try {
           await onSectionSave({
             section_id: dbSectionId ?? originalSection['section-id'],
             section_register_id: sectionRegisterId,
             records: [...newSchemaData],
             files: [...sectionFiles],
+            ...(profileImage ? { image: profileImage } : {}),
           });
         } catch (error) {
           console.error('Section Changes Save failed', error);
