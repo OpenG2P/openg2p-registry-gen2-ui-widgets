@@ -7,7 +7,9 @@ import { SectionConfig, PanelConfig, SupportingDocumentConfig } from '../types';
 import { UseBaseWidgetOptions } from '../hooks/useBaseWidget';
 import { PanelRenderer } from './PanelRenderer';
 import { useWidgetTranslation } from '../hooks/useWidgetTranslation';
-import { getValueByPath, setWidgetValue, setValueByPath } from '../utils/pathUtils';
+import { useWidgetTheme } from '../hooks/useWidgetTheme';
+import { themeToCSSVariables } from '../theme';
+import { getValueByPath, setValueByPath, setWidgetValue } from '../utils/pathUtils';
 import { useWidgetContext } from './WidgetProvider';
 import { FileInputWidget } from '../widgets/FileInputWidget';
 import { SectionMode } from './SectionsContainer';
@@ -99,6 +101,8 @@ export const SectionRenderer = ({
   forceExitEdit,
 }: SectionRendererProps) => {
   const { translateConfig, translate } = useWidgetTranslation();
+  const resolvedTheme = useWidgetTheme();
+  const portalCSSVariables = useMemo(() => themeToCSSVariables(resolvedTheme), [resolvedTheme]);
   const { schemaData: contextSchemaData, dataSourceRequestHandler: contextDataSourceRequestHandler } = useWidgetContext();
   const store = useStore();
   const dispatch = useDispatch();
@@ -430,13 +434,14 @@ export const SectionRenderer = ({
             top: 0;
             bottom: 5px;
             width: 1px;
-            background-color: #F2BA1A;
+            background-color: var(--owt-color-primary, #F5BB1A);
           }
         `}</style>
         <div
           className={`section ${sectionClassId} ${sectionClassId}-edit px-4 sm:px-6 lg:px-8`}
           data-section-id={`${sectionId}-edit`}
           style={{
+            ...portalCSSVariables,
             position: 'absolute',
             top: `${editSectionPosition.top}px`,
             left: `${editSectionPosition.left}px`,
@@ -466,7 +471,7 @@ export const SectionRenderer = ({
                 </div>
               );
             })}
-            <hr className="w-full" style={{ height: '1px', backgroundColor: '#F2BA1A', border: 'none', margin: '25px 0 0 0' }} />
+            <hr className="w-full" style={{ height: '1px', backgroundColor: 'var(--owt-section-divider-color, #F5BB1A)', border: 'none', margin: '25px 0 0 0' }} />
             {hasSupportingDocuments && (
               <>
                 <div className="supporting-documents-container">
@@ -499,21 +504,33 @@ export const SectionRenderer = ({
                 </div>
               </>
             )}
-            <hr className="w-full" style={{ height: '1px', backgroundColor: '#F2BA1A', border: 'none', marginTop: hasSupportingDocuments ? '20px' : 0, marginBottom: '20px' }} />
+            <hr className="w-full" style={{ height: '1px', backgroundColor: 'var(--owt-section-divider-color, #F5BB1A)', border: 'none', marginTop: hasSupportingDocuments ? '20px' : 0, marginBottom: '20px' }} />
             <div className="edit-controls-container" style={{ marginBottom: '20px' }}>
               <div className="edit-controls-buttons">
                 <button
                   onClick={handleCancel}
-                  className="bg-white hover:bg-gray-50 text-gray-900 text-sm font-medium px-6 py-2 transition-colors border border-gray-300"
-                  style={{ fontFamily: 'Roboto, sans-serif', borderRadius: '10px' }}
+                  className="text-sm font-medium px-6 py-2 transition-colors"
+                  style={{
+                    fontFamily: 'Roboto, sans-serif',
+                    borderRadius: 'var(--owt-btn-border-radius, 10px)',
+                    border: '1px solid var(--owt-btn-secondary-border, #C4C4C4)',
+                    backgroundColor: 'var(--owt-btn-secondary-bg, #FFFFFF)',
+                    color: 'var(--owt-btn-secondary-color, #011627)',
+                  }}
                 >
                   {translate('common.cancel') || 'Cancel'}
                 </button>
                 <button
                   onClick={handleSave}
                   disabled={!isDirty}
-                  className="bg-gray-900 hover:bg-gray-800 text-white text-sm font-medium px-6 py-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                  style={{ fontFamily: 'Roboto, sans-serif', borderRadius: '10px' }}
+                  className="text-sm font-medium px-6 py-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  style={{
+                    fontFamily: 'Roboto, sans-serif',
+                    borderRadius: 'var(--owt-btn-border-radius, 10px)',
+                    border: '1px solid var(--owt-btn-primary-border, #F07B1A)',
+                    backgroundColor: 'var(--owt-color-primary, #F5BB1A)',
+                    color: 'var(--owt-color-bg, #FFFFFF)',
+                  }}
                 >
                   {translate('common.save') || 'Save'}
                 </button>
@@ -952,7 +969,7 @@ export const SectionRenderer = ({
         .${sectionClassId} label.text-gray-700,
         .${sectionClassId} .text-gray-600 {
           font-weight: 400 !important;
-          color: rgba(0, 0, 0, 0.5) !important;
+          color: var(--owt-color-text-muted, #727474) !important;
           width: 50% !important;
           min-width: 50% !important;
           max-width: 50% !important;
@@ -997,11 +1014,11 @@ export const SectionRenderer = ({
         .${sectionClassId}-edit {
           box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.2), 
                       0 8px 10px -6px rgba(0, 0, 0, 0.1);
-          border-color: #ED7C22;
+          border-color: var(--owt-color-primary-dark, #F07B1A);
           border-style: dashed;
           border-width: 1px;
-          background-color: #F3E6BC;
-          border-radius: 10px;
+          background-color: var(--owt-color-primary-light, #FBE6AA);
+          border-radius: var(--owt-section-border-radius, 10px);
           z-index: 10;
           position: absolute;
         }
@@ -1101,23 +1118,23 @@ export const SectionRenderer = ({
 
         /* IntakeForm accordion */
         .${sectionClassId}.intake-form-accordion-item {
-          border-color: #E5E7EB;
+          border-color: var(--owt-color-border-light, #E4E4E4);
           transition: box-shadow 0.2s ease, border-color 0.2s ease;
         }
         .${sectionClassId}.intake-form-accordion-item:hover {
-          border-color: #D1D5DB;
+          border-color: var(--owt-color-border, #C4C4C4);
         }
         .${sectionClassId}.intake-form-accordion-item .intake-form-accordion-header {
           transition: opacity 0.2s ease, background-color 0.2s ease;
         }
         .${sectionClassId}.intake-form-accordion-item .intake-form-accordion-header h2 {
-          color: #ED7C22;
+          color: var(--owt-color-primary-dark, #F07B1A);
         }
         .${sectionClassId}.intake-form-accordion-item .intake-form-accordion-header:hover {
           opacity: 0.85;
         }
         .${sectionClassId}.intake-form-accordion-item .intake-form-accordion-header:focus-visible {
-          outline: 2px solid #F2BA1A;
+          outline: 2px solid var(--owt-color-primary, #F5BB1A);
           outline-offset: 2px;
         }
         .${sectionClassId}.intake-form-accordion-item .intake-form-accordion-content {
@@ -1129,22 +1146,22 @@ export const SectionRenderer = ({
           width: 100%;
         }
         .${sectionClassId}.intake-form-accordion-item .intake-form-prev-btn {
-          color: rgba(0, 0, 0, 0.5) !important;
+          color: var(--owt-color-text-muted, #727474) !important;
         }
         .${sectionClassId}.intake-form-accordion-item .intake-form-prev-btn:disabled {
-          color: rgba(0, 0, 0, 0.3) !important;
+          color: var(--owt-color-border, #C4C4C4) !important;
         }
         .${sectionClassId}.intake-form-accordion-item .intake-form-prev-btn:hover:not(:disabled) {
-          background-color: #F3F4F6;
-          border-color: #FD8C3E;
+          background-color: var(--owt-color-bg-alt, #F6F6F6);
+          border-color: var(--owt-btn-primary-border, #F07B1A);
         }
         .${sectionClassId}.intake-form-accordion-item .intake-form-save-btn:hover:not(:disabled) {
-          background-color: #E5E7EB;
+          background-color: var(--owt-color-border-light, #E4E4E4);
         }
       `}</style>
       <div
         ref={sectionRef}
-        className={`section ${sectionClassId} px-4 sm:px-6 lg:px-8 border-2 border-white ${mode === 'IntakeForm' ? 'intake-form-accordion-item' : ''}`}
+        className={`section ${sectionClassId} px-4 sm:px-6 lg:px-8 border-2 ${mode === 'IntakeForm' ? 'intake-form-accordion-item' : ''}`}
         data-section-id={sectionId}
         data-has-table={hasTableWidget ? 'true' : 'false'}
         data-has-explicit-span={hasExplicitTableSpan ? 'true' : 'false'}
@@ -1156,12 +1173,12 @@ export const SectionRenderer = ({
         style={{
           gridColumn: `span ${columnSpan}`,
           width: '100%',
-          borderRadius: '10px',
-          // IntakeForm expanded: edit-mode colors. Others: normal or faded for old CR
+          borderRadius: 'var(--owt-section-border-radius, 10px)',
+          borderColor: 'var(--owt-color-bg, #FFFFFF)',
           ...(mode === 'IntakeForm' && isExpanded
-            ? { backgroundColor: '#F3E6BC', border: '1px dashed #ED7C22' }
+            ? { backgroundColor: 'var(--owt-color-primary-light, #FBE6AA)', border: '1px dashed var(--owt-color-primary-dark, #F07B1A)' }
             : {
-                backgroundColor: changeRequestType === 'old' ? '#F9F9F9' : '#FFFFFF',
+                backgroundColor: changeRequestType === 'old' ? 'var(--owt-color-bg-alt, #F6F6F6)' : 'var(--owt-section-bg, #FFFFFF)',
                 opacity: changeRequestType === 'old' ? 0.95 : 1,
               }),
           ...(isEditMode && sectionHeight ? {
@@ -1214,8 +1231,8 @@ export const SectionRenderer = ({
                       borderRadius: '9999px',
                       fontSize: '12px',
                       fontWeight: 500,
-                      backgroundColor: '#D1FAE5',
-                      color: '#047857',
+                      backgroundColor: 'var(--owt-color-success-light, #D1FAE5)',
+                      color: 'var(--owt-color-success-dark, #047857)',
                     }}
                   >
                     {translate('common.sectionSaved') || 'Saved'}
@@ -1229,8 +1246,8 @@ export const SectionRenderer = ({
                       borderRadius: '9999px',
                       fontSize: '12px',
                       fontWeight: 500,
-                      backgroundColor: '#FEE2E2',
-                      color: '#B91C1C',
+                      backgroundColor: 'var(--owt-color-error-light, #FEE2E2)',
+                      color: 'var(--owt-color-error, #B91C1C)',
                     }}
                   >
                     {translate('common.sectionModified') || 'Modified and not saved'}
@@ -1271,7 +1288,7 @@ export const SectionRenderer = ({
                       />
                     </div>
                   ))}
-                  <hr className="w-full" style={{ height: '1px', backgroundColor: '#F2BA1A', border: 'none', margin: '15px 0 0 0' }} />
+                  <hr className="w-full" style={{ height: '1px', backgroundColor: 'var(--owt-section-divider-color, #F5BB1A)', border: 'none', margin: '15px 0 0 0' }} />
                   {hasSupportingDocuments && (
                     <div className="supporting-documents-container">
                       <span className="font-semibold" style={{ fontFamily: 'Roboto, sans-serif', fontSize: '16px' }}>
@@ -1311,10 +1328,10 @@ export const SectionRenderer = ({
                           fontSize: '14px',
                           fontWeight: 400,
                           padding: '8px 24px',
-                          borderRadius: '10px',
-                          border: '1px solid #FD8C3E',
-                          background: '#FFFFFF',
-                          color: 'rgba(0, 0, 0, 0.5)',
+                          borderRadius: 'var(--owt-btn-border-radius, 10px)',
+                          border: '1px solid var(--owt-btn-primary-border, #F07B1A)',
+                          background: 'var(--owt-btn-primary-bg, #FFFFFF)',
+                          color: 'var(--owt-color-text-muted, #727474)',
                           cursor: 'pointer',
                           display: 'inline-flex',
                           alignItems: 'center',
@@ -1339,10 +1356,10 @@ export const SectionRenderer = ({
                         fontSize: '14px',
                         fontWeight: 400,
                         padding: '8px 24px',
-                        borderRadius: '10px',
-                        border: '1px solid #FD8C3E',
-                        background: '#FFFFFF',
-                        color: 'rgba(0, 0, 0, 0.5)',
+                        borderRadius: 'var(--owt-btn-border-radius, 10px)',
+                        border: '1px solid var(--owt-btn-primary-border, #F07B1A)',
+                        background: 'var(--owt-btn-primary-bg, #FFFFFF)',
+                        color: 'var(--owt-color-text-muted, #727474)',
                         cursor: 'pointer',
                         display: 'inline-flex',
                         alignItems: 'center',
@@ -1390,8 +1407,8 @@ export const SectionRenderer = ({
                       fontWeight: 600,
                       textTransform: 'uppercase',
                       letterSpacing: '0.5px',
-                      backgroundColor: changeRequestType === 'new' ? '#28a745' : '#ffcccc', // Green for new, faded red for old
-                      color: changeRequestType === 'new' ? '#FFFFFF' : '#cc0000',
+                      backgroundColor: changeRequestType === 'new' ? 'var(--owt-color-success, #16A34A)' : 'var(--owt-color-error-light, #FEE2E2)',
+                      color: changeRequestType === 'new' ? 'var(--owt-color-bg, #FFFFFF)' : 'var(--owt-color-error, #B91C1C)',
                       whiteSpace: 'nowrap',
                       boxShadow: changeRequestType === 'new' ? '0 2px 4px rgba(40, 167, 69, 0.3)' : 'none',
                     }}
@@ -1422,7 +1439,7 @@ export const SectionRenderer = ({
           {/* CRView Mode - Show Created by / Approved by information */}
           {mode === 'CRView' && crViewData && (
             <>
-              <hr className="border-gray-300 w-full" style={{ height: '1px', marginTop: '20px', marginBottom: '0px' }} />
+              <hr className="w-full" style={{ height: '1px', marginTop: '20px', marginBottom: '0px', border: 'none', backgroundColor: 'var(--owt-color-border, #C4C4C4)' }} />
               <div className="cr-view-container" style={{
                 marginTop: '20px',
                 paddingBottom: '30px',
@@ -1441,7 +1458,7 @@ export const SectionRenderer = ({
                   <span style={{
                     fontFamily: 'Roboto, sans-serif',
                     fontSize: '14px',
-                    color: '#000000',
+                    color: 'var(--owt-color-text, #011627)',
                     fontWeight: 'normal',
                   }}>
                     Created by
@@ -1452,7 +1469,7 @@ export const SectionRenderer = ({
                     <span style={{
                       fontFamily: 'Roboto, sans-serif',
                       fontSize: '14px',
-                      color: '#000000',
+                      color: 'var(--owt-color-text, #011627)',
                       fontWeight: 'normal',
                     }}>
                       {crViewData.createdBy}
@@ -1464,7 +1481,7 @@ export const SectionRenderer = ({
                     <span style={{
                       fontFamily: 'Roboto, sans-serif',
                       fontSize: '14px',
-                      color: '#000000',
+                      color: 'var(--owt-color-text, #011627)',
                       fontWeight: 'normal',
                     }}>
                       {crViewData.createdDate}
@@ -1483,7 +1500,7 @@ export const SectionRenderer = ({
                   <span style={{
                     fontFamily: 'Roboto, sans-serif',
                     fontSize: '14px',
-                    color: '#000000',
+                    color: 'var(--owt-color-text, #011627)',
                     fontWeight: 'normal',
                   }}>
                     Approved by
@@ -1494,7 +1511,7 @@ export const SectionRenderer = ({
                     <span style={{
                       fontFamily: 'Roboto, sans-serif',
                       fontSize: '14px',
-                      color: '#000000',
+                      color: 'var(--owt-color-text, #011627)',
                       fontWeight: 'normal',
                     }}>
                       {crViewData.approvedBy}
@@ -1506,7 +1523,7 @@ export const SectionRenderer = ({
                     <span style={{
                       fontFamily: 'Roboto, sans-serif',
                       fontSize: '14px',
-                      color: '#000000',
+                      color: 'var(--owt-color-text, #011627)',
                       fontWeight: 'normal',
                     }}>
                       {crViewData.approvedDate}
@@ -1518,7 +1535,7 @@ export const SectionRenderer = ({
           )}
           {/* RegistryView Mode - Show edit button (if not hidden) */}
           {mode === 'RegistryView' && !hideEditButton && (
-            <hr className="border-gray-300 w-full" style={{ height: '1px', marginTop: !isEditMode ? '10px' : 0, marginBottom: '14px' }} />
+            <hr className="w-full" style={{ height: '1px', marginTop: !isEditMode ? '10px' : 0, marginBottom: '14px', border: 'none', backgroundColor: 'var(--owt-color-border, #C4C4C4)' }} />
           )}
           {mode === 'RegistryView' && !isEditMode && !hideEditButton && (
             <div className="flex justify-center items-center" style={{ marginBottom: '20px' }}>
@@ -1528,7 +1545,7 @@ export const SectionRenderer = ({
                 style={{
                   fontFamily: 'Roboto, sans-serif',
                   fontSize: '16px',
-                  color: 'rgba(0, 0, 0, 0.50)'
+                  color: 'var(--owt-color-text-muted, #727474)'
                 }}
               >
                 {translate('common.editDetails') || 'Edit Details'}

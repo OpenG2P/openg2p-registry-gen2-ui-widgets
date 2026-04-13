@@ -5,12 +5,16 @@ import { createWidgetStore, WidgetStore } from '../store';
 import { setValues } from '../store/widgetSlice';
 import { WidgetEventBus } from '../events/WidgetEventBus';
 import { WidgetEventBusContext } from '../hooks/useWidgetEventBus';
+import { WidgetTheme, resolveTheme, themeToCSSVariables } from '../theme';
+import { ThemeContext } from '../hooks/useWidgetTheme';
 
 export interface WidgetProviderProps {
   store?: WidgetStore;
   dataSourceRequestHandler?: DataSourceRequestHandler; // Required for widgets with API data sources
   schemaData?: Record<string, any>;
   translate?: (key: string, options?: any) => string;
+  /** Optional theme object to override default colors and styles across all widgets. */
+  theme?: WidgetTheme;
   children: ReactNode;
 }
 
@@ -33,12 +37,17 @@ export const WidgetProvider = ({
   dataSourceRequestHandler,
   schemaData,
   translate,
+  theme,
   children,
 }: WidgetProviderProps) => {
   const widgetStore = useMemo(() => store || createWidgetStore(), [store]);
   
   // Create event bus instance (one per provider)
   const eventBus = useMemo(() => new WidgetEventBus(), []);
+
+  // Resolve theme: merge user-supplied overrides with defaults
+  const resolvedTheme = useMemo(() => resolveTheme(theme), [theme]);
+  const cssVariables = useMemo(() => themeToCSSVariables(resolvedTheme), [resolvedTheme]);
 
   // Memoize context value to prevent unnecessary re-renders
   const contextValue = useMemo(
@@ -79,11 +88,15 @@ export const WidgetProvider = ({
 
   const content = (
     <Provider store={widgetStore}>
-      <WidgetContext.Provider value={contextValue}>
-        <WidgetEventBusContext.Provider value={eventBus}>
-          {children}
-        </WidgetEventBusContext.Provider>
-      </WidgetContext.Provider>
+      <ThemeContext.Provider value={resolvedTheme}>
+        <WidgetContext.Provider value={contextValue}>
+          <WidgetEventBusContext.Provider value={eventBus}>
+            <div className="openg2p-widget-theme-root" style={cssVariables}>
+              {children}
+            </div>
+          </WidgetEventBusContext.Provider>
+        </WidgetContext.Provider>
+      </ThemeContext.Provider>
     </Provider>
   );
 

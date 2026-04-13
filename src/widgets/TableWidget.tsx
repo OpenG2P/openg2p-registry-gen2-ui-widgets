@@ -33,10 +33,14 @@ const TableCellSelect = ({ config, value, onValueChange }: TableCellSelectProps)
       value={value || ''}
       onChange={(e) => onValueChange(e.target.value)}
       disabled={isReadonly || loading}
-      className={`w-full h-[28px] px-2 text-sm border focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 ${
-        isReadonly || loading ? 'bg-gray-100 cursor-not-allowed' : 'bg-white'
-      } border-gray-300`}
-      style={{ borderRadius: '10px' }}
+      className={`w-full h-[28px] px-2 text-sm border focus:outline-none ${
+        isReadonly || loading ? 'cursor-not-allowed' : ''
+      } table-cell-input`}
+      style={{
+        borderRadius: '10px',
+        borderColor: 'var(--owt-widget-input-border, #C4C4C4)',
+        backgroundColor: isReadonly || loading ? 'var(--owt-color-bg-alt, #F6F6F6)' : 'var(--owt-color-bg, #FFFFFF)',
+      }}
     >
       <option value="">{translate('common.select') || 'Select'}</option>
       {dataSourceOptions.map((option: any) => (
@@ -91,10 +95,14 @@ const TableCellText = ({ config, value, onValueChange }: TableCellTextProps) => 
       disabled={isReadonly}
       placeholder={placeholder}
       maxLength={maxLength}
-      className={`w-full h-[28px] px-2 text-sm border focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 ${
-        isReadonly ? 'bg-gray-100 cursor-not-allowed' : 'bg-white'
-      } border-gray-300`}
-      style={{ borderRadius: '10px' }}
+      className={`w-full h-[28px] px-2 text-sm border focus:outline-none ${
+        isReadonly ? 'cursor-not-allowed' : ''
+      } table-cell-input`}
+      style={{
+        borderRadius: '10px',
+        borderColor: 'var(--owt-widget-input-border, #C4C4C4)',
+        backgroundColor: isReadonly ? 'var(--owt-color-bg-alt, #F6F6F6)' : 'var(--owt-color-bg, #FFFFFF)',
+      }}
     />
   );
 };
@@ -138,10 +146,14 @@ const TableCellNumber = ({ config, value, onValueChange }: TableCellNumberProps)
       min={validationConfig?.min}
       max={validationConfig?.max}
       step={formatConfig?.decimalPlaces ? Math.pow(0.1, formatConfig.decimalPlaces) : undefined}
-      className={`w-full h-[28px] px-2 text-sm border focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 text-right ${
-        isReadonly ? 'bg-gray-100 cursor-not-allowed' : 'bg-white'
-      } border-gray-300`}
-      style={{ borderRadius: '10px' }}
+      className={`w-full h-[28px] px-2 text-sm border focus:outline-none text-right ${
+        isReadonly ? 'cursor-not-allowed' : ''
+      } table-cell-input`}
+      style={{
+        borderRadius: '10px',
+        borderColor: 'var(--owt-widget-input-border, #C4C4C4)',
+        backgroundColor: isReadonly ? 'var(--owt-color-bg-alt, #F6F6F6)' : 'var(--owt-color-bg, #FFFFFF)',
+      }}
     />
   );
 };
@@ -166,10 +178,14 @@ const TableCellDate = ({ config, value, onValueChange }: TableCellDateProps) => 
       onChange={(e) => onValueChange(e.target.value)}
       disabled={isReadonly}
       placeholder={placeholder}
-      className={`w-full h-[28px] px-2 text-sm border focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 ${
-        isReadonly ? 'bg-gray-100 cursor-not-allowed' : 'bg-white'
-      } border-gray-300`}
-      style={{ borderRadius: '10px' }}
+      className={`w-full h-[28px] px-2 text-sm border focus:outline-none ${
+        isReadonly ? 'cursor-not-allowed' : ''
+      } table-cell-input`}
+      style={{
+        borderRadius: '10px',
+        borderColor: 'var(--owt-widget-input-border, #C4C4C4)',
+        backgroundColor: isReadonly ? 'var(--owt-color-bg-alt, #F6F6F6)' : 'var(--owt-color-bg, #FFFFFF)',
+      }}
     />
   );
 };
@@ -703,11 +719,11 @@ export const TableWidget = ({ config }: TableWidgetProps) => {
       
       const editAction = row?.edit_action;
       if (editAction === 'ADD') {
-        return { color: '#16a34a' }; // green-600
+        return { color: 'var(--owt-color-success, #16A34A)' };
       } else if (editAction === 'DELETE') {
-        return { color: '#dc2626', textDecoration: 'line-through' }; // red-600 with strikethrough
+        return { color: 'var(--owt-color-error, #B91C1C)', textDecoration: 'line-through' };
       } else if (editAction === 'UPDATE') {
-        return { color: '#ea580c' }; // orange-600
+        return { color: 'var(--owt-color-warning, #F59E0B)' };
       }
       return {};
     };
@@ -806,30 +822,45 @@ export const TableWidget = ({ config }: TableWidgetProps) => {
         .${tableWidgetId} button {
           border-radius: 10px !important;
         }
+        /* Focus ring for table cell inputs */
+        .${tableWidgetId} .table-cell-input:focus {
+          box-shadow: 0 0 0 1px var(--owt-widget-input-focus-border, #F07B1A);
+          border-color: var(--owt-widget-input-focus-border, #F07B1A);
+        }
       `}</style>
       <div className={`table-widget-container ${tableWidgetId}`}>
         {/* Confirmation Dialog */}
       {confirmationState?.show && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
-            <h3 className="text-lg font-semibold mb-4">
+        <div className="fixed inset-0 flex items-center justify-center z-50" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
+          <div className="rounded-lg p-6 max-w-md w-full mx-4" style={{ backgroundColor: 'var(--owt-color-bg, #FFFFFF)' }}>
+            <h3 className="text-lg font-semibold mb-4" style={{ color: 'var(--owt-color-text, #011627)' }}>
               {translate('table.confirm') || 'Confirm Action'}
             </h3>
-            <p className="text-gray-700 mb-6">
+            <p className="mb-6" style={{ color: 'var(--owt-color-text, #011627)' }}>
               {confirmationState.message}
             </p>
             <div className="flex justify-end gap-3">
               <button
                 onClick={confirmationState.onCancel}
-                className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-200 hover:bg-gray-300"
-                style={{ borderRadius: '15px' }}
+                className="px-4 py-2 text-sm font-medium"
+                style={{
+                  borderRadius: 'var(--owt-btn-border-radius, 10px)',
+                  border: '1px solid var(--owt-btn-secondary-border, #C4C4C4)',
+                  backgroundColor: 'var(--owt-btn-secondary-bg, #FFFFFF)',
+                  color: 'var(--owt-btn-secondary-color, #011627)',
+                }}
               >
                 {translate('common.cancel') || 'Cancel'}
               </button>
               <button
                 onClick={confirmationState.onConfirm}
-                className="px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700"
-                style={{ borderRadius: '15px' }}
+                className="px-4 py-2 text-sm font-medium"
+                style={{
+                  borderRadius: 'var(--owt-btn-border-radius, 10px)',
+                  border: '1px solid var(--owt-btn-primary-border, #F07B1A)',
+                  backgroundColor: 'var(--owt-color-primary, #F5BB1A)',
+                  color: 'var(--owt-color-bg, #FFFFFF)',
+                }}
               >
                 {translate('table.discard') || 'Discard & Continue'}
               </button>
@@ -845,47 +876,70 @@ export const TableWidget = ({ config }: TableWidgetProps) => {
             type="button"
             onClick={startAdd}
             disabled={loadingRowIndex !== null}
-            className="px-3 py-1 text-sm bg-blue-500 text-white hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed"
-            style={{ borderRadius: '15px' }}
+            className="px-3 py-1 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+            style={{
+              borderRadius: 'var(--owt-btn-border-radius, 10px)',
+              border: '1px solid var(--owt-btn-primary-border, #F07B1A)',
+              backgroundColor: 'var(--owt-color-primary, #F5BB1A)',
+              color: 'var(--owt-color-bg, #FFFFFF)',
+            }}
           >
             {translate('table.addRecord') || 'Add New Record'}
           </button>
         </div>
       )}
 
-      {rows.length === 0 && !isAdding ? (
-        <div className="text-gray-500 text-sm py-4 text-center border border-gray-300" style={{ borderRadius: '15px' }}>
-          {translate('table.noData') || 'No records available.'}
-          {operations.add && !isReadonly && ` ${translate('table.clickToAdd') || 'Click "Add New Record" to add one.'}`}
-        </div>
-      ) : (
-        <div className="overflow-x-auto border border-gray-300" style={{ borderRadius: '15px' }}>
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
-              <tr>
+        <div className="overflow-x-auto border" style={{ borderRadius: 'var(--owt-widget-table-border-radius, 15px)', borderColor: 'var(--owt-widget-table-border-color, #C4C4C4)' }}>
+          <table className="min-w-full" style={{ borderCollapse: 'separate', borderSpacing: 0 }}>
+            <thead style={{ backgroundColor: 'var(--owt-widget-table-header-bg, #F6F6F6)' }}>
+              <tr style={{ borderBottom: '1px solid var(--owt-widget-table-row-divider, #E4E4E4)' }}>
                 {columns.map((col) => (
                   <th
                     key={col['column-key']}
-                    className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                    className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider"
+                    style={{ color: 'var(--owt-widget-table-header-color, #727474)' }}
                   >
                     {translateConfig(col['widget-label'])}
                   </th>
                 ))}
                 {((operations.edit || operations.remove) && !isReadonly) || isAnyRowEditing || isSectionEditMode ? (
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th
+                    className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider"
+                    style={{ color: 'var(--owt-widget-table-header-color, #727474)' }}
+                  >
                     {translate('common.actions') || 'Actions'}
                   </th>
                 ) : null}
               </tr>
             </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
+            <tbody style={{ backgroundColor: 'var(--owt-widget-table-body-bg, #FFFFFF)' }}>
+              {rows.length === 0 && !isAdding && (
+                <tr>
+                  <td
+                    colSpan={columns.length + (((operations.edit || operations.remove) && !isReadonly) || isSectionEditMode ? 1 : 0)}
+                    className="px-4 py-6 text-center text-sm"
+                    style={{ color: 'var(--owt-widget-table-empty-color, #727474)' }}
+                  >
+                    {translate('table.noData') || 'No records available.'}
+                    {operations.add && !isReadonly && ` ${translate('table.clickToAdd') || 'Click "Add New Record" to add one.'}`}
+                  </td>
+                </tr>
+              )}
               {rows.map((row, rowIndex) => {
                 const isEditing = isRowEditing(rowIndex);
                 const isLoading = loadingRowIndex === rowIndex;
                 return (
                   <tr
                     key={rowIndex}
-                    className={isEditing ? 'bg-blue-50' : isLoading ? 'opacity-50' : row.edit_action === 'DELETE' ? 'bg-red-50' : ''}
+                    className={isLoading ? 'opacity-50' : ''}
+                    style={{
+                      borderBottom: '1px solid var(--owt-widget-table-row-divider, #E4E4E4)',
+                      backgroundColor: isEditing
+                        ? 'var(--owt-widget-table-editing-row-bg, #FBE6AA)'
+                        : row.edit_action === 'DELETE'
+                          ? 'var(--owt-widget-table-deleted-row-bg, #FEE2E2)'
+                          : undefined,
+                    }}
                   >
                     {columns.map((col) => {
                       return (
@@ -906,14 +960,14 @@ export const TableWidget = ({ config }: TableWidgetProps) => {
                               type="button"
                               onClick={saveEdit}
                               disabled={isLoading}
-                              className="px-3 py-1 text-xs font-medium hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap flex-shrink-0"
+                              className="px-3 py-1 text-xs font-medium disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap flex-shrink-0"
                               style={{ 
                                 display: 'inline-block', 
                                 minWidth: '60px',
-                                backgroundColor: '#16a34a', // green-600
-                                color: '#ffffff', // white text
+                                backgroundColor: 'var(--owt-color-success, #16A34A)',
+                                color: 'var(--owt-color-bg, #FFFFFF)',
                                 border: 'none',
-                                borderRadius: '15px'
+                                borderRadius: 'var(--owt-btn-border-radius, 10px)',
                               }}
                             >
                               {translate('common.ok') || 'OK'}
@@ -922,8 +976,15 @@ export const TableWidget = ({ config }: TableWidgetProps) => {
                               type="button"
                               onClick={cancelEdit}
                               disabled={isLoading}
-                              className="px-3 py-1 text-xs font-medium bg-gray-200 text-gray-700 hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap flex-shrink-0"
-                              style={{ display: 'inline-block', minWidth: '60px', borderRadius: '15px' }}
+                              className="px-3 py-1 text-xs font-medium disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap flex-shrink-0"
+                              style={{
+                                display: 'inline-block',
+                                minWidth: '60px',
+                                borderRadius: 'var(--owt-btn-border-radius, 10px)',
+                                border: '1px solid var(--owt-btn-secondary-border, #C4C4C4)',
+                                backgroundColor: 'var(--owt-btn-secondary-bg, #FFFFFF)',
+                                color: 'var(--owt-btn-secondary-color, #011627)',
+                              }}
                             >
                               {translate('common.cancel') || 'Cancel'}
                             </button>
@@ -936,8 +997,13 @@ export const TableWidget = ({ config }: TableWidgetProps) => {
                                 type="button"
                                 onClick={() => startEdit(rowIndex)}
                                 disabled={isAnyRowEditing || isLoading}
-                                className="px-3 py-1 text-xs text-blue-600 hover:text-blue-800 hover:bg-blue-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                                style={{ borderRadius: '15px' }}
+                                className="px-3 py-1 text-xs disabled:opacity-50 disabled:cursor-not-allowed"
+                                style={{
+                                  borderRadius: 'var(--owt-btn-border-radius, 10px)',
+                                  color: 'var(--owt-color-primary-dark, #F07B1A)',
+                                  backgroundColor: 'transparent',
+                                  border: 'none',
+                                }}
                               >
                                 {translate('common.edit') || 'Edit'}
                               </button>
@@ -947,8 +1013,13 @@ export const TableWidget = ({ config }: TableWidgetProps) => {
                                 type="button"
                                 onClick={() => deleteRow(rowIndex)}
                                 disabled={isAnyRowEditing || isLoading}
-                                className="px-3 py-1 text-xs text-red-600 hover:text-red-800 hover:bg-red-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                                style={{ borderRadius: '15px' }}
+                                className="px-3 py-1 text-xs disabled:opacity-50 disabled:cursor-not-allowed"
+                                style={{
+                                  borderRadius: 'var(--owt-btn-border-radius, 10px)',
+                                  color: 'var(--owt-color-error, #B91C1C)',
+                                  backgroundColor: 'transparent',
+                                  border: 'none',
+                                }}
                               >
                                 {translate('common.remove') || 'Delete'}
                               </button>
@@ -963,7 +1034,7 @@ export const TableWidget = ({ config }: TableWidgetProps) => {
 
               {/* New row being added */}
               {isAdding && newRowData && (
-                <tr className="bg-blue-50">
+                <tr style={{ backgroundColor: 'var(--owt-widget-table-editing-row-bg, #FBE6AA)' }}>
                   {columns.map((col) => (
                     <td key={col['column-key']} className="px-4 py-3 whitespace-nowrap">
                       {renderCell(rows.length, col, { ...newRowData, edit_action: 'ADD' })}
@@ -975,8 +1046,13 @@ export const TableWidget = ({ config }: TableWidgetProps) => {
                         type="button"
                         onClick={saveAdd}
                         disabled={loadingRowIndex === -1}
-                        className="px-3 py-1 text-xs bg-green-600 text-white hover:bg-green-700 disabled:opacity-50"
-                        style={{ borderRadius: '15px' }}
+                        className="px-3 py-1 text-xs disabled:opacity-50"
+                        style={{
+                          borderRadius: 'var(--owt-btn-border-radius, 10px)',
+                          backgroundColor: 'var(--owt-color-success, #16A34A)',
+                          color: 'var(--owt-color-bg, #FFFFFF)',
+                          border: 'none',
+                        }}
                       >
                         {translate('common.save') || 'Save'}
                       </button>
@@ -987,8 +1063,13 @@ export const TableWidget = ({ config }: TableWidgetProps) => {
                           setNewRowData(null);
                         }}
                         disabled={loadingRowIndex === -1}
-                        className="px-3 py-1 text-xs bg-gray-200 text-gray-700 hover:bg-gray-300 disabled:opacity-50"
-                        style={{ borderRadius: '15px' }}
+                        className="px-3 py-1 text-xs disabled:opacity-50"
+                        style={{
+                          borderRadius: 'var(--owt-btn-border-radius, 10px)',
+                          border: '1px solid var(--owt-btn-secondary-border, #C4C4C4)',
+                          backgroundColor: 'var(--owt-btn-secondary-bg, #FFFFFF)',
+                          color: 'var(--owt-btn-secondary-color, #011627)',
+                        }}
                       >
                         {translate('common.cancel') || 'Cancel'}
                       </button>
@@ -999,11 +1080,10 @@ export const TableWidget = ({ config }: TableWidgetProps) => {
             </tbody>
           </table>
         </div>
-      )}
 
       {/* Error and Help Text */}
       {touched && error.length > 0 && (
-        <p className="text-red-500 text-sm mt-1">{error[0]}</p>
+        <p className="text-sm mt-1" style={{ color: 'var(--owt-widget-error-color, #B91C1C)' }}>{error[0]}</p>
       )}
       {/* {widgetConfig['widget-data-helptext'] && (
         <p className="text-gray-500 text-sm mt-1">
