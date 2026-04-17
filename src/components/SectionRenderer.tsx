@@ -15,6 +15,42 @@ import { namespaceSectionConfig } from '../utils/schemaNamespace';
 import { sectionValidate, collectWidgets } from '../utils/sectionValidate';
 import { downArrowIcon, personIcon, calendarIcon, rightArrowIcon, arrowUpIcon, arrowDownIcon, arrowLeftIcon, arrowRightIcon } from '../assets';
 
+/** Root class on readonly label/value rows; SectionRenderer scopes overflow/ellipsis rules here. */
+const READONLY_VALUE_ROW_ROOT_CLASSES = [
+  'TextDisplayWidget',
+  'TextAreaDisplayWidget',
+  'SelectDisplayWidget',
+  'PhoneDisplayWidget',
+  'NumberDisplayWidget',
+  'CurrencyDisplayWidget',
+  'RadioDisplayWidget',
+  'DateDisplayWidget',
+  'DateTimeDisplayWidget',
+  'CheckboxDisplayWidget',
+  'BooleanDisplayWidget',
+  'FileDisplayWidget',
+  'DisplayFieldWidget',
+] as const;
+
+/** Rows whose value is one line in .flex-1 > .text-gray-900 (ellipsis; full string via title on the element). */
+const READONLY_SINGLE_LINE_VALUE_ROW_CLASSES = [
+  'TextDisplayWidget',
+  'SelectDisplayWidget',
+  'PhoneDisplayWidget',
+  'NumberDisplayWidget',
+  'CurrencyDisplayWidget',
+  'RadioDisplayWidget',
+  'DateDisplayWidget',
+  'DateTimeDisplayWidget',
+  'CheckboxDisplayWidget',
+  'BooleanDisplayWidget',
+  'DisplayFieldWidget',
+] as const;
+
+function scopedClassSelectors(sectionClassId: string, classNames: readonly string[]): string {
+  return classNames.map((c) => `.${sectionClassId} .${c}`).join(',\n        ');
+}
+
 // Track section changes for change request creation
 export interface SectionChanges {
   section_id?: string;
@@ -162,6 +198,23 @@ export const SectionRenderer = ({
   const sectionId = sectionToRender['section-id'];
   const gridId = `section-panels-${sectionId}`;
   const sectionClassId = `section-${sectionId}`;
+
+  const readonlyValueRowRootsCss = useMemo(
+    () => scopedClassSelectors(sectionClassId, READONLY_VALUE_ROW_ROOT_CLASSES),
+    [sectionClassId]
+  );
+  const readonlyValueRowFlex1Css = useMemo(
+    () =>
+      READONLY_VALUE_ROW_ROOT_CLASSES.map((c) => `.${sectionClassId} .${c} > .flex-1`).join(',\n        '),
+    [sectionClassId]
+  );
+  const readonlySingleLineValueTextCss = useMemo(
+    () =>
+      READONLY_SINGLE_LINE_VALUE_ROW_CLASSES.map(
+        (c) => `.${sectionClassId} .${c} > .flex-1 > .text-gray-900`
+      ).join(',\n        '),
+    [sectionClassId]
+  );
 
   // IntakeForm mode: accordion expand/collapse state (supports toggle)
   const [standaloneExpanded, setStandaloneExpanded] = useState(true); // For sectionIndex undefined (standalone use)
@@ -969,19 +1022,26 @@ export const SectionRenderer = ({
           white-space: nowrap !important;
         }
         /* Readonly: prevent flex row from overflowing panel */
-        .${sectionClassId} .TextDisplayWidget {
+        ${readonlyValueRowRootsCss} {
           min-width: 0 !important;
           overflow: hidden !important;
         }
-        .${sectionClassId} .TextDisplayWidget > .flex-1 {
+        ${readonlyValueRowFlex1Css} {
           min-width: 0 !important;
           overflow: hidden !important;
         }
-        /* Readonly value text truncation */
-        .${sectionClassId} .TextDisplayWidget > .flex-1 > .text-gray-900 {
+        /* Readonly value: single-line ellipsis; full value via title on the value node */
+        ${readonlySingleLineValueTextCss} {
           overflow: hidden;
           text-overflow: ellipsis;
           white-space: nowrap;
+        }
+        /* Readonly textarea: break unbroken long tokens; title on pre keeps full text on hover */
+        .${sectionClassId} .TextAreaDisplayWidget > .flex-1 > pre {
+          min-width: 0;
+          max-width: 100%;
+          overflow-wrap: anywhere;
+          word-break: break-word;
         }
         
         /* Only apply fixed height when in edit mode */
