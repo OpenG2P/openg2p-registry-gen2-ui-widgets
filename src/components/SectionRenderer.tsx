@@ -1421,7 +1421,7 @@ export const SectionRenderer = ({
             <div
               id={gridId}
               className="section-panels"
-              style={mode === 'RegistryView' && hideEditButton ? { paddingBottom: '40px' } : {}}
+              style={mode === 'RegistryView' && hideEditButton ? { paddingBottom: '30px' } : {}}
             >
           {editableSection.panels.map((panel, index) => (
             <div
