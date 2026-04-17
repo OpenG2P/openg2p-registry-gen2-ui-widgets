@@ -84,7 +84,7 @@ import { dummyProfile } from '../assets';
  *   Key           | Type                     | Default
  *   ------------- | ------------------------ | ----------------------------
  *   imageSize     | number (px)              | 90
- *   nameColor     | CSS colour string        | '#ED7C22'
+ *   nameColor     | CSS colour string        | '#F07B1A'
  *   statusColors  | Record<string, string>   | green/red/amber defaults
  *
  * ── Full example ─────────────────────────────────────────────────
@@ -129,7 +129,7 @@ import { dummyProfile } from '../assets';
  *   },
  *   "widget-data-format": {
  *     "imageSize": 90,
- *     "nameColor": "#ED7C22",
+ *     "nameColor": "#F07B1A",
  *     "statusColors": {
  *       "active":   "#16A34A",
  *       "inactive": "#D97706",
@@ -332,7 +332,7 @@ export const HeaderSectionWidget = ({ config }: HeaderSectionWidgetProps) => {
   // ── Format options ────────────────────────────────────────────
   const format = (widgetConfig['widget-data-format'] || {}) as Record<string, any>;
   const imageSize = format.imageSize || 120;
-  const nameColor = format.nameColor || '#ED7C22';
+  const nameColor = format.nameColor || 'var(--owt-color-primary-dark, #F07B1A)';
   const statusColors: Record<string, string> = {
     ...DEFAULT_STATUS_COLORS,
     ...(format.statusColors || {}),
@@ -359,7 +359,7 @@ export const HeaderSectionWidget = ({ config }: HeaderSectionWidgetProps) => {
   }, [statusValue, statusOptions]);
 
   const statusColor =
-    statusColors[String(statusValue).toLowerCase()] || '#6B7280';
+    statusColors[String(statusValue).toLowerCase()] || 'var(--owt-color-text-muted, #6B7280)';
 
   // ── Scoped class for CSS isolation ────────────────────────────
   const cls = `header-section-widget-${widgetConfig['widget-id']}`;
@@ -414,8 +414,8 @@ export const HeaderSectionWidget = ({ config }: HeaderSectionWidgetProps) => {
           height: ${imageSize}px;
           border-radius: 8px;
           object-fit: cover;
-          background-color: #e5e7eb;
-          border: 2px solid #d1d5db;
+          background-color: var(--owt-color-border-light, #e5e7eb);
+          border: 2px solid var(--owt-color-border, #d1d5db);
           flex-shrink: 0;
         }
 
@@ -423,8 +423,8 @@ export const HeaderSectionWidget = ({ config }: HeaderSectionWidgetProps) => {
           width: ${imageSize}px;
           height: ${imageSize}px;
           border-radius: 8px;
-          background-color: #e5e7eb;
-          border: 2px solid #d1d5db;
+          background-color: var(--owt-color-border-light, #e5e7eb);
+          border: 2px solid var(--owt-color-border, #d1d5db);
           display: flex;
           align-items: center;
           justify-content: center;
@@ -470,7 +470,7 @@ export const HeaderSectionWidget = ({ config }: HeaderSectionWidgetProps) => {
         }
 
         .${cls} .hdr-field-value {
-          color: #111827;
+          color: var(--owt-color-text, #111827);
           font-weight: 500;
         }
 
@@ -497,41 +497,41 @@ export const HeaderSectionWidget = ({ config }: HeaderSectionWidgetProps) => {
         }
 
         .${cls} .hdr-meta-value {
-          color: #111827;
+          color: var(--owt-color-text, #111827);
           font-weight: 500;
         }
 
         .${cls} .hdr-select {
           height: 32px;
           padding: 0 8px;
-          border: 1px solid #d1d5db;
+          border: 1px solid var(--owt-widget-input-border, #d1d5db);
           border-radius: 6px;
           font-size: 0.875rem;
           font-family: Roboto, sans-serif;
-          background: #fff;
+          background: var(--owt-widget-input-bg, #fff);
           min-width: 140px;
-          color: #374151;
+          color: var(--owt-btn-primary-color, #374151);
         }
         .${cls} .hdr-select:focus {
           outline: none;
-          border-color: #ED7C22;
+          border-color: var(--owt-widget-input-focus-border, #F07B1A);
           box-shadow: 0 0 0 2px rgba(237, 124, 34, 0.15);
         }
 
         .${cls} .hdr-input {
           height: 32px;
           padding: 0 8px;
-          border: 1px solid #d1d5db;
+          border: 1px solid var(--owt-widget-input-border, #d1d5db);
           border-radius: 6px;
           font-size: 0.875rem;
           font-family: Roboto, sans-serif;
-          background: #fff;
+          background: var(--owt-widget-input-bg, #fff);
           min-width: 140px;
-          color: #374151;
+          color: var(--owt-btn-primary-color, #374151);
         }
         .${cls} .hdr-input:focus {
           outline: none;
-          border-color: #ED7C22;
+          border-color: var(--owt-widget-input-focus-border, #F07B1A);
           box-shadow: 0 0 0 2px rgba(237, 124, 34, 0.15);
         }
 

@@ -272,7 +272,7 @@ export const FileInputWidget = ({ config }: FileInputWidgetProps) => {
                 handleFileClick(file, e);
               }}
               className="text-sm hover:underline focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1 rounded cursor-pointer"
-              style={{ color: isSupportingDocument ? '#000000' : '#2563eb' }}
+              style={{ color: isSupportingDocument ? 'var(--owt-color-text, #011627)' : 'var(--owt-color-info, #2563eb)' }}
               title="Click to preview"
             >
               {fileName}
@@ -283,7 +283,7 @@ export const FileInputWidget = ({ config }: FileInputWidgetProps) => {
         return (
           <div style={{ display: 'flex', alignItems: 'center' }}>
             {fileIconElement}
-            <span className="text-sm" style={{ color: isSupportingDocument ? '#000000' : '#4b5563' }}>
+            <span className="text-sm" style={{ color: isSupportingDocument ? 'var(--owt-color-text, #011627)' : '#4b5563' }}>
               {fileName}
             </span>
           </div>
@@ -319,7 +319,7 @@ export const FileInputWidget = ({ config }: FileInputWidgetProps) => {
                     type="button"
                     onClick={(e) => handleFileClick(file, e)}
                     className="text-sm hover:underline focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1 rounded cursor-pointer"
-                    style={{ color: isSupportingDocument ? '#000000' : '#2563eb' }}
+                    style={{ color: isSupportingDocument ? 'var(--owt-color-text, #011627)' : 'var(--owt-color-info, #2563eb)' }}
                     title="Click to preview"
                   >
                     {fileName}
@@ -330,7 +330,7 @@ export const FileInputWidget = ({ config }: FileInputWidgetProps) => {
               return (
                 <div key={index} style={{ display: 'flex', alignItems: 'center' }}>
                   {fileIconElement}
-                  <span className="text-sm" style={{ color: isSupportingDocument ? '#000000' : '#4b5563' }}>
+                  <span className="text-sm" style={{ color: isSupportingDocument ? 'var(--owt-color-text, #011627)' : '#4b5563' }}>
                     {fileName}
                   </span>
                 </div>

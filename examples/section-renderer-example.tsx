@@ -8,12 +8,42 @@
 import React, { useMemo } from 'react';
 import { createWidgetStore } from '../src/store';
 import { WidgetProvider, SectionsContainer } from '../src';
-import type { SectionConfig } from '../src/types';
+import type { DataSourceRequestHandler, SectionConfig } from '../src/types';
 import type { SectionChanges } from '../src/components/SectionRenderer';
 
 const REG_ID = 'a1a4d25a';
 
 // ── Section UI schemas (same as intake-form-example) ──────────
+
+const scoresSection: SectionConfig = {
+  'section-id': 'record_scores',
+  'section-title': 'Score',
+  'section-editable': false,
+  'section-hide-edit-button': true,
+  'section-column-span': 3,
+  panels: [
+    {
+      'panel-id': 'panel_scores_main',
+      'panel-orientation': 'vertical',
+      'panel-column-span': 3,
+      widgets: [
+        {
+          widget: 'scores-display',
+          'widget-type': 'group',
+          'widget-id': 'record-scores',
+          'widget-readonly': true,
+          'widget-data-source': {
+            type: 'api',
+            service: 'staff-portal-api',
+            endpoint: 'get_scores',
+            method: 'POST',
+            params: { internal_record_id_path: 'internal_record_id' },
+          },
+        },
+      ],
+    },
+  ],
+};
 
 const personalInfoSection: SectionConfig = {
   'section-id': 'farmer_personal_info',
@@ -364,6 +394,7 @@ const socioEconomicSection: SectionConfig = {
 };
 
 const registryViewSections: SectionConfig[] = [
+  scoresSection,
   personalInfoSection,
   locationSection,
   socioEconomicSection,
@@ -372,6 +403,7 @@ const registryViewSections: SectionConfig[] = [
 // ── Schema data (pre-populated for view mode) ──────────
 
 const sampleSchemaData: Record<string, unknown> = {
+  internal_record_id: 'INT-0000123',
   [`${REG_ID}.birth_date`]: '1990-05-15',
   [`${REG_ID}.estimated_age`]: 35,
   [`${REG_ID}.gender`]: 'male',
@@ -396,6 +428,30 @@ const sampleSchemaData: Record<string, unknown> = {
   [`${REG_ID}.source_of_income`]: 'CROP_PRODUCTION',
 };
 
+const mockHandler: DataSourceRequestHandler = async (service, endpoint, method, params) => {
+  void method;
+  void params;
+  if (service === 'staff-portal-api' && endpoint === 'get_scores') {
+    return {
+      scores: [
+        {
+          score_type: 'PMT',
+          computed_score: 42,
+          computed_at: '2026-04-16T10:12:00Z',
+          triggered_by_cr_id: 'CR-001',
+        },
+        {
+          score_type: 'FSS',
+          computed_score: 0.78,
+          computed_at: '2026-03-10T08:30:00Z',
+          triggered_by_cr_id: 'CR-000',
+        },
+      ],
+    };
+  }
+  return { scores: [] };
+};
+
 export const SectionRendererExample = () => {
   const store = useMemo(() => createWidgetStore(), []);
 
@@ -405,7 +461,11 @@ export const SectionRendererExample = () => {
   };
 
   return (
-    <WidgetProvider store={store} schemaData={sampleSchemaData}>
+    <WidgetProvider
+      store={store}
+      schemaData={sampleSchemaData}
+      dataSourceRequestHandler={mockHandler}
+    >
       <div style={{
         display: 'flex',
         flexDirection: 'column',

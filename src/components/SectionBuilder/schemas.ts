@@ -437,6 +437,11 @@ export const sectionSchema = {
       type: 'boolean' as const,
       description: 'Whether section is editable',
     },
+    'section-hide-edit-button': {
+      type: 'boolean' as const,
+      description:
+        'RegistryView only: when true, hides the Edit Details link for this section (per-section override).',
+    },
     'section-column-span': {
       type: 'number' as const,
       minimum: 1,

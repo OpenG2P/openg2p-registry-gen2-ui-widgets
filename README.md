@@ -236,7 +236,7 @@ The library includes 20 pre-built widgets:
 - **Layout Widgets**: Array, IterableAccordion
 - **Display Widgets**: Display, Profile
 - **Table Widgets**: Table, SimpleTable
-- **Section Widgets**: HeaderSection
+- **Section Widgets**: HeaderSection, ScoresDisplay
 
 ### HeaderSection Widget
 
@@ -255,6 +255,57 @@ A full-width header card designed for registry record views. Displays a profile 
   }
 }
 ```
+
+### ScoresDisplay Widget
+
+A full-width, view-only widget for showing a single computed score record (e.g. PMT, Food Security Score). It fetches data via the host application's `dataSourceRequestHandler` and renders:
+
+- **Score Type**
+- **Score**
+- **Computed at**
+
+**API request mapping**
+
+- The widget reads `internal_record_id` from `widget-data-source.params.internal_record_id_path` (a dot-path into `schemaData` / store values).
+- It then calls `dataSourceRequestHandler(service, endpoint, method, params)` and passes `internal_record_id` in the request params.
+
+```json
+{
+  "widget": "scores-display",
+  "widget-type": "group",
+  "widget-id": "record-scores",
+  "widget-readonly": true,
+  "widget-data-source": {
+    "type": "api",
+    "service": "staff-portal-api",
+    "endpoint": "get_scores",
+    "method": "POST",
+    "params": {
+      "internal_record_id_path": "internal_record_id"
+    }
+  }
+}
+```
+
+**Expected response shape (ideal)**
+
+```json
+{
+  "scores": [
+    {
+      "score_type": "PMT",
+      "computed_score": 42,
+      "computed_at": "2026-04-16T10:12:00Z",
+      "triggered_by_cr_id": "CR-001"
+    }
+  ]
+}
+```
+
+**Notes**
+
+- The widget displays a single score record. If multiple scores are returned, it selects the most recent by `computed_at` (falls back to the first item if dates are missing).
+- There is no edit mode for this widget.
 
 ## Section Modes
 

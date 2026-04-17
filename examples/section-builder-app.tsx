@@ -23,6 +23,7 @@ import { SectionBuilder } from '../src/components/SectionBuilder';
 import { IntakeFormExample } from './intake-form-example';
 import { HeaderSectionExample } from './header-section-example';
 import { SectionRendererExample } from './section-renderer-example';
+import { ThemeExample } from './theme-example';
 import { SectionConfig } from '../src/types';
 import { createWidgetStore } from '../src/store';
 import { WidgetProvider } from '../src/components/WidgetProvider';
@@ -95,7 +96,7 @@ const initialSection: SectionConfig = {
   ],
 };
 
-type TabId = 'section-builder' | 'intake-form' | 'header-section' | 'section-renderer';
+type TabId = 'section-builder' | 'intake-form' | 'header-section' | 'section-renderer' | 'theme';
 
 function App() {
   const [section, setSection] = useState<SectionConfig>(initialSection);
@@ -186,6 +187,20 @@ function App() {
             >
               Section Renderer
             </button>
+            <button
+              type="button"
+              onClick={() => setActiveTab('theme')}
+              style={{
+                padding: '8px 16px',
+                fontWeight: activeTab === 'theme' ? 600 : 400,
+                background: activeTab === 'theme' ? '#e5e7eb' : 'transparent',
+                border: 'none',
+                borderRadius: '6px',
+                cursor: 'pointer',
+              }}
+            >
+              Theme
+            </button>
           </div>
           <div style={{
             flex: 1,
@@ -215,6 +230,7 @@ function App() {
             {activeTab === 'intake-form' && <IntakeFormExample />}
             {activeTab === 'header-section' && <HeaderSectionExample />}
             {activeTab === 'section-renderer' && <SectionRendererExample />}
+            {activeTab === 'theme' && <ThemeExample />}
           </div>
         </div>
       </WidgetProvider>
