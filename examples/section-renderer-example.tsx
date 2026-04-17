@@ -95,6 +95,15 @@ const personalInfoSection: SectionConfig = {
                 ],
               },
             },
+            // Long single token (no spaces): in RegistryView readonly mode this truncates with
+            // an ellipsis; hover the value for the full string (native title tooltip).
+            {
+              widget: 'text',
+              'widget-id': 'external_reference_id',
+              'widget-type': 'input',
+              'widget-label': 'External reference ID',
+              'widget-data-path': `${REG_ID}.external_reference_id`,
+            },
           ],
         },
         {
@@ -380,6 +389,8 @@ const sampleSchemaData: Record<string, unknown> = {
     gender: 'male',
     marital_status: 'married',
     education_level: 'secondary',
+    external_reference_id:
+      'openg2p-registry-ui-widgets-demo-very-long-token-without-spaces-0123456789abcdef-0123456789abcdef',
     has_personal_phone: 'yes',
     phone: '+1 555-0123',
     email: 'john.doe@example.com',
