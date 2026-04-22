@@ -8,7 +8,7 @@
 import React, { useMemo } from 'react';
 import { createWidgetStore } from '../src/store';
 import { WidgetProvider, SectionsContainer } from '../src';
-import type { DataSourceRequestHandler, SectionConfig } from '../src/types';
+import type { SectionConfig } from '../src/types';
 import type { SectionChanges } from '../src/components/SectionRenderer';
 
 const REG_ID = 'a1a4d25a';
@@ -32,13 +32,7 @@ const scoresSection: SectionConfig = {
           'widget-type': 'group',
           'widget-id': 'record-scores',
           'widget-readonly': true,
-          'widget-data-source': {
-            type: 'api',
-            service: 'staff-portal-api',
-            endpoint: 'get_scores',
-            method: 'POST',
-            params: { internal_record_id_path: 'internal_record_id' },
-          },
+          'widget-data-path': 'scores',
         },
       ],
     },
@@ -403,7 +397,33 @@ const registryViewSections: SectionConfig[] = [
 // ── Schema data (pre-populated for view mode) ──────────
 
 const sampleSchemaData: Record<string, unknown> = {
-  internal_record_id: 'INT-0000123',
+  scores: [
+    {
+      score_type: 'PMT',
+      computed_score: 42,
+      computed_at: '2026-04-16T10:12:00Z',
+      triggered_by_cr_id: 'CR-001',
+    },
+    {
+      score_type: 'FSS',
+      computed_score: 0.78,
+      computed_at: '2026-03-10T08:30:00Z',
+      triggered_by_cr_id: 'CR-000',
+    },
+    {
+      score_type: 'Poverty Score',
+      computed_score: 18,
+      computed_at: '2026-01-02T09:05:00Z',
+      triggered_by_cr_id: 'CR-000',
+    },
+    
+    {
+      score_type: 'Poverty Score',
+      computed_score: 18,
+      computed_at: '2026-01-02T09:05:00Z',
+      triggered_by_cr_id: 'CR-000',
+    },
+  ],
   [`${REG_ID}.birth_date`]: '1990-05-15',
   [`${REG_ID}.estimated_age`]: 35,
   [`${REG_ID}.gender`]: 'male',
@@ -428,30 +448,6 @@ const sampleSchemaData: Record<string, unknown> = {
   [`${REG_ID}.source_of_income`]: 'CROP_PRODUCTION',
 };
 
-const mockHandler: DataSourceRequestHandler = async (service, endpoint, method, params) => {
-  void method;
-  void params;
-  if (service === 'staff-portal-api' && endpoint === 'get_scores') {
-    return {
-      scores: [
-        {
-          score_type: 'PMT',
-          computed_score: 42,
-          computed_at: '2026-04-16T10:12:00Z',
-          triggered_by_cr_id: 'CR-001',
-        },
-        {
-          score_type: 'FSS',
-          computed_score: 0.78,
-          computed_at: '2026-03-10T08:30:00Z',
-          triggered_by_cr_id: 'CR-000',
-        },
-      ],
-    };
-  }
-  return { scores: [] };
-};
-
 export const SectionRendererExample = () => {
   const store = useMemo(() => createWidgetStore(), []);
 
@@ -464,7 +460,6 @@ export const SectionRendererExample = () => {
     <WidgetProvider
       store={store}
       schemaData={sampleSchemaData}
-      dataSourceRequestHandler={mockHandler}
     >
       <div style={{
         display: 'flex',

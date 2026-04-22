@@ -2,37 +2,34 @@
  * Scores Display Widget Example
  *
  * Demonstrates the ScoresDisplayWidget in a full-width section.
- * The API handler below is a small mock; in a host app you would route
- * `service + endpoint` to your API gateway.
  */
 
 import React, { useMemo } from 'react';
 import { createWidgetStore } from '../src/store';
 import { WidgetProvider, SectionsContainer } from '../src';
-import type { DataSourceRequestHandler, SectionConfig } from '../src/types';
+import type { SectionConfig } from '../src/types';
 
 const schemaData = {
-  internal_record_id: 'INT-0000123',
-};
-
-const mockHandler: DataSourceRequestHandler = async (service, endpoint, method, params) => {
-  void service;
-  void endpoint;
-  void method;
-  void params;
-  if (service === 'staff-portal-api' && endpoint === 'get_scores') {
-    return {
-      scores: [
-        {
-          score_type: 'PMT',
-          computed_score: 42,
-          computed_at: '2026-04-16T10:12:00Z',
-          triggered_by_cr_id: 'CR-001',
-        },
-      ],
-    };
-  }
-  return { scores: [] };
+  scores: [
+    {
+      score_type: 'PMT',
+      computed_score: 42,
+      computed_at: '2026-04-16T10:12:00Z',
+      triggered_by_cr_id: 'CR-001',
+    },
+    {
+      score_type: 'FSS',
+      computed_score: 0.78,
+      computed_at: '2026-03-10T08:30:00Z',
+      triggered_by_cr_id: 'CR-000',
+    },
+    {
+      score_type: 'Poverty Score',
+      computed_score: 18,
+      computed_at: '2026-01-02T09:05:00Z',
+      triggered_by_cr_id: 'CR-000',
+    },
+  ],
 };
 
 const scoresSection: SectionConfig = {
@@ -52,13 +49,7 @@ const scoresSection: SectionConfig = {
           'widget-type': 'group',
           'widget-id': 'record-scores',
           'widget-readonly': true,
-          'widget-data-source': {
-            type: 'api',
-            service: 'staff-portal-api',
-            endpoint: 'get_scores',
-            method: 'POST',
-            params: { internal_record_id_path: 'internal_record_id' },
-          },
+          'widget-data-path': 'scores',
         },
       ],
     },
@@ -68,7 +59,7 @@ const scoresSection: SectionConfig = {
 export const ScoresDisplayExample = () => {
   const store = useMemo(() => createWidgetStore(), []);
   return (
-    <WidgetProvider store={store} schemaData={schemaData} dataSourceRequestHandler={mockHandler}>
+    <WidgetProvider store={store} schemaData={schemaData}>
       <div style={{ padding: '24px', maxWidth: '1241px', margin: '0 auto' }}>
         <h1 style={{ fontSize: '24px', fontFamily: 'Roboto, sans-serif', margin: '0 0 24px 0' }}>
           Registry View — Scores Display Widget

@@ -258,16 +258,16 @@ A full-width header card designed for registry record views. Displays a profile 
 
 ### ScoresDisplay Widget
 
-A full-width, view-only widget for showing a single computed score record (e.g. PMT, Food Security Score). It fetches data via the host application's `dataSourceRequestHandler` and renders:
+A full-width, view-only widget for showing **a list** of computed score records (e.g. PMT, Food Security Score). It renders, for each score:
 
 - **Score Type**
 - **Score**
 - **Computed at**
 
-**API request mapping**
+**Data binding**
 
-- The widget reads `internal_record_id` from `widget-data-source.params.internal_record_id_path` (a dot-path into `schemaData` / store values).
-- It then calls `dataSourceRequestHandler(service, endpoint, method, params)` and passes `internal_record_id` in the request params.
+- The widget reads an array of score records from `widget-data-path` (a dot-path into `schemaData` / store values).
+- `widget-data-path` may point either directly to an array, or to an object containing `{ "scores": [...] }`.
 
 ```json
 {
@@ -275,37 +275,27 @@ A full-width, view-only widget for showing a single computed score record (e.g. 
   "widget-type": "group",
   "widget-id": "record-scores",
   "widget-readonly": true,
-  "widget-data-source": {
-    "type": "api",
-    "service": "staff-portal-api",
-    "endpoint": "get_scores",
-    "method": "POST",
-    "params": {
-      "internal_record_id_path": "internal_record_id"
-    }
-  }
+  "widget-data-path": "scores"
 }
 ```
 
-**Expected response shape (ideal)**
+**Expected record shape (ideal)**
 
 ```json
-{
-  "scores": [
-    {
-      "score_type": "PMT",
-      "computed_score": 42,
-      "computed_at": "2026-04-16T10:12:00Z",
-      "triggered_by_cr_id": "CR-001"
-    }
-  ]
-}
+[
+  {
+    "score_type": "PMT",
+    "computed_score": 42,
+    "computed_at": "2026-04-16T10:12:00Z",
+    "triggered_by_cr_id": "CR-001"
+  }
+]
 ```
 
 **Notes**
 
-- The widget displays a single score record. If multiple scores are returned, it selects the most recent by `computed_at` (falls back to the first item if dates are missing).
 - There is no edit mode for this widget.
+- If multiple scores are provided, the widget sorts them by `computed_at` (most recent first). If dates are missing/invalid, original order is preserved for those items.
 
 ## Section Modes
 
