@@ -125,6 +125,15 @@ const personalInfoSection: SectionConfig = {
                 ],
               },
             },
+            // Long single token (no spaces): in RegistryView readonly mode this truncates with
+            // an ellipsis; hover the value for the full string (native title tooltip).
+            {
+              widget: 'text',
+              'widget-id': 'external_reference_id',
+              'widget-type': 'input',
+              'widget-label': 'External reference ID',
+              'widget-data-path': `${REG_ID}.external_reference_id`,
+            },
           ],
         },
         {
@@ -401,31 +410,36 @@ const registryViewSections: SectionConfig[] = [
 ];
 
 // ── Schema data (pre-populated for view mode) ──────────
+// Must be a nested object so getValueByPath can traverse dot-notation
+// widget-data-path values like "a1a4d25a.birth_date".
 
 const sampleSchemaData: Record<string, unknown> = {
-  internal_record_id: 'INT-0000123',
-  [`${REG_ID}.birth_date`]: '1990-05-15',
-  [`${REG_ID}.estimated_age`]: 35,
-  [`${REG_ID}.gender`]: 'male',
-  [`${REG_ID}.marital_status`]: 'married',
-  [`${REG_ID}.education_level`]: 'secondary',
-  [`${REG_ID}.has_personal_phone`]: 'yes',
-  [`${REG_ID}.phone`]: '+1 555-0123',
-  [`${REG_ID}.email`]: 'john.doe@example.com',
-  [`${REG_ID}.address_line_1`]: '123 Farm Road',
-  [`${REG_ID}.address_line_2`]: 'Rural District',
-  [`${REG_ID}.postal_code`]: '10001',
-  [`${REG_ID}.country_code`]: 'US',
-  [`${REG_ID}.region`]: 'Midwest',
-  [`${REG_ID}.district`]: 'Springfield',
-  [`${REG_ID}.locality`]: 'Green Valley',
-  [`${REG_ID}.latitude`]: 39.781721,
-  [`${REG_ID}.longitude`]: -89.650148,
-  [`${REG_ID}.altitude`]: 182.5,
-  [`${REG_ID}.disabled`]: 'no',
-  [`${REG_ID}.disability_type`]: '',
-  [`${REG_ID}.disability_severity`]: '',
-  [`${REG_ID}.source_of_income`]: 'CROP_PRODUCTION',
+  [REG_ID]: {
+    birth_date: '1990-05-15',
+    estimated_age: 35,
+    gender: 'male',
+    marital_status: 'married',
+    education_level: 'secondary',
+    external_reference_id:
+      'openg2p-registry-ui-widgets-demo-very-long-token-without-spaces-0123456789abcdef-0123456789abcdef',
+    has_personal_phone: 'yes',
+    phone: '+1 555-0123',
+    email: 'john.doe@example.com',
+    address_line_1: '123 Farm Road',
+    address_line_2: 'Rural District',
+    postal_code: '10001',
+    country_code: 'US',
+    region: 'Midwest',
+    district: 'Springfield',
+    locality: 'Green Valley',
+    latitude: 39.781721,
+    longitude: -89.650148,
+    altitude: 182.5,
+    disabled: 'no',
+    disability_type: '',
+    disability_severity: '',
+    source_of_income: 'CROP_PRODUCTION',
+  },
 };
 
 const mockHandler: DataSourceRequestHandler = async (service, endpoint, method, params) => {
@@ -480,6 +494,7 @@ export const SectionRendererExample = () => {
 
         <SectionsContainer
           sections={registryViewSections}
+          schemaData={sampleSchemaData}
           mode="RegistryView"
           onSectionSave={handleSectionSave}
           namespace={(_, i) => `rv-section-${i}`}

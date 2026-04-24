@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { useBaseWidget } from '../hooks/useBaseWidget';
 import { BaseWidgetConfig, DataSource } from '../types';
@@ -26,7 +26,8 @@ import { dummyProfile } from '../assets';
  *
  *   Key             | Description
  *   --------------- | -----------------------------------------------
- *   image           | Profile image URL        (e.g. "record_image_storage_id")
+ *   image           | Backend storage ID       (e.g. "record_image_storage_id")
+ *   imageUrl        | Resolved image URL       (e.g. "record_image_url") — used for display
  *   name            | Record display name      (e.g. "record_name")
  *   functionalId    | Functional record ID     (e.g. "functional_record_id")
  *   status          | Record status value      (e.g. "record_status")
@@ -95,6 +96,7 @@ import { dummyProfile } from '../assets';
  *   "widget-id": "registry-header",
  *   "widget-data-path": {
  *     "image": "record_image_storage_id",
+ *     "imageUrl": "record_image_url",
  *     "name": "record_name",
  *     "functionalId": "functional_record_id",
  *     "status": "record_status",
@@ -319,7 +321,21 @@ export const HeaderSectionWidget = ({ config }: HeaderSectionWidgetProps) => {
     [paths, values, schemaData],
   );
 
-  const imageUrl = findValue('image') || null;
+  const imageVal = findValue('image');
+  const imageUrlVal = findValue('imageUrl');
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (imageVal instanceof File) {
+      const url = URL.createObjectURL(imageVal);
+      setPreviewUrl(url);
+      return () => URL.revokeObjectURL(url);
+    }
+    setPreviewUrl(null);
+  }, [imageVal]);
+
+  const displayImageUrl = previewUrl || (typeof imageUrlVal === 'string' && imageUrlVal ? imageUrlVal : null);
+
   const displayName = findValue('name') || '';
   const functionalId = findValue('functionalId') || '';
   const statusValue = findValue('status') || '';
@@ -361,23 +377,25 @@ export const HeaderSectionWidget = ({ config }: HeaderSectionWidgetProps) => {
   const statusColor =
     statusColors[String(statusValue).toLowerCase()] || 'var(--owt-color-text-muted, #6B7280)';
 
+  // ── Image edit helpers ───────────────────────────────────────
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleImageUpload = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      const file = e.target.files?.[0];
+      if (!file) return;
+      updateFieldValue('image', file);
+      e.target.value = '';
+    },
+    [updateFieldValue],
+  );
+
+  const handleImageDelete = useCallback(() => {
+    updateFieldValue('image', '');
+  }, [updateFieldValue]);
+
   // ── Scoped class for CSS isolation ────────────────────────────
   const cls = `header-section-widget-${widgetConfig['widget-id']}`;
-
-  // ── Indicator dot component ───────────────────────────────────
-  const Dot = ({ color }: { color: string }) => (
-    <span
-      style={{
-        display: 'inline-block',
-        width: 8,
-        height: 8,
-        borderRadius: '50%',
-        backgroundColor: color,
-        flexShrink: 0,
-        marginTop: 6,
-      }}
-    />
-  );
 
   // ── RENDER ────────────────────────────────────────────────────
   return (
@@ -437,6 +455,56 @@ export const HeaderSectionWidget = ({ config }: HeaderSectionWidgetProps) => {
           height: 100%;
           object-fit: cover;
           border-radius: 8px;
+        }
+
+        .${cls} .hdr-avatar-wrapper {
+          position: relative;
+          width: ${imageSize}px;
+          height: ${imageSize}px;
+          flex-shrink: 0;
+        }
+
+        .${cls} .hdr-avatar-overlay {
+          position: absolute;
+          inset: 0;
+          border-radius: 8px;
+          background: rgba(0, 0, 0, 0.55);
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          gap: 6px;
+          opacity: 0;
+          transition: opacity 0.2s;
+        }
+
+        .${cls} .hdr-avatar-wrapper:hover .hdr-avatar-overlay {
+          opacity: 1;
+        }
+
+        .${cls} .hdr-avatar-action {
+          display: flex;
+          align-items: center;
+          gap: 5px;
+          padding: 5px 14px;
+          border: none;
+          border-radius: 4px;
+          background: rgba(255, 255, 255, 0.92);
+          color: #374151;
+          font-size: 0.7rem;
+          font-weight: 500;
+          cursor: pointer;
+          font-family: Roboto, sans-serif;
+          transition: background 0.15s;
+          white-space: nowrap;
+        }
+
+        .${cls} .hdr-avatar-action:hover {
+          background: #fff;
+        }
+
+        .${cls} .hdr-avatar-action--delete {
+          color: #DC2626;
         }
 
         .${cls} .hdr-info {
@@ -549,10 +617,10 @@ export const HeaderSectionWidget = ({ config }: HeaderSectionWidgetProps) => {
         {/* ─── LEFT COLUMN ─── */}
         <div className="hdr-left">
           {/* Avatar */}
-          <div>
-            {imageUrl ? (
+          <div className="hdr-avatar-wrapper">
+            {displayImageUrl ? (
               <img
-                src={imageUrl}
+                src={displayImageUrl}
                 alt={displayName || 'Profile'}
                 className="hdr-avatar"
                 onError={(e) => {
@@ -565,10 +633,47 @@ export const HeaderSectionWidget = ({ config }: HeaderSectionWidgetProps) => {
             ) : null}
             <div
               className="hdr-avatar-placeholder"
-              style={{ display: imageUrl ? 'none' : 'flex' }}
+              style={{ display: displayImageUrl ? 'none' : 'flex' }}
             >
               <img src={dummyProfile} alt="Profile Placeholder" />
             </div>
+
+            {!isReadonly && (
+              <>
+                <div className="hdr-avatar-overlay">
+                  <button
+                    type="button"
+                    className="hdr-avatar-action"
+                    onClick={() => fileInputRef.current?.click()}
+                  >
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                      <polyline points="17 8 12 3 7 8" />
+                      <line x1="12" y1="3" x2="12" y2="15" />
+                    </svg>
+                    Upload
+                  </button>
+                  <button
+                    type="button"
+                    className="hdr-avatar-action hdr-avatar-action--delete"
+                    onClick={handleImageDelete}
+                  >
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <polyline points="3 6 5 6 21 6" />
+                      <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                    </svg>
+                    Delete
+                  </button>
+                </div>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  style={{ display: 'none' }}
+                  onChange={handleImageUpload}
+                />
+              </>
+            )}
           </div>
 
           {/* Info fields */}
@@ -577,7 +682,6 @@ export const HeaderSectionWidget = ({ config }: HeaderSectionWidgetProps) => {
 
             {/* Functional Record ID */}
             <div className="hdr-field-row">
-              <Dot color="#9CA3AF" />
               <span className="hdr-field-label">
                 {getLabel('functionalId')} :
               </span>
@@ -586,7 +690,6 @@ export const HeaderSectionWidget = ({ config }: HeaderSectionWidgetProps) => {
 
             {/* Record Status */}
             <div className="hdr-field-row">
-              <Dot color={isReadonly ? statusColor : '#F59E0B'} />
               <span className="hdr-field-label">
                 {getLabel('status')}
               </span>
@@ -621,7 +724,6 @@ export const HeaderSectionWidget = ({ config }: HeaderSectionWidgetProps) => {
 
             {/* Status Reason */}
             <div className="hdr-field-row">
-              <Dot color={isReadonly ? '#9CA3AF' : '#F59E0B'} />
               <span className="hdr-field-label">
                 {getLabel('statusReason')} :
               </span>
