@@ -2,7 +2,7 @@ import { useEffect, useRef } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useWidgetEventBus } from './useWidgetEventBus';
 import { BaseWidgetConfig, WidgetGeoConfig, DataSourceRequestHandler } from '../types';
-import { setValue, setDataSource } from '../store/widgetSlice';
+import { setValue, setValues, setDataSource } from '../store/widgetSlice';
 import { getApiDataSource, transformDataSourceOptions } from '../utils/dataSource';
 import { WidgetRootState } from '../store';
 import { geoHierarchyBuilder } from '../utils/geoHierarchy';
@@ -29,6 +29,9 @@ export const useGeoWidgetCascade = (options: UseGeoWidgetCascadeOptions) => {
   const geoConfig = config['widget-geo-config'];
   const dataSource = config['widget-data-source'];
   const dataPath = config['widget-data-path'];
+  const groupId = typeof dataPath === 'string' && dataPath.includes('.') 
+    ? dataPath.split('.').slice(0, -1).join('.') 
+    : 'default';
 
   const valuesRef = useRef(values);
   const handlerRef = useRef(dataSourceRequestHandler);
@@ -41,10 +44,40 @@ export const useGeoWidgetCascade = (options: UseGeoWidgetCascadeOptions) => {
 
   // Get current value and data source options
   const currentValue = useSelector((state: WidgetRootState) => {
-    if (!dataPath) {
-      return state.widget.values[widgetId];
+    // Try to get value from widgetId first (most recent selection)
+    let value = state.widget.values[widgetId];
+    
+    // If not found in widgetId, try dataPath
+    if (value === undefined && dataPath) {
+      value = getWidgetValue(state.widget.values, dataPath, widgetId);
     }
-    return getWidgetValue(state.widget.values, dataPath, widgetId);
+
+    // Extract value if it's a geo hierarchy object
+    if (value && typeof value === 'object' && !Array.isArray(value) && geoConfig) {
+      const hierarchy = value.hierarchy || value.geo_code_hierarchy_json?.hierarchy;
+      if (Array.isArray(hierarchy)) {
+        const levelData = hierarchy.find((l: any) => l.level === geoConfig.level);
+        if (levelData) {
+          return levelData.level_value_id;
+        }
+      }
+      
+      // Extended fallbacks (matching useBaseWidget)
+      if ('geo_lowest_level_value_id' in value) {
+        return value.geo_lowest_level_value_id;
+      }
+      if ('lowest_level_value_id' in value) {
+        return value.lowest_level_value_id;
+      }
+      if (value.geo_code_hierarchy_json?.lowest_level_value_id) {
+        return value.geo_code_hierarchy_json.lowest_level_value_id;
+      }
+      if (value.geo_code_hierarchy_json?.geo_lowest_level_value_id) {
+        return value.geo_code_hierarchy_json.geo_lowest_level_value_id;
+      }
+    }
+
+    return value;
   });
 
   // Memoize selector to avoid returning new array reference
@@ -73,12 +106,19 @@ export const useGeoWidgetCascade = (options: UseGeoWidgetCascadeOptions) => {
         const currentValues = valuesRef.current;
         const currentHandler = handlerRef.current;
 
-        // CRITICAL: Get the parent value from Redux state, not from the event
-        // The event.value might be stale, but Redux state is always current
-        const parentValue = currentValues[parentWidgetId];
+        // CRITICAL: Try to get parent value from event first, then from Redux
+        let parentValue = event.value;
+        if (parentValue === undefined || parentValue === null) {
+          parentValue = currentValues[parentWidgetId];
+          
+          // If not found in top-level values, try to find it via dataPath or dependsOn
+          if (parentValue === undefined && dataSource.dependsOn) {
+            parentValue = getWidgetValue(currentValues, dataSource.dependsOn, '');
+          }
+        }
 
         // Remove this level and all below from hierarchy
-        geoHierarchyBuilder.removeLevelAndBelow(level);
+        geoHierarchyBuilder.removeLevelAndBelow(level, groupId);
 
         // Clear this widget's value
         // CRITICAL: Only dispatch setValue for THIS widget, not for parent or other widgets
@@ -134,7 +174,8 @@ export const useGeoWidgetCascade = (options: UseGeoWidgetCascadeOptions) => {
             dispatch(setDataSource({ widgetId, data: [] }));
           }
         } else {
-          // If parent value is cleared, clear the data source
+          // If parent value is cleared, clear the data source and hierarchy
+          geoHierarchyBuilder.removeLevelAndBelow(level, groupId);
           dispatch(setDataSource({ widgetId, data: [] }));
         }
       };
@@ -152,27 +193,71 @@ export const useGeoWidgetCascade = (options: UseGeoWidgetCascadeOptions) => {
       return;
     }
 
-    // Skip if value is empty/null (but allow 0 and false)
-    if (currentValue === null || currentValue === undefined || currentValue === '') {
-      // If value was cleared, remove this level and below from hierarchy
+    // Skip if value is undefined (it might still be loading or rehydrating)
+    // ONLY clear hierarchy if the value is explicitly null or empty string (user action)
+    if (currentValue === null || currentValue === '') {
       const { level } = geoConfig;
-      geoHierarchyBuilder.removeLevelAndBelow(level);
+      geoHierarchyBuilder.removeLevelAndBelow(level, groupId);
+      
+      // If we have a dataPath, we need to update Redux with the cleared hierarchy
+      if (dataPath) {
+        const hierarchyJson = geoHierarchyBuilder.buildHierarchyJson(groupId);
+        let finalUpdatedValues = valuesRef.current;
+        
+        // Use logic similar to the build section below to update the dataPath
+        if (typeof dataPath === 'string' && dataPath.endsWith('.geo_code_hierarchy_json')) {
+          const prefix = dataPath.substring(0, dataPath.lastIndexOf('.'));
+          finalUpdatedValues = setWidgetValue(
+            finalUpdatedValues,
+            dataPath,
+            widgetId,
+            hierarchyJson?.geo_code_hierarchy_json
+          );
+          finalUpdatedValues = setWidgetValue(
+            finalUpdatedValues,
+            `${prefix}.geo_lowest_level_value_id`,
+            widgetId,
+            hierarchyJson?.geo_lowest_level_value_id
+          );
+        } else {
+          finalUpdatedValues = setWidgetValue(
+            finalUpdatedValues,
+            dataPath,
+            widgetId,
+            hierarchyJson?.geo_code_hierarchy_json
+          );
+        }
+        dispatch(setValues(finalUpdatedValues));
+      }
       return;
+    }
+
+    if (currentValue === undefined) {
+      return; // Skip if undefined (still initializing)
     }
 
     const { level, isLastLevel } = geoConfig;
     
-    // For last level, check if hierarchy is already built to prevent endless loops
-    if (isLastLevel && dataPath) {
+    // Check if hierarchy is already built to prevent endless loops
+    if (dataPath) {
       const currentHierarchy = getWidgetValue(valuesRef.current, dataPath, widgetId);
       // If hierarchy JSON is already set and matches current value, skip rebuilding
-      if (currentHierarchy && typeof currentHierarchy === 'object' && currentHierarchy.geo_code_hierarchy_json) {
-        // Check if the lowest level value matches
-        const currentLevelValue = typeof currentValue === 'object' 
-          ? (currentValue.level_value_id || currentValue.id || currentValue.value)
-          : currentValue;
-        if (currentHierarchy.geo_lowest_level_value_id === currentLevelValue) {
-          return; // Hierarchy already built for this value, skip
+      if (currentHierarchy && typeof currentHierarchy === 'object') {
+        // Check if this specific level's value matches the hierarchy
+        const hierarchyArray = currentHierarchy.hierarchy || currentHierarchy.geo_code_hierarchy_json?.hierarchy;
+        
+        if (Array.isArray(hierarchyArray)) {
+          const currentLevelValue = typeof currentValue === 'object' 
+            ? (currentValue.level_value_id || currentValue.id || currentValue.value)
+            : currentValue;
+          
+          const levelData = hierarchyArray.find((l: any) => l.level === geoConfig.level);
+          
+          // If this level is already correctly represented in the hierarchy, skip rebuilding
+          // String conversion ensures comparison works for mixed types
+          if (levelData && String(levelData.level_value_id) === String(currentLevelValue)) {
+            return;
+          }
         }
       }
     }
@@ -196,32 +281,52 @@ export const useGeoWidgetCascade = (options: UseGeoWidgetCascadeOptions) => {
     }
 
     // When a widget's own value changes, remove this level and all below from hierarchy first
-    // This ensures that when level 1 changes, we clear the hierarchy and rebuild from scratch
-    // The addLevel method already handles removing existing levels, but we explicitly clear to be safe
-    geoHierarchyBuilder.removeLevelAndBelow(level);
+    geoHierarchyBuilder.removeLevelAndBelow(level, groupId);
     
     // Add level to hierarchy
-    geoHierarchyBuilder.addLevel(level, level_value_id, level_value_mnemonic);
+    geoHierarchyBuilder.addLevel(level, level_value_id, level_value_mnemonic, groupId);
 
-    // If this is the last level, build and store hierarchy JSON
-    if (isLastLevel && dataPath) {
-      const hierarchyJson = geoHierarchyBuilder.buildHierarchyJson();
+    // Build and store hierarchy JSON on every change
+    if (dataPath) {
+      const hierarchyJson = geoHierarchyBuilder.buildHierarchyJson(groupId);
       
       if (hierarchyJson) {
-        // Store both geo_lowest_level_value_id and geo_code_hierarchy_json
-        const updatedValues = setWidgetValue(
-          valuesRef.current,
-          dataPath,
-          widgetId,
-          {
-            geo_lowest_level_value_id: hierarchyJson.geo_lowest_level_value_id,
-            geo_code_hierarchy_json: hierarchyJson.geo_code_hierarchy_json,
-          }
-        );
+        // Fix: Avoid double nesting of geo_code_hierarchy_json
+        // If dataPath ends with .geo_code_hierarchy_json, we want to save the content directly to it
+        // and save the lowest level ID as a sibling
+        let finalUpdatedValues = valuesRef.current;
+        
+        if (typeof dataPath === 'string' && dataPath.endsWith('.geo_code_hierarchy_json')) {
+          const prefix = dataPath.substring(0, dataPath.lastIndexOf('.'));
+          
+          // Save hierarchy JSON content directly to dataPath (avoiding double nesting)
+          finalUpdatedValues = setWidgetValue(
+            finalUpdatedValues,
+            dataPath,
+            widgetId,
+            hierarchyJson.geo_code_hierarchy_json
+          );
+          
+          // Save lowest level ID as sibling
+          finalUpdatedValues = setWidgetValue(
+            finalUpdatedValues,
+            `${prefix}.geo_lowest_level_value_id`,
+            widgetId,
+            hierarchyJson.geo_lowest_level_value_id
+          );
+        } else {
+          // Fallback if path doesn't follow the naming convention
+          finalUpdatedValues = setWidgetValue(
+            finalUpdatedValues,
+            dataPath,
+            widgetId,
+            hierarchyJson.geo_code_hierarchy_json
+          );
+        }
 
-        Object.entries(updatedValues).forEach(([key, value]) => {
-          dispatch(setValue({ widgetId: key, value }));
-        });
+        // CRITICAL: Use setValues for deep merge instead of replacing root keys with setValue
+        // setWidgetValue returns the complete updated state object with all keys preserved
+        dispatch(setValues(finalUpdatedValues));
       }
     } else if (!isLastLevel) {
       // For non-last levels, the value is already stored by handleChange in useBaseWidget
