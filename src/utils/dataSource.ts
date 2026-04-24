@@ -34,6 +34,19 @@ export const getApiDataSource = async (
       // If not found and doesn't contain dots, try as widget-id
       if ((depValue === null || depValue === undefined) && !dataSource.dependsOn.includes('.')) {
         depValue = allValues[dataSource.dependsOn];
+        
+        // Smart resolution: If not found at top level, try to find the dependency in the same nested object
+        // by looking for other keys in allValues that might contain the dependency.
+        // We look for objects that contain both the current widget's path (if we can guess it) and the dependency.
+        // But since we don't know the current widget's path here, we search for any object that has this dependency key.
+        if (depValue === null || depValue === undefined || depValue === '') {
+          for (const val of Object.values(allValues)) {
+            if (val && typeof val === 'object' && !Array.isArray(val) && dataSource.dependsOn in val) {
+              depValue = val[dataSource.dependsOn];
+              if (depValue !== null && depValue !== undefined && depValue !== '') break;
+            }
+          }
+        }
       }
 
       if (depValue === null || depValue === undefined || depValue === '') {
@@ -83,8 +96,8 @@ export const getApiDataSource = async (
         requestParams[paramKey] = parentValueId;
       }
     } else if (staticParams.level_id) {
-      // First level has no parent
-      requestParams.parent_level_value_id = null;
+      // First level has no parent, send empty string as many OpenG2P APIs expect it
+      requestParams.parent_level_value_id = "";
     }
 
     // Get service mnemonic and endpoint (required)
@@ -175,8 +188,10 @@ export const transformDataSourceOptions = (
     });
   }
 
-  return data.map((item) => ({
-    value: item[valueKey],
-    label: item[labelKey] || String(item[valueKey]),
-  }));
+  return data.map((item) => {
+    const value = item[valueKey];
+    // Try multiple common label keys if the primary one is missing
+    const label = item[labelKey] || item.name || item.label || item.mnemonic || item.level_value_mnemonic || String(value);
+    return { value, label };
+  });
 };
