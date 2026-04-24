@@ -109,6 +109,7 @@ const schemaData = {
     functional_record_id: '1234567890',
     foundational_id: '1234-5678-9012-3456',
     record_image_storage_id: '',
+    record_image_url: '',
     record_status: 'active',
     record_status_reason: 'Reason text here',
     created_by: 'Robert David',
@@ -159,6 +160,7 @@ const headerSection: SectionConfig = {
           'widget-id': 'registry-header',
           'widget-data-path': {
             image: 'registrant.record_image_storage_id',
+            imageUrl: 'registrant.record_image_url',
             name: 'registrant.record_name',
             functionalId: 'registrant.functional_record_id',
             status: 'registrant.record_status',

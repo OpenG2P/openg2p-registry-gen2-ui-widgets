@@ -119,6 +119,15 @@ const personalInfoSection: SectionConfig = {
                 ],
               },
             },
+            // Long single token (no spaces): in RegistryView readonly mode this truncates with
+            // an ellipsis; hover the value for the full string (native title tooltip).
+            {
+              widget: 'text',
+              'widget-id': 'external_reference_id',
+              'widget-type': 'input',
+              'widget-label': 'External reference ID',
+              'widget-data-path': `${REG_ID}.external_reference_id`,
+            },
           ],
         },
         {
@@ -395,6 +404,8 @@ const registryViewSections: SectionConfig[] = [
 ];
 
 // ── Schema data (pre-populated for view mode) ──────────
+// Must be a nested object so getValueByPath can traverse dot-notation
+// widget-data-path values like "a1a4d25a.birth_date".
 
 const sampleSchemaData: Record<string, unknown> = {
   scores: [
@@ -475,6 +486,7 @@ export const SectionRendererExample = () => {
 
         <SectionsContainer
           sections={registryViewSections}
+          schemaData={sampleSchemaData}
           mode="RegistryView"
           onSectionSave={handleSectionSave}
           namespace={(_, i) => `rv-section-${i}`}

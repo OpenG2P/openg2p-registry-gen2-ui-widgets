@@ -164,6 +164,10 @@ export const SectionsContainer = ({
   const safeSections = sections ?? [];
   const prevSectionsLengthRef = useRef(safeSections.length);
 
+  // Stable ref for namespace so formHandle useMemo doesn't depend on the (possibly inline) function identity
+  const namespaceRef = useRef(namespace);
+  namespaceRef.current = namespace;
+
   // Track dirty (unsaved changes) per section for form handle validation
   const sectionDirtyMapRef = useRef<Record<string, boolean>>({});
   const handleSectionDirtyChange = useCallback((sectionId: string, isDirty: boolean) => {
@@ -215,12 +219,14 @@ export const SectionsContainer = ({
   // Form handle for onFormReady - allows host to validate and get all section data from its own Submit button
   const formHandle = useMemo<SectionsFormHandle>(() => {
     const getValues = () => (store.getState() as { widget?: { values?: Record<string, unknown> } }).widget?.values || {};
-    const getNamespace = (section: SectionConfig, index: number) =>
-      namespace
-        ? typeof namespace === 'string'
-          ? namespace
-          : namespace(section['section-id'], index)
+    const getNamespace = (section: SectionConfig, index: number) => {
+      const ns = namespaceRef.current;
+      return ns
+        ? typeof ns === 'string'
+          ? ns
+          : ns(section['section-id'], index)
         : undefined;
+    };
 
     const checkNoUnsavedChanges = () => {
       const hasDirty = Object.values(sectionDirtyMapRef.current).some(Boolean);
@@ -271,7 +277,7 @@ export const SectionsContainer = ({
         return results;
       },
     };
-  }, [store, dispatch, safeSections, namespace]);
+  }, [store, dispatch, safeSections]);
 
   // Call onFormReady when form is ready (sections loaded)
   useEffect(() => {
