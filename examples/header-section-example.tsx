@@ -107,6 +107,7 @@ const schemaData = {
   registrant: {
     record_name: 'Sarah Elizabeth',
     functional_record_id: '1234567890',
+    foundational_id: '1234-5678-9012-3456',
     record_image_storage_id: '',
     record_image_url: '',
     record_status: 'active',
@@ -115,6 +116,12 @@ const schemaData = {
     created_at: '14 Jan 2025',
     last_approved_by: 'Linda Susan',
     last_approved_at: '20 Mar 2026',
+    last_authenticated_on: '2026-04-18T11:05:00Z',
+    last_authentication_status: 'success',
+    authentication_expiry_date: '2026-05-18T00:00:00Z',
+    completion_score: 92,
+    ideal_score: 100,
+    psut: 'PSUT-EXAMPLE-TOKEN-1234567890',
     first_name: 'Sarah',
     last_name: 'Elizabeth',
     date_of_birth: '1990-05-15',
@@ -158,6 +165,8 @@ const headerSection: SectionConfig = {
             functionalId: 'registrant.functional_record_id',
             status: 'registrant.record_status',
             statusReason: 'registrant.record_status_reason',
+            completionScore: 'registrant.completion_score',
+            idealScore: 'registrant.ideal_score',
             createdBy: 'registrant.created_by',
             createdAt: 'registrant.created_at',
             lastApprovedBy: 'registrant.last_approved_by',
@@ -175,6 +184,7 @@ const headerSection: SectionConfig = {
               },
             },
           },
+          // HeaderSectionWidget uses extra formatting keys beyond WidgetFormat.
           'widget-data-format': {
             imageSize: 120,
             nameColor: '#ED7C22',
@@ -183,6 +193,47 @@ const headerSection: SectionConfig = {
               inactive: '#D97706',
               archived: '#6B7280',
             },
+          } as any,
+        },
+      ],
+    },
+  ],
+};
+
+const idAuthenticationSection: SectionConfig = {
+  'section-id': 'id-authentication',
+  'section-title': 'ID Authentication',
+  'section-editable': false,
+  'section-hide-edit-button': true,
+  'section-column-span': 3,
+  panels: [
+    {
+      'panel-id': 'id-authentication-panel',
+      'panel-orientation': 'vertical',
+      'panel-column-span': 3,
+      widgets: [
+        {
+          widget: 'id-authentication',
+          'widget-type': 'group',
+          'widget-id': 'id-auth',
+          'widget-readonly': true,
+          'widget-data-path': {
+            foundationalId: 'registrant.foundational_id',
+            lastAuthenticatedOn: 'registrant.last_authenticated_on',
+            lastAuthenticationStatus: 'registrant.last_authentication_status',
+            expiryDate: 'registrant.authentication_expiry_date',
+            authenticationToken: 'registrant.psut',
+          },
+          'widget-auth-config': {
+            service: 'registry',
+            endpoint: 'get_id_auth_provider_details',
+            method: 'GET',
+            // Optional: default OIDC/authorization URL if the API is not wired (e.g. local demo)
+            // defaultAuthorizationUrl: 'https://example.com/oidc/authorize?...',
+            // Popup size for eSignet login (clamped to the viewport)
+            // popupWidth: 1024,
+            // popupHeight: 800,
+            // prefetchOnMount: true,
           },
         },
       ],
@@ -305,6 +356,7 @@ const registrantDetailsSection: SectionConfig = {
 
 const allSections: SectionConfig[] = [
   headerSection,
+  idAuthenticationSection,
   registrantDetailsSection,
 ];
 

@@ -1183,6 +1183,10 @@ export const SectionRenderer = ({
           gap: 0.5rem;
         }
 
+        
+
+        
+
         /* IntakeForm accordion */
         .${sectionClassId}.intake-form-accordion-item {
           border-color: var(--owt-color-border-light, #E4E4E4);
@@ -1612,7 +1616,7 @@ export const SectionRenderer = ({
                 style={{
                   fontFamily: 'Roboto, sans-serif',
                   fontSize: '16px',
-                  color: 'var(--owt-color-text-muted, #727474)'
+                  color: 'var(--owt-color-text-muted, #727474)',
                 }}
               >
                 {translate('common.editDetails') || 'Edit Details'}

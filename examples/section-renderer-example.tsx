@@ -8,7 +8,7 @@
 import React, { useMemo } from 'react';
 import { createWidgetStore } from '../src/store';
 import { WidgetProvider, SectionsContainer } from '../src';
-import type { DataSourceRequestHandler, SectionConfig } from '../src/types';
+import type { SectionConfig } from '../src/types';
 import type { SectionChanges } from '../src/components/SectionRenderer';
 
 const REG_ID = 'a1a4d25a';
@@ -32,13 +32,7 @@ const scoresSection: SectionConfig = {
           'widget-type': 'group',
           'widget-id': 'record-scores',
           'widget-readonly': true,
-          'widget-data-source': {
-            type: 'api',
-            service: 'staff-portal-api',
-            endpoint: 'get_scores',
-            method: 'POST',
-            params: { internal_record_id_path: 'internal_record_id' },
-          },
+          'widget-data-path': 'scores',
         },
       ],
     },
@@ -414,56 +408,55 @@ const registryViewSections: SectionConfig[] = [
 // widget-data-path values like "a1a4d25a.birth_date".
 
 const sampleSchemaData: Record<string, unknown> = {
-  [REG_ID]: {
-    birth_date: '1990-05-15',
-    estimated_age: 35,
-    gender: 'male',
-    marital_status: 'married',
-    education_level: 'secondary',
-    external_reference_id:
-      'openg2p-registry-ui-widgets-demo-very-long-token-without-spaces-0123456789abcdef-0123456789abcdef',
-    has_personal_phone: 'yes',
-    phone: '+1 555-0123',
-    email: 'john.doe@example.com',
-    address_line_1: '123 Farm Road',
-    address_line_2: 'Rural District',
-    postal_code: '10001',
-    country_code: 'US',
-    region: 'Midwest',
-    district: 'Springfield',
-    locality: 'Green Valley',
-    latitude: 39.781721,
-    longitude: -89.650148,
-    altitude: 182.5,
-    disabled: 'no',
-    disability_type: '',
-    disability_severity: '',
-    source_of_income: 'CROP_PRODUCTION',
-  },
-};
-
-const mockHandler: DataSourceRequestHandler = async (service, endpoint, method, params) => {
-  void method;
-  void params;
-  if (service === 'staff-portal-api' && endpoint === 'get_scores') {
-    return {
-      scores: [
-        {
-          score_type: 'PMT',
-          computed_score: 42,
-          computed_at: '2026-04-16T10:12:00Z',
-          triggered_by_cr_id: 'CR-001',
-        },
-        {
-          score_type: 'FSS',
-          computed_score: 0.78,
-          computed_at: '2026-03-10T08:30:00Z',
-          triggered_by_cr_id: 'CR-000',
-        },
-      ],
-    };
-  }
-  return { scores: [] };
+  scores: [
+    {
+      score_type: 'PMT',
+      computed_score: 42,
+      computed_at: '2026-04-16T10:12:00Z',
+      triggered_by_cr_id: 'CR-001',
+    },
+    {
+      score_type: 'FSS',
+      computed_score: 0.78,
+      computed_at: '2026-03-10T08:30:00Z',
+      triggered_by_cr_id: 'CR-000',
+    },
+    {
+      score_type: 'Poverty Score',
+      computed_score: 18,
+      computed_at: '2026-01-02T09:05:00Z',
+      triggered_by_cr_id: 'CR-000',
+    },
+    
+    {
+      score_type: 'Poverty Score',
+      computed_score: 18,
+      computed_at: '2026-01-02T09:05:00Z',
+      triggered_by_cr_id: 'CR-000',
+    },
+  ],
+  [`${REG_ID}.birth_date`]: '1990-05-15',
+  [`${REG_ID}.estimated_age`]: 35,
+  [`${REG_ID}.gender`]: 'male',
+  [`${REG_ID}.marital_status`]: 'married',
+  [`${REG_ID}.education_level`]: 'secondary',
+  [`${REG_ID}.has_personal_phone`]: 'yes',
+  [`${REG_ID}.phone`]: '+1 555-0123',
+  [`${REG_ID}.email`]: 'john.doe@example.com',
+  [`${REG_ID}.address_line_1`]: '123 Farm Road',
+  [`${REG_ID}.address_line_2`]: 'Rural District',
+  [`${REG_ID}.postal_code`]: '10001',
+  [`${REG_ID}.country_code`]: 'US',
+  [`${REG_ID}.region`]: 'Midwest',
+  [`${REG_ID}.district`]: 'Springfield',
+  [`${REG_ID}.locality`]: 'Green Valley',
+  [`${REG_ID}.latitude`]: 39.781721,
+  [`${REG_ID}.longitude`]: -89.650148,
+  [`${REG_ID}.altitude`]: 182.5,
+  [`${REG_ID}.disabled`]: 'no',
+  [`${REG_ID}.disability_type`]: '',
+  [`${REG_ID}.disability_severity`]: '',
+  [`${REG_ID}.source_of_income`]: 'CROP_PRODUCTION',
 };
 
 export const SectionRendererExample = () => {
@@ -478,7 +471,6 @@ export const SectionRendererExample = () => {
     <WidgetProvider
       store={store}
       schemaData={sampleSchemaData}
-      dataSourceRequestHandler={mockHandler}
     >
       <div style={{
         display: 'flex',

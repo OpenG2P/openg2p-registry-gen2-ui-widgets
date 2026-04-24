@@ -36,6 +36,8 @@ import { dummyProfile } from '../assets';
  *   createdAt       | Creation date            (e.g. "created_at")
  *   lastApprovedBy  | Last approver name       (e.g. "last_approved_by")
  *   lastApprovedAt  | Last approval date       (e.g. "last_approved_at")
+ *   completionScore | Completion score number  (e.g. "completion_score")
+ *   idealScore      | Ideal score number       (e.g. "ideal_score")
  *
  * ── widget-field-config (object, optional) ───────────────────────
  *   Per-field configuration. Each key matches a widget-data-path key.
@@ -340,10 +342,26 @@ export const HeaderSectionWidget = ({ config }: HeaderSectionWidgetProps) => {
   const functionalId = findValue('functionalId') || '';
   const statusValue = findValue('status') || '';
   const statusReason = findValue('statusReason') || '';
+  const completionScoreRaw = findValue('completionScore');
+  const idealScoreRaw = findValue('idealScore');
   const createdBy = findValue('createdBy') || '';
   const createdAt = findValue('createdAt') || '';
   const lastApprovedBy = findValue('lastApprovedBy') || '';
   const lastApprovedAt = findValue('lastApprovedAt') || '';
+
+  const score = useMemo(() => {
+    const toNum = (v: unknown): number | null => {
+      if (v === null || v === undefined || String(v).trim() === '') return null;
+      const n = typeof v === 'number' ? v : Number(String(v));
+      return Number.isFinite(n) ? n : null;
+    };
+    const completion = toNum(completionScoreRaw);
+    const ideal = toNum(idealScoreRaw);
+    if (completion === null || ideal === null || ideal <= 0) return null;
+    const ratio = completion / ideal;
+    const percent = Math.max(0, Math.min(100, Math.round(ratio * 100)));
+    return { completion, ideal, percent };
+  }, [completionScoreRaw, idealScoreRaw]);
 
   // ── Format options ────────────────────────────────────────────
   const format = (widgetConfig['widget-data-format'] || {}) as Record<string, any>;
@@ -425,6 +443,58 @@ export const HeaderSectionWidget = ({ config }: HeaderSectionWidgetProps) => {
           gap: 0.5rem;
           flex: 1 1 40%;
           min-width: 220px;
+        }
+
+        .${cls} .hdr-right-top {
+          display: flex;
+          align-items: flex-start;
+          justify-content: space-between;
+          gap: 14px;
+          width: 100%;
+        }
+
+        .${cls} .hdr-meta-col {
+          display: flex;
+          flex-direction: column;
+          gap: 0.5rem;
+          flex: 1 1 auto;
+          min-width: 0;
+        }
+
+        .${cls} .hdr-score-ring {
+          --ring-size: 54px;
+          --ring-thickness: 7px;
+          --ring-color: var(--owt-color-primary-dark, #F07B1A);
+          --ring-track: rgba(2, 6, 23, 0.10);
+          width: var(--ring-size);
+          height: var(--ring-size);
+          border-radius: 50%;
+          background: conic-gradient(
+            var(--ring-color) calc(var(--pct) * 1%),
+            var(--ring-track) 0
+          );
+          position: relative;
+          flex: 0 0 auto;
+        }
+
+        .${cls} .hdr-score-ring::before {
+          content: "";
+          position: absolute;
+          inset: var(--ring-thickness);
+          border-radius: 50%;
+          background: var(--owt-color-bg, #FFFFFF);
+        }
+
+        .${cls} .hdr-score-value {
+          position: absolute;
+          inset: 0;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 20px;
+          font-weight: 700;
+          color: var(--owt-color-text, #011627);
+          font-family: Roboto, sans-serif;
         }
 
         .${cls} .hdr-avatar {
@@ -744,32 +814,47 @@ export const HeaderSectionWidget = ({ config }: HeaderSectionWidgetProps) => {
 
         {/* ─── RIGHT COLUMN ─── */}
         <div className="hdr-right">
-          <div className="hdr-meta-row">
-            <span className="hdr-meta-label">
-              {getLabel('createdBy')} :
-            </span>
-            <span className="hdr-meta-value">{createdBy || '-'}</span>
-          </div>
+          <div className="hdr-right-top">
+            <div className="hdr-meta-col">
+              <div className="hdr-meta-row">
+                <span className="hdr-meta-label">
+                  {getLabel('createdBy')} :
+                </span>
+                <span className="hdr-meta-value">{createdBy || '-'}</span>
+              </div>
 
-          <div className="hdr-meta-row">
-            <span className="hdr-meta-label">
-              {getLabel('createdAt')} :
-            </span>
-            <span className="hdr-meta-value">{createdAt || '-'}</span>
-          </div>
+              <div className="hdr-meta-row">
+                <span className="hdr-meta-label">
+                  {getLabel('createdAt')} :
+                </span>
+                <span className="hdr-meta-value">{createdAt || '-'}</span>
+              </div>
 
-          <div className="hdr-meta-row">
-            <span className="hdr-meta-label">
-              {getLabel('lastApprovedBy')} :
-            </span>
-            <span className="hdr-meta-value">{lastApprovedBy || '-'}</span>
-          </div>
+              <div className="hdr-meta-row">
+                <span className="hdr-meta-label">
+                  {getLabel('lastApprovedBy')} :
+                </span>
+                <span className="hdr-meta-value">{lastApprovedBy || '-'}</span>
+              </div>
 
-          <div className="hdr-meta-row">
-            <span className="hdr-meta-label">
-              {getLabel('lastApprovedAt')} :
-            </span>
-            <span className="hdr-meta-value">{lastApprovedAt || '-'}</span>
+              <div className="hdr-meta-row">
+                <span className="hdr-meta-label">
+                  {getLabel('lastApprovedAt')} :
+                </span>
+                <span className="hdr-meta-value">{lastApprovedAt || '-'}</span>
+              </div>
+            </div>
+
+            {score ? (
+              <div
+                className="hdr-score-ring"
+                style={{ ['--pct' as any]: score.percent }}
+                aria-label={`Completion score ${score.completion} of ${score.ideal} (${score.percent}%)`}
+                title={`${score.completion} / ${score.ideal} (${score.percent}%)`}
+              >
+                <div className="hdr-score-value">{String(score.completion)}</div>
+              </div>
+            ) : null}
           </div>
         </div>
       </div>

@@ -96,7 +96,12 @@ const initialSection: SectionConfig = {
   ],
 };
 
-type TabId = 'section-builder' | 'intake-form' | 'header-section' | 'section-renderer' | 'theme';
+type TabId =
+  | 'section-builder'
+  | 'intake-form'
+  | 'header-section'
+  | 'section-renderer'
+  | 'theme';
 
 function App() {
   const [section, setSection] = useState<SectionConfig>(initialSection);

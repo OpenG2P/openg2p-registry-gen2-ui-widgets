@@ -20,6 +20,7 @@ import {
   TextAreaWidget,
   HeaderSectionWidget,
   ScoresDisplayWidget,
+  IdAuthenticationWidget,
 } from '../widgets';
 
 /**
@@ -81,6 +82,9 @@ export const registerDefaultWidgets = () => {
 
   // Scores display widget for full-width computed scores display (view-only)
   widgetRegistry.register({ widget: 'scores-display', component: ScoresDisplayWidget });
+
+  // ID Authentication widget for OIDC-based foundational ID authentication (view-only + action)
+  widgetRegistry.register({ widget: 'id-authentication', component: IdAuthenticationWidget });
 };
 
 // Auto-register on import
