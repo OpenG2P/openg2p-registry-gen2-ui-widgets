@@ -19,6 +19,7 @@ import {
   ProfileWidget,
   TextAreaWidget,
   HeaderSectionWidget,
+  ScoresDisplayWidget,
 } from '../widgets';
 
 /**
@@ -77,6 +78,9 @@ export const registerDefaultWidgets = () => {
 
   // Header section widget for full-width registry header with profile, status, and metadata
   widgetRegistry.register({ widget: 'header-section', component: HeaderSectionWidget });
+
+  // Scores display widget for full-width computed scores display (view-only)
+  widgetRegistry.register({ widget: 'scores-display', component: ScoresDisplayWidget });
 };
 
 // Auto-register on import

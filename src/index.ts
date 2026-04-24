@@ -55,6 +55,18 @@ export * from './utils/geoHierarchy';
 export { WidgetEventBus } from './events/WidgetEventBus';
 export type { WidgetEventType, WidgetEvent } from './events/WidgetEventBus';
 
+// Theme
+export type {
+  WidgetTheme,
+  WidgetThemeColors,
+  WidgetThemeSection,
+  WidgetThemePanel,
+  WidgetThemeButton,
+  WidgetThemeWidget,
+} from './theme';
+export { defaultTheme, resolveTheme } from './theme';
+export { useWidgetTheme } from './hooks/useWidgetTheme';
+
 // i18n
 export { initI18n } from './i18n/config';
 export { useWidgetTranslation } from './hooks/useWidgetTranslation';

@@ -366,6 +366,9 @@ export const SectionsContainer = ({
             ? (typeof namespace === 'string' ? namespace : namespace(section['section-id'], index))
             : undefined;
 
+          const hideEditForSection =
+            hideEditButton || section['section-hide-edit-button'] === true;
+
           // IntakeForm mode: pass accordion state and handlers
           const intakeFormProps = mode === 'IntakeForm'
             ? {
@@ -398,7 +401,7 @@ export const SectionsContainer = ({
                 onValueChange={onValueChange}
                 gridColumnSpan={section['section-column-span']}
                 onSectionSave={onSectionSave}
-                hideEditButton={hideEditButton}
+                hideEditButton={hideEditForSection}
                 mode={mode}
                 namespace={sectionNamespace}
                 onSectionDirtyChange={handleSectionDirtyChange}
@@ -423,7 +426,7 @@ export const SectionsContainer = ({
               onValueChange={onValueChange}
               gridColumnSpan={columnSpan}
               onSectionSave={onSectionSave}
-              hideEditButton={hideEditButton}
+              hideEditButton={hideEditForSection}
               mode={mode}
               namespace={sectionNamespace}
               onSectionDirtyChange={handleSectionDirtyChange}

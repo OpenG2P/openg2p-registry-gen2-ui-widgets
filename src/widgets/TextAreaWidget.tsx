@@ -182,7 +182,7 @@ export const TextAreaWidget = ({ config }: TextAreaWidgetProps) => {
                 className="absolute bottom-2 right-2 text-xs px-1 rounded"
                 style={{
                   fontFamily: 'Roboto, sans-serif',
-                  color: maxLength && currentLength > maxLength ? '#EF4444' : '#6B7280',
+                  color: maxLength && currentLength > maxLength ? 'var(--owt-widget-error-color, #EF4444)' : 'var(--owt-widget-helptext-color, #6B7280)',
                   backgroundColor: 'rgba(255, 255, 255, 0.9)',
                 }}
               >

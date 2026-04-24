@@ -334,6 +334,8 @@ export interface SectionConfig {
   'section-id': string;
   'section-title'?: string; // Optional - can be empty for card-based layouts
   'section-editable'?: boolean;
+  /** When true in RegistryView, hides the "Edit Details" link for this section only. */
+  'section-hide-edit-button'?: boolean;
   'section-column-span'?: number; // Number of columns to span (1, 2, 3, etc.) - for layout control
   'section-supporting-documents'?: SupportingDocumentConfig[];
   panels: PanelConfig[];

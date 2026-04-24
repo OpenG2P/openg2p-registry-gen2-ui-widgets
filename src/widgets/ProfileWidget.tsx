@@ -28,7 +28,7 @@ import { dummyProfile } from '../assets';
  * Format options:
  * - widget-data-format: Optional format configuration
  *   - imageSize?: number - Size of the avatar image in pixels (default: 80)
- *   - nameColor?: string - Color for the name text (default: '#ED7C22')
+ *   - nameColor?: string - Color for the name text (default: '#F07B1A')
  *   - showIdLabel?: boolean - Whether to show "ID :" label (default: true)
  * 
  * Example usage (Recommended):
@@ -44,7 +44,7 @@ import { dummyProfile } from '../assets';
  *   },
  *   "widget-data-format": {
  *     "imageSize": 80,
- *     "nameColor": "#ED7C22",
+ *     "nameColor": "#F07B1A",
  *     "showIdLabel": true
  *   }
  * }
@@ -153,7 +153,7 @@ export const ProfileWidget = ({ config }: ProfileWidgetProps) => {
   // Get format options (using index access for widget-specific properties)
   const format = widgetConfig['widget-data-format'] || {};
   const imageSize = (format as any).imageSize || 80;
-  const nameColor = (format as any).nameColor || '#ED7C22';
+  const nameColor = (format as any).nameColor || 'var(--owt-color-primary-dark, #F07B1A)';
   const showIdLabel = (format as any).showIdLabel !== false; // Default to true
 
   // Generate a unique class ID for this widget instance
@@ -180,8 +180,8 @@ export const ProfileWidget = ({ config }: ProfileWidgetProps) => {
           height: ${imageSize}px;
           border-radius: 8px;
           object-fit: cover;
-          background-color: #e5e7eb;
-          border: 2px solid #d1d5db;
+          background-color: var(--owt-color-border-light, #e5e7eb);
+          border: 2px solid var(--owt-color-border, #d1d5db);
           flex-shrink: 0;
         }
         
@@ -189,8 +189,8 @@ export const ProfileWidget = ({ config }: ProfileWidgetProps) => {
           width: ${imageSize}px;
           height: ${imageSize}px;
           border-radius: 8px;
-          background-color: #e5e7eb;
-          border: 2px solid #d1d5db;
+          background-color: var(--owt-color-border-light, #e5e7eb);
+          border: 2px solid var(--owt-color-border, #d1d5db);
           display: flex;
           align-items: center;
           justify-content: center;
@@ -231,12 +231,12 @@ export const ProfileWidget = ({ config }: ProfileWidgetProps) => {
         }
         
         .${widgetClassId} .profile-id-label {
-          color: #6b7280;
+          color: var(--owt-color-text-muted, #6b7280);
           font-weight: 500;
         }
         
         .${widgetClassId} .profile-id-value {
-          color: #111827;
+          color: var(--owt-color-text, #111827);
           font-weight: 400;
         }
       `}</style>
