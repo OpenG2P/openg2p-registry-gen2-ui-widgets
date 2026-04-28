@@ -15,6 +15,7 @@ export { PhoneInputWidget } from './PhoneInputWidget';
 export { CurrencyInputWidget } from './CurrencyInputWidget';
 export { DisplayWidget } from './DisplayWidget';
 export { TableWidget } from './TableWidget';
+export { DialogTableWidget } from './DialogTableWidget';
 export { ProfileWidget } from './ProfileWidget';
 export { TextAreaWidget } from './TextAreaWidget';
 export { HeaderSectionWidget } from './HeaderSectionWidget';

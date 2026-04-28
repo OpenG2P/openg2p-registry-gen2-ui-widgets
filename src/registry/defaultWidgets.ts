@@ -16,6 +16,7 @@ import {
   CurrencyInputWidget,
   DisplayWidget,
   TableWidget,
+  DialogTableWidget,
   ProfileWidget,
   TextAreaWidget,
   HeaderSectionWidget,
@@ -63,6 +64,9 @@ export const registerDefaultWidgets = () => {
 
   // Table widget with record-level editing
   widgetRegistry.register({ widget: 'table', component: TableWidget });
+
+  // Table widget with add/edit popup dialog
+  widgetRegistry.register({ widget: 'dialog-table', component: DialogTableWidget });
 
   // Group widgets
   widgetRegistry.register({ widget: 'array-widget', component: ArrayWidget });

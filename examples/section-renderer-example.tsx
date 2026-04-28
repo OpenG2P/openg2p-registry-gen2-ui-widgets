@@ -396,11 +396,72 @@ const socioEconomicSection: SectionConfig = {
   ],
 };
 
+const tableSection: SectionConfig = {
+  'section-id': 'table_widget_example',
+  'section-title': 'Table Widget Example',
+  'section-editable': true,
+  'section-column-span': 3,
+  panels: [
+    {
+      'panel-id': 'panel_table_main',
+      'panel-orientation': 'vertical',
+      'panel-column-span': 3,
+      widgets: [
+        {
+          widget: 'table',
+          'widget-type': 'table',
+          'widget-id': 'education_history',
+          'widget-label': 'Education History',
+          'widget-column-span': 3,
+          'widget-data-path': `${REG_ID}.education_history`,
+          'widget-data-operations': { add: true, remove: true, edit: true },
+          'widget-data-columns': [
+            {
+              'column-key': 'degree',
+              widget: 'text',
+              'widget-type': 'input',
+              'widget-label': 'Degree',
+            },
+            {
+              'column-key': 'institution',
+              widget: 'text',
+              'widget-type': 'input',
+              'widget-label': 'Institution',
+            },
+            {
+              'column-key': 'level',
+              widget: 'select',
+              'widget-type': 'input',
+              'widget-label': 'Level',
+              'widget-data-source': {
+                type: 'static',
+                options: [
+                  { label: 'Primary', value: 'PRIMARY' },
+                  { label: 'Secondary', value: 'SECONDARY' },
+                  { label: 'Tertiary', value: 'TERTIARY' },
+                ],
+              },
+            },
+            {
+              'column-key': 'year',
+              widget: 'number',
+              'widget-type': 'input',
+              'widget-label': 'Year',
+              'widget-data-validation': { min: 1900, max: 2100 },
+            },
+          ],
+        },
+      ],
+    },
+  ],
+};
+
 const registryViewSections: SectionConfig[] = [
   scoresSection,
   personalInfoSection,
   locationSection,
   socioEconomicSection,
+  tableSection,
 ];
 
 // ── Schema data (pre-populated for view mode) ──────────
@@ -457,6 +518,10 @@ const sampleSchemaData: Record<string, unknown> = {
   [`${REG_ID}.disability_type`]: '',
   [`${REG_ID}.disability_severity`]: '',
   [`${REG_ID}.source_of_income`]: 'CROP_PRODUCTION',
+  [`${REG_ID}.education_history`]: [
+    { degree: 'BSc', institution: 'Springfield University', level: 'TERTIARY', year: 2012 },
+    { degree: 'High School', institution: 'Springfield High', level: 'SECONDARY', year: 2008 },
+  ],
 };
 
 export const SectionRendererExample = () => {

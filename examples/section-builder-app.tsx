@@ -24,6 +24,7 @@ import { IntakeFormExample } from './intake-form-example';
 import { HeaderSectionExample } from './header-section-example';
 import { SectionRendererExample } from './section-renderer-example';
 import { ThemeExample } from './theme-example';
+import { DialogTableExample } from './dialog-table-example';
 import { SectionConfig } from '../src/types';
 import { createWidgetStore } from '../src/store';
 import { WidgetProvider } from '../src/components/WidgetProvider';
@@ -101,6 +102,7 @@ type TabId =
   | 'intake-form'
   | 'header-section'
   | 'section-renderer'
+  | 'dialog-table'
   | 'theme';
 
 function App() {
@@ -194,6 +196,20 @@ function App() {
             </button>
             <button
               type="button"
+              onClick={() => setActiveTab('dialog-table')}
+              style={{
+                padding: '8px 16px',
+                fontWeight: activeTab === 'dialog-table' ? 600 : 400,
+                background: activeTab === 'dialog-table' ? '#e5e7eb' : 'transparent',
+                border: 'none',
+                borderRadius: '6px',
+                cursor: 'pointer',
+              }}
+            >
+              Dialog Table
+            </button>
+            <button
+              type="button"
               onClick={() => setActiveTab('theme')}
               style={{
                 padding: '8px 16px',
@@ -235,6 +251,7 @@ function App() {
             {activeTab === 'intake-form' && <IntakeFormExample />}
             {activeTab === 'header-section' && <HeaderSectionExample />}
             {activeTab === 'section-renderer' && <SectionRendererExample />}
+            {activeTab === 'dialog-table' && <DialogTableExample />}
             {activeTab === 'theme' && <ThemeExample />}
           </div>
         </div>
