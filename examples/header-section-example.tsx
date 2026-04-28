@@ -17,6 +17,7 @@ import { createWidgetStore } from '../src/store';
 import { WidgetProvider, SectionsContainer } from '../src';
 import type { SectionConfig } from '../src/types';
 import type { SectionChanges } from '../src/components/SectionRenderer';
+import type { DataSourceRequestHandler } from '../src/types';
 
 // ── Simulates the host app's locale JSON files ──────────────────
 // In a real app these come from /locales/en.json, /locales/fr.json, etc.
@@ -105,6 +106,9 @@ const translations: Record<string, Record<string, string>> = {
 // ── Schema data (simulates API response) ────────────────────────
 const schemaData = {
   registrant: {
+    register_id: 'a1a4d25a-1cd4-4356-abac-985a0b3c6bcd',
+    internal_record_id: '99c9a49b-404c-4fda-b893-92c655831208',
+    initiated_by_staff_id: 'WANGO',
     record_name: 'Sarah Elizabeth',
     functional_record_id: '1234567890',
     foundational_id: '1234-5678-9012-3456',
@@ -119,7 +123,7 @@ const schemaData = {
     last_authenticated_on: '2026-04-18T11:05:00Z',
     last_authentication_status: 'success',
     authentication_expiry_date: '2026-05-18T00:00:00Z',
-    completion_score: 92,
+    completion_score: 94.3456723424,
     ideal_score: 100,
     psut: 'PSUT-EXAMPLE-TOKEN-1234567890',
     first_name: 'Sarah',
@@ -218,6 +222,9 @@ const idAuthenticationSection: SectionConfig = {
           'widget-id': 'id-auth',
           'widget-readonly': true,
           'widget-data-path': {
+            registerId: 'registrant.register_id',
+            internalRecordId: 'registrant.internal_record_id',
+            initiatedByStaffId: 'registrant.initiated_by_staff_id',
             foundationalId: 'registrant.foundational_id',
             lastAuthenticatedOn: 'registrant.last_authenticated_on',
             lastAuthenticationStatus: 'registrant.last_authentication_status',
@@ -226,14 +233,15 @@ const idAuthenticationSection: SectionConfig = {
           },
           'widget-auth-config': {
             service: 'registry',
-            endpoint: 'get_id_auth_provider_details',
-            method: 'GET',
-            // Optional: default OIDC/authorization URL if the API is not wired (e.g. local demo)
-            // defaultAuthorizationUrl: 'https://example.com/oidc/authorize?...',
+            providerId: 'esignet',
+            providerName: 'eSignet',
+            authenticateEndpoint: 'authenticate_registrant',
+            authenticateMethod: 'POST',
+            // authorizationUrlKey: 'authorization_url', // default includes this
+            useIframeOverlay: true,
             // Popup size for eSignet login (clamped to the viewport)
             // popupWidth: 1024,
             // popupHeight: 800,
-            // prefetchOnMount: true,
           },
         },
       ],
@@ -381,8 +389,38 @@ export const HeaderSectionExample = () => {
     alert(`Section "${changes.section_id}" saved!\nRecords: ${JSON.stringify(changes.records, null, 2)}\nCheck console for details.`);
   };
 
+  // Mock host API handler so the authentication widget works in examples without a backend.
+  const dataSourceRequestHandler = useMemo<DataSourceRequestHandler>(() => {
+    return async (service, endpoint, method, params) => {
+      // eslint-disable-next-line no-console
+      console.log('[examples] dataSourceRequestHandler', { service, endpoint, method, params });
+      if (service !== 'registry') {
+        throw new Error(`Unknown service: ${service}`);
+      }
+      if (endpoint === 'authenticate_registrant') {
+        // Simulate initiate authentication response with auth URL
+        const rid = (params as any)?.register_id || 'demo-register';
+        return {
+          response_body: {
+            response_payload: {
+              authorization_session_id: 'auth-session-demo-001',
+              provider_name: (params as any)?.provider_id || 'eSignet',
+              authorization_url: `https://example.com/?register_id=${encodeURIComponent(String(rid))}`,
+            },
+          },
+        };
+      }
+      throw new Error(`Unknown endpoint: ${endpoint} (${method})`);
+    };
+  }, []);
+
   return (
-    <WidgetProvider store={store} schemaData={schemaData} translate={translateFn}>
+    <WidgetProvider
+      store={store}
+      schemaData={schemaData}
+      translate={translateFn}
+      dataSourceRequestHandler={dataSourceRequestHandler}
+    >
       <div style={{ padding: '24px', maxWidth: '1241px', margin: '0 auto' }}>
         {/* ── Language selector bar ─── */}
         <div style={{

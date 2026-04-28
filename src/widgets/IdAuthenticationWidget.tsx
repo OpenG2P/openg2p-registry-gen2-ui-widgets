@@ -8,25 +8,24 @@ import { getValueByPath } from '../utils/pathUtils';
 type AuthStatus = 'success' | 'failure' | 'not_done' | 'not done' | 'not-done' | 'unknown';
 
 type AuthConfig = {
-  /** Service mnemonic (required to call the API unless using defaultAuthorizationUrl only) */
+  /** Service mnemonic (used for both calls) */
   service?: string;
-  /** Endpoint/operation (required to call the API unless using defaultAuthorizationUrl only) */
-  endpoint?: string;
-  method?: 'GET' | 'POST' | 'PUT' | 'DELETE';
+  /** Provider details supplied by host */
+  providerId?: string;
+  providerName?: string;
+  /** Initiate authentication (called on button click) */
+  authenticateEndpoint?: string;
+  authenticateMethod?: 'GET' | 'POST' | 'PUT' | 'DELETE';
   /**
    * Response key that contains provider authorization URL.
-   * Defaults try: authorization_url, authorizationUrl, auth_url, authUrl, url
+   * Defaults try: authentication_url, authorization_url, authorizationUrl, auth_url, authUrl, url
    */
   authorizationUrlKey?: string;
   /**
-   * If the host cannot call the API (no handler) or the request fails, this URL is used
-   * for the OIDC / eSignet flow so the widget still works in demos or offline mode.
+   * When true (default), open auth URL in an overlay iframe instead of window.open.
+   * This avoids popup blockers and feels like a centered popup.
    */
-  defaultAuthorizationUrl?: string;
-  /**
-   * When false, skips the mount-time provider fetch. Default: true.
-   */
-  prefetchOnMount?: boolean;
+  useIframeOverlay?: boolean;
   /**
    * Centered popup size for the provider login page (e.g. eSignet). Clamped to ~92% of the viewport.
    * Defaults: 1024×800.
@@ -46,6 +45,10 @@ type AuthConfig = {
 };
 
 type DataPaths = {
+  /** Used for API calls */
+  registerId?: string;
+  internalRecordId?: string;
+  initiatedByStaffId?: string;
   foundationalId?: string;
   lastAuthenticatedOn?: string;
   lastAuthenticationStatus?: string;
@@ -146,6 +149,7 @@ function pickAuthorizationUrl(resp: any, explicitKey?: string): string | null {
   }
 
   return (
+    tryKey('authentication_url') ||
     tryKey('authorization_url') ||
     tryKey('authorizationUrl') ||
     tryKey('auth_url') ||
@@ -166,23 +170,12 @@ function resolveValueFromSources(
   return getValueByPath(schemaData, path);
 }
 
-async function fetchProviderAuthorizationUrl(
-  authConfig: AuthConfig,
-  dataSourceRequestHandler: DataSourceRequestHandler,
-  _values: Record<string, unknown>,
-  _schemaData: Record<string, unknown>,
-): Promise<string | null> {
-  const response = await dataSourceRequestHandler(
-    authConfig.service!,
-    authConfig.endpoint!,
-    authConfig.method || 'GET',
-    {},
-  );
-  const payload =
-    response?.response_body?.response_payload && typeof response.response_body.response_payload === 'object'
-      ? response.response_body.response_payload
-      : response;
-  return pickAuthorizationUrl(payload, authConfig.authorizationUrlKey);
+function unwrapPayload(response: any): any {
+  if (response && typeof response === 'object') {
+    if (response.response_body?.response_payload !== undefined) return response.response_body.response_payload;
+    if (response.response_payload !== undefined) return response.response_payload;
+  }
+  return response;
 }
 
 export const IdAuthenticationWidget = ({ config, schemaData: propSchemaData }: IdAuthenticationWidgetProps) => {
@@ -200,6 +193,12 @@ export const IdAuthenticationWidget = ({ config, schemaData: propSchemaData }: I
 
   const authConfig = (config as any)['widget-auth-config'] as AuthConfig | undefined;
 
+  const registerId = resolveValueFromSources(paths.registerId, values, schemaData);
+  const internalRecordId = resolveValueFromSources(paths.internalRecordId, values, schemaData);
+  const initiatedByStaffId = resolveValueFromSources(paths.initiatedByStaffId, values, schemaData);
+  const providerId = authConfig?.providerId;
+  const providerName = authConfig?.providerName;
+
   const foundationalId = resolveValueFromSources(paths.foundationalId, values, schemaData);
   const lastAuthenticatedOn = resolveValueFromSources(paths.lastAuthenticatedOn, values, schemaData);
   const lastAuthStatusRaw = resolveValueFromSources(paths.lastAuthenticationStatus, values, schemaData);
@@ -210,12 +209,13 @@ export const IdAuthenticationWidget = ({ config, schemaData: propSchemaData }: I
 
   /** URL from prefetch (or default); used when opening the OIDC / eSignet popup */
   const [resolvedAuthUrl, setResolvedAuthUrl] = useState<string | null>(null);
-  const [providerLoading, setProviderLoading] = useState(false);
   const [authActionLoading, setAuthActionLoading] = useState(false);
   const [authError, setAuthError] = useState<string | null>(null);
 
   const popupRef = useRef<Window | null>(null);
   const pollTimerRef = useRef<number | null>(null);
+
+  const [overlayUrl, setOverlayUrl] = useState<string | null>(null);
 
   const emitHostEvent = useCallback(
     (detail: Record<string, unknown>) => {
@@ -251,73 +251,18 @@ export const IdAuthenticationWidget = ({ config, schemaData: propSchemaData }: I
     };
   }, [cleanupPopup]);
 
-  const prefetchKey = useMemo(() => {
-    if (!authConfig) return 'no-config';
-    return JSON.stringify({
-      s: authConfig.service,
-      e: authConfig.endpoint,
-      m: authConfig.method,
-      def: authConfig.defaultAuthorizationUrl,
-      prefetch: authConfig.prefetchOnMount,
-    });
-  }, [authConfig]);
-
-  // Prefetch provider login URL on mount (and when params / config change)
+  // Provider details are supplied by host; clear any previous resolved URL on provider change.
   useEffect(() => {
-    if (!authConfig) {
-      setResolvedAuthUrl(null);
-      setProviderLoading(false);
-      return;
-    }
-    if (authConfig.prefetchOnMount === false) {
-      setResolvedAuthUrl(authConfig.defaultAuthorizationUrl || null);
-      setProviderLoading(false);
-      return;
-    }
-
-    const def = authConfig.defaultAuthorizationUrl;
-    if (def) {
-      setResolvedAuthUrl(def);
-    }
-
-    const canCallApi = Boolean(
-      dataSourceRequestHandler && authConfig.service && authConfig.endpoint,
-    );
-    if (!canCallApi) {
-      setProviderLoading(false);
-      if (!def) {
-        setResolvedAuthUrl(null);
-      }
-      return;
-    }
-
-    let cancelled = false;
-    setProviderLoading(true);
-    (async () => {
-      try {
-        const url = await fetchProviderAuthorizationUrl(authConfig, dataSourceRequestHandler!, values, schemaData);
-        if (cancelled) return;
-        if (url) {
-          setResolvedAuthUrl(url);
-        } else if (!def) {
-          setResolvedAuthUrl(null);
-        }
-      } catch {
-        if (cancelled) return;
-        if (!def) {
-          setResolvedAuthUrl(null);
-        }
-      } finally {
-        if (!cancelled) setProviderLoading(false);
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [authConfig, dataSourceRequestHandler, prefetchKey, values, schemaData]);
+    setResolvedAuthUrl(null);
+  }, [providerId, providerName]);
 
   const openAuthPopup = useCallback(
     (authUrl: string) => {
+      if (authConfig?.useIframeOverlay !== false) {
+        setOverlayUrl(authUrl);
+        emitHostEvent({ type: 'overlay_opened' });
+        return;
+      }
       const pw = authConfig?.popupWidth ?? 1024;
       const ph = authConfig?.popupHeight ?? 800;
       const features = getCenteredPopupFeatures(pw, ph);
@@ -356,28 +301,30 @@ export const IdAuthenticationWidget = ({ config, schemaData: propSchemaData }: I
       setAuthError('Missing widget-auth-config.');
       return;
     }
-
-    const def = authConfig.defaultAuthorizationUrl;
-    const canCallApi = Boolean(
-      dataSourceRequestHandler && authConfig.service && authConfig.endpoint,
+    const canCallAuthApi = Boolean(
+      dataSourceRequestHandler && authConfig.service && authConfig.authenticateEndpoint,
     );
 
     let url = resolvedAuthUrl;
-    if (!url && canCallApi) {
+    if (!url && canCallAuthApi) {
       setAuthActionLoading(true);
       try {
-        const fetched = await fetchProviderAuthorizationUrl(
-          authConfig,
-          dataSourceRequestHandler!,
-          values,
-          schemaData,
+        const resp = await dataSourceRequestHandler!(
+          authConfig.service!,
+          authConfig.authenticateEndpoint!,
+          authConfig.authenticateMethod || 'POST',
+          {
+            register_id: registerId,
+            internal_record_id: internalRecordId,
+            provider_id: authConfig.providerId,
+            initiated_by_staff_id: initiatedByStaffId,
+          },
         );
-        url = fetched || def || null;
-        if (fetched) {
-          setResolvedAuthUrl(fetched);
-        }
+        const payload = unwrapPayload(resp);
+        const authUrl = pickAuthorizationUrl(payload, authConfig.authorizationUrlKey);
+        url = authUrl || null;
+        if (authUrl) setResolvedAuthUrl(authUrl);
       } catch (e: any) {
-        url = def || null;
         if (!url) {
           setAuthError(e?.message || 'Could not load provider URL.');
           return;
@@ -385,18 +332,24 @@ export const IdAuthenticationWidget = ({ config, schemaData: propSchemaData }: I
       } finally {
         setAuthActionLoading(false);
       }
-    } else if (!url) {
-      url = def || null;
     }
 
     if (!url) {
       setAuthError(
-        'No authorization URL. Set widget-auth-config (service + endpoint, or defaultAuthorizationUrl) and dataSourceRequestHandler on WidgetProvider if using the API.',
+        'No authorization URL returned from authenticate_registrant.',
       );
       return;
     }
     openAuthPopup(url);
-  }, [authConfig, dataSourceRequestHandler, openAuthPopup, resolvedAuthUrl, values, schemaData]);
+  }, [
+    authConfig,
+    dataSourceRequestHandler,
+    openAuthPopup,
+    registerId,
+    internalRecordId,
+    initiatedByStaffId,
+    resolvedAuthUrl,
+  ]);
 
   useEffect(() => {
     const successType = authConfig?.successMessageType || 'openg2p:oidc:success';
@@ -439,9 +392,7 @@ export const IdAuthenticationWidget = ({ config, schemaData: propSchemaData }: I
     return 'var(--owt-color-text-muted, #6B7280)';
   }, [status]);
 
-  const buttonBusy =
-    authActionLoading ||
-    (providerLoading && !resolvedAuthUrl && !authConfig?.defaultAuthorizationUrl);
+  const buttonBusy = authActionLoading;
   const buttonDisabled = !authConfig || buttonBusy;
 
   return (
@@ -480,6 +431,14 @@ export const IdAuthenticationWidget = ({ config, schemaData: propSchemaData }: I
           grid-column: 1 / -1;
         }
 
+        /* Action cell: no left label spacer, align button to column start */
+        .${cls} .auth-cell.auth-cell--action .auth-label {
+          display: none;
+        }
+        .${cls} .auth-cell.auth-cell--action .auth-value {
+          flex: 1 1 auto;
+        }
+
         .${cls} .auth-label {
           flex: 0 0 auto;
           min-width: 200px;
@@ -502,16 +461,14 @@ export const IdAuthenticationWidget = ({ config, schemaData: propSchemaData }: I
           word-break: break-word;
         }
 
-        .${cls} .auth-bottom-actions {
-          display: flex;
-          flex-direction: column;
-          align-items: flex-start;
-          justify-content: flex-start;
-          gap: 8px;
-          width: 100%;
-          margin-top: 20px;
-          margin-bottom: 0;
+        .${cls} .auth-value--foundational {
+          font-size: 18px;
+          font-weight: 700;
+          color: var(--owt-color-primary-dark, #F07B1A);
+          letter-spacing: 0.1px;
         }
+
+        /* Button is placed inside the grid (next to PSUT) */
 
         .${cls} .auth-status {
           display: inline-flex;
@@ -553,8 +510,8 @@ export const IdAuthenticationWidget = ({ config, schemaData: propSchemaData }: I
           padding: 8px 24px;
           line-height: 1.5;
           border-radius: var(--owt-btn-border-radius, 10px);
-          border: 1px solid var(--owt-btn-primary-border, #F07B1A);
-          background-color: var(--owt-color-primary, #F5BB1A);
+          border: 1px solid rgb(237, 124, 34);
+          background-color: rgb(237, 124, 34);
           color: var(--owt-color-bg, #FFFFFF);
           font-family: Roboto, sans-serif;
           cursor: pointer;
@@ -575,6 +532,63 @@ export const IdAuthenticationWidget = ({ config, schemaData: propSchemaData }: I
           max-width: 100%;
         }
 
+        .${cls} .overlay-backdrop {
+          position: fixed;
+          inset: 0;
+          background: rgba(17, 24, 39, 0.55);
+          z-index: 9999;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          padding: 24px;
+        }
+
+        .${cls} .overlay-panel {
+          width: min(1100px, 92vw);
+          height: min(820px, 92vh);
+          background: var(--owt-color-bg, #FFFFFF);
+          border-radius: 12px;
+          box-shadow: 0 10px 30px rgba(0,0,0,0.25);
+          overflow: hidden;
+          display: flex;
+          flex-direction: column;
+        }
+
+        .${cls} .overlay-header {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          padding: 10px 14px;
+          border-bottom: 1px solid var(--owt-color-border-light, #E4E4E4);
+          font-family: Roboto, sans-serif;
+        }
+
+        .${cls} .overlay-title {
+          font-size: 14px;
+          color: var(--owt-color-text, #011627);
+          font-weight: 600;
+          min-width: 0;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+        }
+
+        .${cls} .overlay-close {
+          border: 1px solid var(--owt-btn-secondary-border, #C4C4C4);
+          background: var(--owt-btn-secondary-bg, #FFFFFF);
+          color: var(--owt-btn-secondary-color, #011627);
+          border-radius: var(--owt-btn-border-radius, 10px);
+          padding: 6px 10px;
+          font-size: 12px;
+          cursor: pointer;
+        }
+
+        .${cls} .overlay-iframe {
+          flex: 1 1 auto;
+          width: 100%;
+          border: none;
+        }
+
         @media (max-width: 640px) {
           .${cls} .auth-grid {
             grid-template-columns: 1fr;
@@ -592,16 +606,53 @@ export const IdAuthenticationWidget = ({ config, schemaData: propSchemaData }: I
       `}</style>
 
       <div className={cls}>
+        {overlayUrl ? (
+          <div
+            className="overlay-backdrop"
+            role="dialog"
+            aria-modal="true"
+            aria-label="Authentication"
+            onClick={(e) => {
+              if (e.target === e.currentTarget) {
+                setOverlayUrl(null);
+                emitHostEvent({ type: 'overlay_closed' });
+              }
+            }}
+          >
+            <div className="overlay-panel">
+              <div className="overlay-header">
+                <div className="overlay-title">{providerName ? `Authenticate via ${providerName}` : 'Authenticate'}</div>
+                <button
+                  type="button"
+                  className="overlay-close"
+                  onClick={() => {
+                    setOverlayUrl(null);
+                    emitHostEvent({ type: 'overlay_closed' });
+                  }}
+                >
+                  Close
+                </button>
+              </div>
+              <iframe className="overlay-iframe" src={overlayUrl} title="Authentication" />
+            </div>
+          </div>
+        ) : null}
+
         <div className="auth-content">
           <div className="auth-grid">
             <div className="auth-cell">
               <div className="auth-label">Foundational ID:</div>
-              <div className="auth-value">{displayText(foundationalId)}</div>
+              <div className="auth-value auth-value--foundational">{displayText(foundationalId)}</div>
             </div>
 
             <div className="auth-cell">
               <div className="auth-label">Last authenticated on:</div>
               <div className="auth-value">{tryFormatDateTime(lastAuthenticatedOn)}</div>
+            </div>
+
+            <div className="auth-cell">
+              <div className="auth-label">Expiry date:</div>
+              <div className="auth-value">{tryFormatDate(expiryDate)}</div>
             </div>
 
             <div className="auth-cell">
@@ -615,23 +666,25 @@ export const IdAuthenticationWidget = ({ config, schemaData: propSchemaData }: I
             </div>
 
             <div className="auth-cell">
-              <div className="auth-label">Expiry date:</div>
-              <div className="auth-value">{tryFormatDate(expiryDate)}</div>
-            </div>
-
-            <div className="auth-cell auth-cell--full">
               <div className="auth-label">Authentication token (PSUT):</div>
               <div className="auth-value">
                 <div className="auth-token">{psut ? String(psut) : '-'}</div>
               </div>
             </div>
-          </div>
 
-          <div className="auth-bottom-actions">
-            <button type="button" className="auth-button" onClick={onAuthenticate} disabled={buttonDisabled}>
-              {buttonBusy ? 'Loading…' : 'Authenticate'}
-            </button>
-            {authError ? <div className="auth-error">{authError}</div> : null}
+            <div className="auth-cell auth-cell--action">
+              <div className="auth-label" aria-hidden />
+              <div className="auth-value">
+                <button type="button" className="auth-button" onClick={onAuthenticate} disabled={buttonDisabled}>
+                  {buttonBusy ? 'Loading…' : 'Authenticate'}
+                </button>
+                {authError ? (
+                  <div className="auth-error" style={{ marginTop: 8 }}>
+                    {authError}
+                  </div>
+                ) : null}
+              </div>
+            </div>
           </div>
         </div>
       </div>

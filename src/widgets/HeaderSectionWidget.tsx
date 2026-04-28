@@ -427,7 +427,9 @@ export const HeaderSectionWidget = ({ config }: HeaderSectionWidgetProps) => {
     if (completion === null || ideal === null || ideal <= 0) return null;
     const ratio = completion / ideal;
     const percent = Math.max(0, Math.min(100, Math.round(ratio * 100)));
-    return { completion, ideal, percent };
+    const completionDisplay = Number.isInteger(completion) ? completion : Math.round(completion);
+    const idealDisplay = Number.isInteger(ideal) ? ideal : Math.round(ideal);
+    return { completion, ideal, completionDisplay, idealDisplay, percent };
   }, [completionScoreRaw, idealScoreRaw]);
 
   // ── Format options ────────────────────────────────────────────
@@ -947,10 +949,10 @@ export const HeaderSectionWidget = ({ config }: HeaderSectionWidgetProps) => {
               <div
                 className="hdr-score-ring"
                 style={{ ['--pct' as any]: score.percent }}
-                aria-label={`Completion score ${score.completion} of ${score.ideal} (${score.percent}%)`}
-                title={`${score.completion} / ${score.ideal} (${score.percent}%)`}
+                aria-label={`Completion score ${score.completionDisplay} of ${score.idealDisplay} (${score.percent}%)`}
+                title={`${score.completionDisplay} / ${score.idealDisplay} (${score.percent}%)`}
               >
-                <div className="hdr-score-value">{String(score.completion)}</div>
+                <div className="hdr-score-value">{String(score.completionDisplay)}</div>
               </div>
             ) : null}
           </div>
