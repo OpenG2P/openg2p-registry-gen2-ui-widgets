@@ -15,6 +15,7 @@ import { FileInputWidget } from '../widgets/FileInputWidget';
 import { SectionMode } from './SectionsContainer';
 import { namespaceSectionConfig } from '../utils/schemaNamespace';
 import { sectionValidate, collectWidgets } from '../utils/sectionValidate';
+import { extractTableRecordsFromSnapshot, isTableLikeWidget } from '../utils/extractTableRecordsFromSnapshot';
 import { downArrowIcon, personIcon, calendarIcon, rightArrowIcon, arrowUpIcon, arrowDownIcon, arrowLeftIcon, arrowRightIcon } from '../assets';
 
 /** Root class on readonly label/value rows; SectionRenderer scopes overflow/ellipsis rules here. */
@@ -589,11 +590,7 @@ export const SectionRenderer = ({
       const widgetPath = widget['widget-data-path'];
       if (!widgetPath) return;
 
-      if (
-        widget['widget-type'] === 'table' ||
-        widget['widget-type'] === 'simple-table' ||
-        widget['widget'] === 'table'
-      ) {
+      if (isTableLikeWidget(widget)) {
         hasTable = true;
       }
 
@@ -634,12 +631,7 @@ export const SectionRenderer = ({
       ];
     }
 
-    const tableEntry = Object.entries(snapshot).find(
-      ([key, value]) =>
-        key.endsWith('.records') && Array.isArray(value)
-    );
-
-    return tableEntry ? tableEntry[1] : [];
+    return extractTableRecordsFromSnapshot(snapshot as Record<string, unknown>, widgets);
   };
 
 

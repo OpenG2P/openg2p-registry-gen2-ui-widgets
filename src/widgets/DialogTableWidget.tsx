@@ -1,9 +1,12 @@
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useCallback, useMemo, useRef, useState } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
 import { useBaseWidget } from '../hooks/useBaseWidget';
 import { BaseWidgetConfig } from '../types';
 import { WidgetRenderer } from '../components/WidgetRenderer';
 import { useWidgetTranslation } from '../hooks/useWidgetTranslation';
 import { formatValue } from '../utils/formatting';
+import { WidgetRootState } from '../store';
+import { resetWidget } from '../store/widgetSlice';
 
 interface DialogTableWidgetProps {
   config: BaseWidgetConfig;
@@ -43,6 +46,8 @@ const SelectDisplayValue = ({ config, value }: { config: BaseWidgetConfig; value
 export const DialogTableWidget = ({ config }: DialogTableWidgetProps) => {
   const { value, error, touched, isEnabled, onChange, config: widgetConfig } = useBaseWidget({ config });
   const { translate, translateConfig } = useWidgetTranslation();
+  const dispatch = useDispatch();
+  const storeValues = useSelector((state: WidgetRootState) => state.widget?.values ?? {});
 
   const rows: any[] = Array.isArray(value) ? value : [];
   const columns: any[] = widgetConfig['widget-data-columns'] || [];
@@ -65,6 +70,9 @@ export const DialogTableWidget = ({ config }: DialogTableWidgetProps) => {
   const [dialogMode, setDialogMode] = useState<DialogMode>('add');
   const [activeRowIndex, setActiveRowIndex] = useState<number | null>(null);
   const [formData, setFormData] = useState<Record<string, any>>({});
+  /** Unique per dialog open so Redux widget ids don't reuse stale values across rows/add sessions */
+  const dialogSessionRef = useRef(0);
+  const [dialogSessionId, setDialogSessionId] = useState(0);
 
   const addDialogTitle =
     translateConfig(widgetConfig['widget-data-dialog-title-add']) ||
@@ -84,15 +92,42 @@ export const DialogTableWidget = ({ config }: DialogTableWidgetProps) => {
     return emptyRow;
   }, [columns]);
 
+  const dialogFieldWidgetId = useCallback(
+    (columnKey: string) => `${widgetConfig['widget-id']}-dlg-${dialogSessionId}-${columnKey}`,
+    [widgetConfig, dialogSessionId]
+  );
+
+  const resetDialogWidgets = useCallback(
+    (sessionId: number) => {
+      if (sessionId <= 0) return;
+      columns.forEach((col) => {
+        const wid = `${widgetConfig['widget-id']}-dlg-${sessionId}-${col['column-key']}`;
+        dispatch(resetWidget(wid));
+      });
+    },
+    [columns, widgetConfig, dispatch]
+  );
+
+  const beginDialogSession = useCallback(() => {
+    dialogSessionRef.current += 1;
+    const nextSession = dialogSessionRef.current;
+    setDialogSessionId(nextSession);
+    return nextSession;
+  }, []);
+
   const openAddDialog = useCallback(() => {
+    resetDialogWidgets(dialogSessionId);
+    beginDialogSession();
     setDialogMode('add');
     setActiveRowIndex(null);
     setFormData(buildEmptyRow());
     setDialogOpen(true);
-  }, [buildEmptyRow]);
+  }, [buildEmptyRow, beginDialogSession, resetDialogWidgets, dialogSessionId]);
 
   const openEditDialog = useCallback(
     (rowIndex: number) => {
+      resetDialogWidgets(dialogSessionId);
+      beginDialogSession();
       const row = rows[rowIndex] || {};
       const nextFormData: Record<string, any> = buildEmptyRow();
       columns.forEach((col) => {
@@ -104,22 +139,38 @@ export const DialogTableWidget = ({ config }: DialogTableWidgetProps) => {
       setFormData(nextFormData);
       setDialogOpen(true);
     },
-    [rows, columns, buildEmptyRow]
+    [rows, columns, buildEmptyRow, resetDialogWidgets, dialogSessionId, beginDialogSession]
   );
 
   const closeDialog = useCallback(() => {
+    const sessionToClear = dialogSessionId;
     setDialogOpen(false);
     setActiveRowIndex(null);
     setFormData({});
-  }, []);
+    resetDialogWidgets(sessionToClear);
+    setDialogSessionId(0);
+  }, [dialogSessionId, resetDialogWidgets]);
 
   const updateField = useCallback((columnKey: string, newValue: any) => {
     setFormData((prev) => ({ ...prev, [columnKey]: newValue }));
   }, []);
 
+  const collectMergedRowPayload = useCallback(() => {
+    const merged: Record<string, any> = { ...formData };
+    columns.forEach((col) => {
+      const k = col['column-key'];
+      const wid = dialogFieldWidgetId(k);
+      const fromStore = storeValues[wid];
+      if (fromStore !== undefined) merged[k] = fromStore;
+    });
+    return merged;
+  }, [formData, columns, storeValues, dialogFieldWidgetId]);
+
   const saveDialog = useCallback(() => {
+    const payload = collectMergedRowPayload();
+
     if (dialogMode === 'add') {
-      const savedRow = { ...formData, edit_action: 'ADD' };
+      const savedRow = { ...payload, edit_action: 'ADD' };
       onChange([...rows, savedRow]);
       closeDialog();
       return;
@@ -130,11 +181,11 @@ export const DialogTableWidget = ({ config }: DialogTableWidgetProps) => {
       const currentRow = newRows[activeRowIndex] || {};
       const wasDeleted = currentRow.edit_action === 'DELETE';
       const editAction = wasDeleted ? 'UPDATE' : (currentRow.edit_action ?? 'UPDATE');
-      newRows[activeRowIndex] = { ...currentRow, ...formData, edit_action: editAction };
+      newRows[activeRowIndex] = { ...currentRow, ...payload, edit_action: editAction };
       onChange(newRows);
       closeDialog();
     }
-  }, [dialogMode, formData, onChange, rows, closeDialog, activeRowIndex]);
+  }, [collectMergedRowPayload, dialogMode, onChange, rows, closeDialog, activeRowIndex]);
 
   const deleteRow = useCallback(
     (rowIndex: number) => {
@@ -365,11 +416,16 @@ export const DialogTableWidget = ({ config }: DialogTableWidgetProps) => {
               </button>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4" style={{ maxHeight: '70vh', overflow: 'auto' }}>
+            <div
+              key={`dialog-fields-${dialogSessionId}`}
+              className="grid grid-cols-1 md:grid-cols-2 gap-4"
+              style={{ maxHeight: '70vh', overflow: 'auto' }}
+            >
               {columns.map((col) => {
                 const key = col['column-key'];
                 const widgetType = col.widget || 'text';
-                const cellWidgetId = `${widgetConfig['widget-id']}-dialog-${dialogMode}-${key}`;
+                const cellWidgetId = dialogFieldWidgetId(key);
+                const initialValue = formData[key] ?? col['widget-data-default'] ?? '';
 
                 const fieldConfig: BaseWidgetConfig = {
                   ...col,
@@ -379,14 +435,14 @@ export const DialogTableWidget = ({ config }: DialogTableWidgetProps) => {
                   'widget-label': col['widget-label'],
                   'widget-readonly': isReadonly || col['widget-readonly'] === true,
                   'widget-data-path': undefined,
-                  'widget-data-default': formData[key] ?? col['widget-data-default'] ?? '',
+                  'widget-data-default': initialValue,
                 };
 
                 return (
-                  <div key={key} className="min-w-0">
+                  <div key={`${dialogSessionId}-${key}`} className="min-w-0">
                     <WidgetRenderer
                       config={fieldConfig}
-                      schemaData={{ [cellWidgetId]: formData[key] ?? col['widget-data-default'] ?? '' }}
+                      schemaData={{ [cellWidgetId]: initialValue }}
                       onValueChange={(_widgetId, newValue) => updateField(key, newValue)}
                     />
                   </div>

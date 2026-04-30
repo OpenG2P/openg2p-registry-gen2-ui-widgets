@@ -53,7 +53,11 @@ const hasTableWidget = (panels: SectionConfig['panels']): boolean => {
     // Check widgets in this panel
     if (panel.widgets) {
       for (const widget of panel.widgets) {
-        if (widget.widget === 'table' || widget['widget-type'] === 'table') {
+        if (
+          widget.widget === 'table' ||
+          widget.widget === 'dialog-table' ||
+          widget['widget-type'] === 'table'
+        ) {
           return true;
         }
       }
@@ -76,7 +80,11 @@ const getTableWidgetColumnSpan = (panels: SectionConfig['panels']): number | nul
     // Check widgets in this panel
     if (panel.widgets) {
       for (const widget of panel.widgets) {
-        if (widget.widget === 'table' || widget['widget-type'] === 'table') {
+        if (
+          widget.widget === 'table' ||
+          widget.widget === 'dialog-table' ||
+          widget['widget-type'] === 'table'
+        ) {
           // Return the widget's column span if specified, otherwise null
           return widget['widget-column-span'] || null;
         }
