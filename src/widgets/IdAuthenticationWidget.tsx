@@ -13,6 +13,8 @@ type AuthConfig = {
   /** Provider details supplied by host */
   providerId?: string;
   providerName?: string;
+  /** Register ID for authenticate_registrant */
+  registerId?: string;
   /** Initiate authentication (called on button click) */
   authenticateEndpoint?: string;
   authenticateMethod?: 'GET' | 'POST' | 'PUT' | 'DELETE';
@@ -22,8 +24,8 @@ type AuthConfig = {
    */
   authorizationUrlKey?: string;
   /**
-   * When true (default), open auth URL in an overlay iframe instead of window.open.
-   * This avoids popup blockers and feels like a centered popup.
+   * When true, open auth URL in an overlay iframe instead of window.open.
+   * Default is false because most IdPs block iframe embedding / require same-site cookies.
    */
   useIframeOverlay?: boolean;
   /**
@@ -46,7 +48,6 @@ type AuthConfig = {
 
 type DataPaths = {
   /** Used for API calls */
-  registerId?: string;
   internalRecordId?: string;
   initiatedByStaffId?: string;
   foundationalId?: string;
@@ -193,7 +194,7 @@ export const IdAuthenticationWidget = ({ config, schemaData: propSchemaData }: I
 
   const authConfig = (config as any)['widget-auth-config'] as AuthConfig | undefined;
 
-  const registerId = resolveValueFromSources(paths.registerId, values, schemaData);
+  const registerId = authConfig?.registerId ?? undefined;
   const internalRecordId = resolveValueFromSources(paths.internalRecordId, values, schemaData);
   const initiatedByStaffId = resolveValueFromSources(paths.initiatedByStaffId, values, schemaData);
   const providerId = authConfig?.providerId;
@@ -258,7 +259,7 @@ export const IdAuthenticationWidget = ({ config, schemaData: propSchemaData }: I
 
   const openAuthPopup = useCallback(
     (authUrl: string) => {
-      if (authConfig?.useIframeOverlay !== false) {
+      if (authConfig?.useIframeOverlay === true) {
         setOverlayUrl(authUrl);
         emitHostEvent({ type: 'overlay_opened' });
         return;
@@ -309,16 +310,20 @@ export const IdAuthenticationWidget = ({ config, schemaData: propSchemaData }: I
     if (!url && canCallAuthApi) {
       setAuthActionLoading(true);
       try {
+        const basePayload = {
+          register_id: registerId,
+          internal_record_id: internalRecordId,
+          provider_id: providerId,
+          initiated_by_staff_id: initiatedByStaffId,
+        };
+        const requestParams = basePayload;
+        // eslint-disable-next-line no-console
+        console.log('[IdAuthenticationWidget] authenticate_registrant params', requestParams);
         const resp = await dataSourceRequestHandler!(
           authConfig.service!,
           authConfig.authenticateEndpoint!,
           authConfig.authenticateMethod || 'POST',
-          {
-            register_id: registerId,
-            internal_record_id: internalRecordId,
-            provider_id: authConfig.providerId,
-            initiated_by_staff_id: initiatedByStaffId,
-          },
+          requestParams,
         );
         const payload = unwrapPayload(resp);
         const authUrl = pickAuthorizationUrl(payload, authConfig.authorizationUrlKey);

@@ -222,7 +222,6 @@ const idAuthenticationSection: SectionConfig = {
           'widget-id': 'id-auth',
           'widget-readonly': true,
           'widget-data-path': {
-            registerId: 'registrant.register_id',
             internalRecordId: 'registrant.internal_record_id',
             initiatedByStaffId: 'registrant.initiated_by_staff_id',
             foundationalId: 'registrant.foundational_id',
@@ -235,10 +234,11 @@ const idAuthenticationSection: SectionConfig = {
             service: 'registry',
             providerId: 'esignet',
             providerName: 'eSignet',
+            registerId: 'a1a4d25a-1cd4-4356-abac-985a0b3c6bcd',
             authenticateEndpoint: 'authenticate_registrant',
             authenticateMethod: 'POST',
             // authorizationUrlKey: 'authorization_url', // default includes this
-            useIframeOverlay: true,
+            useIframeOverlay: false,
             // Popup size for eSignet login (clamped to the viewport)
             // popupWidth: 1024,
             // popupHeight: 800,
@@ -398,13 +398,24 @@ export const HeaderSectionExample = () => {
         throw new Error(`Unknown service: ${service}`);
       }
       if (endpoint === 'authenticate_registrant') {
+        // eslint-disable-next-line no-console
+        console.log(
+          '[examples] authenticate_registrant payload',
+          (params as any)?.request_payload ?? params,
+        );
         // Simulate initiate authentication response with auth URL
-        const rid = (params as any)?.register_id || 'demo-register';
+        const rid =
+          (params as any)?.request_payload?.register_id ||
+          (params as any)?.register_id ||
+          'demo-register';
         return {
           response_body: {
             response_payload: {
               authorization_session_id: 'auth-session-demo-001',
-              provider_name: (params as any)?.provider_id || 'eSignet',
+              provider_name:
+                (params as any)?.request_payload?.provider_id ||
+                (params as any)?.provider_id ||
+                'eSignet',
               authorization_url: `https://example.com/?register_id=${encodeURIComponent(String(rid))}`,
             },
           },
