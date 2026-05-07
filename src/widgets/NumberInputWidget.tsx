@@ -112,7 +112,7 @@ export const NumberInputWidget = ({ config }: NumberInputWidgetProps) => {
     if (parsed === null) {
       // Allow empty input or partial input (e.g., "-", ".")
       if (inputValue === '' || inputValue === '-' || inputValue === '.') {
-        onChange('');
+        onChange(null);
       }
       // Don't update if invalid - let user continue typing
       return;
