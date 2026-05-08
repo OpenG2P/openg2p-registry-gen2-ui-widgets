@@ -2,6 +2,7 @@ import { SectionConfig } from '../types';
 import { collectWidgets } from './sectionValidate';
 import { getValueByPath } from './pathUtils';
 import type { SectionChanges } from '../components/SectionRenderer';
+import { extractTableRecordsFromSnapshot, isTableLikeWidget } from './extractTableRecordsFromSnapshot';
 
 /**
  * Build SectionChanges from section config and current store values.
@@ -23,12 +24,7 @@ export function buildSectionChanges(
     const widgetPath = widget['widget-data-path'];
     if (!widgetPath) return;
 
-    const widgetType = (widget as { 'widget-type'?: string })['widget-type'];
-    if (
-      widgetType === 'table' ||
-      widgetType === 'simple-table' ||
-      widget.widget === 'table'
-    ) {
+    if (isTableLikeWidget(widget)) {
       hasTable = true;
     }
 
@@ -70,10 +66,7 @@ export function buildSectionChanges(
       },
     ];
   } else {
-    const tableEntry = Object.entries(snapshot).find(
-      ([key, value]) => key.endsWith('.records') && Array.isArray(value)
-    );
-    records = tableEntry ? (tableEntry[1] as unknown[]) : [];
+    records = extractTableRecordsFromSnapshot(snapshot, sectionWidgets);
   }
 
   const files: unknown[] = [];

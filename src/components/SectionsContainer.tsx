@@ -53,7 +53,11 @@ const hasTableWidget = (panels: SectionConfig['panels']): boolean => {
     // Check widgets in this panel
     if (panel.widgets) {
       for (const widget of panel.widgets) {
-        if (widget.widget === 'table' || widget['widget-type'] === 'table') {
+        if (
+          widget.widget === 'table' ||
+          widget.widget === 'dialog-table' ||
+          widget['widget-type'] === 'table'
+        ) {
           return true;
         }
       }
@@ -76,7 +80,11 @@ const getTableWidgetColumnSpan = (panels: SectionConfig['panels']): number | nul
     // Check widgets in this panel
     if (panel.widgets) {
       for (const widget of panel.widgets) {
-        if (widget.widget === 'table' || widget['widget-type'] === 'table') {
+        if (
+          widget.widget === 'table' ||
+          widget.widget === 'dialog-table' ||
+          widget['widget-type'] === 'table'
+        ) {
           // Return the widget's column span if specified, otherwise null
           return widget['widget-column-span'] || null;
         }
@@ -155,6 +163,12 @@ export const SectionsContainer = ({
   // IntakeForm mode: accordion state - which section is expanded (null = none; first expanded by default)
   const [expandedSectionIndex, setExpandedSectionIndex] = useState<number | null>(0);
 
+  // IntakeForm mode: high-water mark of the furthest section the user has clicked Next on.
+  // A section at index i is accessible when i <= maxVisitedIndex + 1
+  // (i.e. every visited section plus the one immediately after it).
+  // Starts at -1 so only section 0 is accessible before any Next is clicked.
+  const [maxVisitedIndex, setMaxVisitedIndex] = useState<number>(-1);
+
   // RegistryView: track which section is currently in edit mode (by section-id); null = none
   const [editingSectionId, setEditingSectionId] = useState<string | null>(null);
 
@@ -168,6 +182,11 @@ export const SectionsContainer = ({
   const namespaceRef = useRef(namespace);
   namespaceRef.current = namespace;
 
+  // Stable refs so formHandle closure can access current mode and accordion setter without stale captures
+  const modeRef = useRef(mode);
+  modeRef.current = mode;
+  const setExpandedSectionIndexRef = useRef(setExpandedSectionIndex);
+
   // Track dirty (unsaved changes) per section for form handle validation
   const sectionDirtyMapRef = useRef<Record<string, boolean>>({});
   const handleSectionDirtyChange = useCallback((sectionId: string, isDirty: boolean) => {
@@ -180,8 +199,9 @@ export const SectionsContainer = ({
     setExpandedSectionIndex(prev => (prev === index ? null : index));
   }, []);
 
-  // IntakeForm mode: called after section save - collapse current, expand next
+  // IntakeForm mode: called after section save - advance high-water mark, collapse current, expand next
   const handleSectionSaveSuccess = useCallback((index: number) => {
+    setMaxVisitedIndex(prev => Math.max(prev, index));
     if (index + 1 < safeSections.length) {
       setExpandedSectionIndex(index + 1);
     } else {
@@ -237,32 +257,47 @@ export const SectionsContainer = ({
 
     return {
       validate: async () => {
-        checkNoUnsavedChanges();
+        if (modeRef.current !== 'IntakeForm') checkNoUnsavedChanges();
         const values = getValues() as Record<string, unknown>;
         let allValid = true;
-        for (let i = 0; i < safeSections.length; i++) {
-          const section = safeSections[i];
-          const ns = getNamespace(section, i);
-          const sectionToValidate = ns ? namespaceSectionConfig(section, ns) : section;
-          const valid = sectionValidate(sectionToValidate, values, dispatch);
-          if (!valid) allValid = false;
-        }
-        return allValid;
-      },
-      getFormData: () => getValues(),
-      validateAndGetData: async () => {
-        checkNoUnsavedChanges();
-        const values = getValues() as Record<string, unknown>;
-        const results: SectionChanges[] = [];
+        let firstInvalidIndex: number | null = null;
         for (let i = 0; i < safeSections.length; i++) {
           const section = safeSections[i];
           const ns = getNamespace(section, i);
           const sectionToValidate = ns ? namespaceSectionConfig(section, ns) : section;
           const valid = sectionValidate(sectionToValidate, values, dispatch);
           if (!valid) {
-            throw new Error('Validation failed');
+            if (firstInvalidIndex === null) firstInvalidIndex = i;
+            allValid = false;
           }
-          results.push(buildSectionChanges(section, values, ns));
+        }
+        if (!allValid && modeRef.current === 'IntakeForm' && firstInvalidIndex !== null) {
+          setExpandedSectionIndexRef.current(firstInvalidIndex);
+        }
+        return allValid;
+      },
+      getFormData: () => getValues(),
+      validateAndGetData: async () => {
+        if (modeRef.current !== 'IntakeForm') checkNoUnsavedChanges();
+        const values = getValues() as Record<string, unknown>;
+        const results: SectionChanges[] = [];
+        let firstInvalidIndex: number | null = null;
+        for (let i = 0; i < safeSections.length; i++) {
+          const section = safeSections[i];
+          const ns = getNamespace(section, i);
+          const sectionToValidate = ns ? namespaceSectionConfig(section, ns) : section;
+          const valid = sectionValidate(sectionToValidate, values, dispatch);
+          if (!valid) {
+            if (firstInvalidIndex === null) firstInvalidIndex = i;
+          } else {
+            results.push(buildSectionChanges(section, values, ns));
+          }
+        }
+        if (firstInvalidIndex !== null) {
+          if (modeRef.current === 'IntakeForm') {
+            setExpandedSectionIndexRef.current(firstInvalidIndex);
+          }
+          throw new Error('Validation failed. Please fix the errors and try again.');
         }
         return results;
       },
@@ -379,6 +414,8 @@ export const SectionsContainer = ({
               onSectionSaveSuccess: handleSectionSaveSuccess,
               onPreviousSection: handlePreviousSection,
               isDraft,
+              // Accessible = every visited section + the one immediately after
+              isAccessible: index <= maxVisitedIndex + 1,
             }
             : {};
 

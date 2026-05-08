@@ -349,6 +349,73 @@ export const HeaderSectionWidget = ({ config }: HeaderSectionWidgetProps) => {
   const lastApprovedBy = findValue('lastApprovedBy') || '';
   const lastApprovedAt = findValue('lastApprovedAt') || '';
 
+  // ── Validation: status change requires reason ──────────────────
+  // Behavior:
+  // - When status changes away from its initial value, clear reason and require it.
+  // - When status returns to initial value (or a parent "Cancel" restores it), restore initial reason.
+  const initialStatusRef = useRef<string | null>(null);
+  const initialReasonRef = useRef<string | null>(null);
+  const prevStatusRef = useRef<string | null>(null);
+  const [showReasonRequired, setShowReasonRequired] = useState(false);
+
+  useEffect(() => {
+    // Capture initial status once when it becomes available.
+    if (initialStatusRef.current === null) {
+      const v = statusValue === undefined || statusValue === null ? '' : String(statusValue);
+      initialStatusRef.current = v;
+    }
+  }, [statusValue]);
+
+  useEffect(() => {
+    // Capture initial reason once when it becomes available.
+    if (initialReasonRef.current === null) {
+      const v = statusReason === undefined || statusReason === null ? '' : String(statusReason);
+      initialReasonRef.current = v;
+    }
+  }, [statusReason]);
+
+  const isStatusChanged = useMemo(() => {
+    const initial = initialStatusRef.current;
+    if (initial === null) return false;
+    return String(statusValue) !== initial;
+  }, [statusValue]);
+
+  const isReasonMissing = useMemo(() => {
+    if (!isStatusChanged) return false;
+    return String(statusReason || '').trim().length === 0;
+  }, [isStatusChanged, statusReason]);
+
+  useEffect(() => {
+    // When status changes:
+    // - If moved away from initial → clear reason.
+    // - If returned to initial → restore initial reason.
+    if (isReadonly) return;
+    if (initialStatusRef.current === null) return;
+
+    const currentStatus = String(statusValue || '');
+    if (prevStatusRef.current === currentStatus) return;
+    prevStatusRef.current = currentStatus;
+
+    const initialStatus = initialStatusRef.current;
+    const initialReason = initialReasonRef.current ?? '';
+
+    if (currentStatus === initialStatus) {
+      // Reverted / cancelled back to original
+      if (String(statusReason || '') !== String(initialReason || '')) {
+        updateFieldValue('statusReason', initialReason);
+      }
+      setShowReasonRequired(false);
+      return;
+    }
+
+    // Status changed to a new value: clear reason (so user must re-enter)
+    if (String(statusReason || '').trim().length > 0) {
+      updateFieldValue('statusReason', '');
+    }
+    setShowReasonRequired(true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [statusValue, isReadonly]);
+
   const score = useMemo(() => {
     const toNum = (v: unknown): number | null => {
       if (v === null || v === undefined || String(v).trim() === '') return null;
@@ -360,7 +427,9 @@ export const HeaderSectionWidget = ({ config }: HeaderSectionWidgetProps) => {
     if (completion === null || ideal === null || ideal <= 0) return null;
     const ratio = completion / ideal;
     const percent = Math.max(0, Math.min(100, Math.round(ratio * 100)));
-    return { completion, ideal, percent };
+    const completionDisplay = Number.isInteger(completion) ? completion : Math.round(completion);
+    const idealDisplay = Number.isInteger(ideal) ? ideal : Math.round(ideal);
+    return { completion, ideal, completionDisplay, idealDisplay, percent };
   }, [completionScoreRaw, idealScoreRaw]);
 
   // ── Format options ────────────────────────────────────────────
@@ -673,6 +742,19 @@ export const HeaderSectionWidget = ({ config }: HeaderSectionWidgetProps) => {
           box-shadow: 0 0 0 2px rgba(237, 124, 34, 0.15);
         }
 
+        .${cls} .hdr-input--error {
+          border-color: var(--owt-color-danger, #DC2626);
+          box-shadow: 0 0 0 2px rgba(220, 38, 38, 0.12);
+        }
+
+        .${cls} .hdr-error-text {
+          margin-left: calc(0px);
+          color: var(--owt-color-danger, #DC2626);
+          font-size: 0.75rem;
+          line-height: 1.2;
+          font-weight: 500;
+        }
+
         @media (max-width: 768px) {
           .${cls} {
             flex-direction: column;
@@ -800,13 +882,31 @@ export const HeaderSectionWidget = ({ config }: HeaderSectionWidgetProps) => {
               {isReadonly ? (
                 <span className="hdr-field-value">{statusReason || '-'}</span>
               ) : (
-                <input
-                  type="text"
-                  className="hdr-input"
-                  value={statusReason}
-                  placeholder={getLabel('enterReason')}
-                  onChange={(e) => updateFieldValue('statusReason', e.target.value)}
-                />
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                  <input
+                    type="text"
+                    className={`hdr-input ${(!isReadonly && (showReasonRequired || isReasonMissing) && isReasonMissing) ? 'hdr-input--error' : ''}`}
+                    value={statusReason}
+                    placeholder={getLabel('enterReason')}
+                    required={isStatusChanged}
+                    aria-required={isStatusChanged}
+                    aria-invalid={!isReadonly && (showReasonRequired || isReasonMissing) && isReasonMissing}
+                    onBlur={() => {
+                      if (isReasonMissing) setShowReasonRequired(true);
+                    }}
+                    onChange={(e) => {
+                      updateFieldValue('statusReason', e.target.value);
+                      if (showReasonRequired && String(e.target.value || '').trim().length > 0) {
+                        setShowReasonRequired(false);
+                      }
+                    }}
+                  />
+                  {!isReadonly && (showReasonRequired || isReasonMissing) && isReasonMissing ? (
+                    <div className="hdr-error-text">
+                      {getLabel('enterReason')}
+                    </div>
+                  ) : null}
+                </div>
               )}
             </div>
           </div>
@@ -849,10 +949,10 @@ export const HeaderSectionWidget = ({ config }: HeaderSectionWidgetProps) => {
               <div
                 className="hdr-score-ring"
                 style={{ ['--pct' as any]: score.percent }}
-                aria-label={`Completion score ${score.completion} of ${score.ideal} (${score.percent}%)`}
-                title={`${score.completion} / ${score.ideal} (${score.percent}%)`}
+                aria-label={`Completion score ${score.completionDisplay} of ${score.idealDisplay} (${score.percent}%)`}
+                title={`${score.completionDisplay} / ${score.idealDisplay} (${score.percent}%)`}
               >
-                <div className="hdr-score-value">{String(score.completion)}</div>
+                <div className="hdr-score-value">{String(score.completionDisplay)}</div>
               </div>
             ) : null}
           </div>
