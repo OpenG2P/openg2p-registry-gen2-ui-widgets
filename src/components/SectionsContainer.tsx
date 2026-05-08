@@ -176,6 +176,11 @@ export const SectionsContainer = ({
   const namespaceRef = useRef(namespace);
   namespaceRef.current = namespace;
 
+  // Stable refs so formHandle closure can access current mode and accordion setter without stale captures
+  const modeRef = useRef(mode);
+  modeRef.current = mode;
+  const setExpandedSectionIndexRef = useRef(setExpandedSectionIndex);
+
   // Track dirty (unsaved changes) per section for form handle validation
   const sectionDirtyMapRef = useRef<Record<string, boolean>>({});
   const handleSectionDirtyChange = useCallback((sectionId: string, isDirty: boolean) => {
@@ -245,32 +250,47 @@ export const SectionsContainer = ({
 
     return {
       validate: async () => {
-        checkNoUnsavedChanges();
+        if (modeRef.current !== 'IntakeForm') checkNoUnsavedChanges();
         const values = getValues() as Record<string, unknown>;
         let allValid = true;
-        for (let i = 0; i < safeSections.length; i++) {
-          const section = safeSections[i];
-          const ns = getNamespace(section, i);
-          const sectionToValidate = ns ? namespaceSectionConfig(section, ns) : section;
-          const valid = sectionValidate(sectionToValidate, values, dispatch);
-          if (!valid) allValid = false;
-        }
-        return allValid;
-      },
-      getFormData: () => getValues(),
-      validateAndGetData: async () => {
-        checkNoUnsavedChanges();
-        const values = getValues() as Record<string, unknown>;
-        const results: SectionChanges[] = [];
+        let firstInvalidIndex: number | null = null;
         for (let i = 0; i < safeSections.length; i++) {
           const section = safeSections[i];
           const ns = getNamespace(section, i);
           const sectionToValidate = ns ? namespaceSectionConfig(section, ns) : section;
           const valid = sectionValidate(sectionToValidate, values, dispatch);
           if (!valid) {
-            throw new Error('Validation failed');
+            if (firstInvalidIndex === null) firstInvalidIndex = i;
+            allValid = false;
           }
-          results.push(buildSectionChanges(section, values, ns));
+        }
+        if (!allValid && modeRef.current === 'IntakeForm' && firstInvalidIndex !== null) {
+          setExpandedSectionIndexRef.current(firstInvalidIndex);
+        }
+        return allValid;
+      },
+      getFormData: () => getValues(),
+      validateAndGetData: async () => {
+        if (modeRef.current !== 'IntakeForm') checkNoUnsavedChanges();
+        const values = getValues() as Record<string, unknown>;
+        const results: SectionChanges[] = [];
+        let firstInvalidIndex: number | null = null;
+        for (let i = 0; i < safeSections.length; i++) {
+          const section = safeSections[i];
+          const ns = getNamespace(section, i);
+          const sectionToValidate = ns ? namespaceSectionConfig(section, ns) : section;
+          const valid = sectionValidate(sectionToValidate, values, dispatch);
+          if (!valid) {
+            if (firstInvalidIndex === null) firstInvalidIndex = i;
+          } else {
+            results.push(buildSectionChanges(section, values, ns));
+          }
+        }
+        if (firstInvalidIndex !== null) {
+          if (modeRef.current === 'IntakeForm') {
+            setExpandedSectionIndexRef.current(firstInvalidIndex);
+          }
+          throw new Error('Validation failed. Please fix the errors and try again.');
         }
         return results;
       },

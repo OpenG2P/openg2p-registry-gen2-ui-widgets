@@ -832,6 +832,7 @@ export const SectionRenderer = ({
       originalSection,
       currentSchemaData,
       dispatch,
+      true, // skipRequired: Save/Edit does not enforce mandatory fields
     );
     if (!isSectionValid) {
       return;
@@ -910,7 +911,12 @@ export const SectionRenderer = ({
       const currentState = (store.getState() as any).widget;
       const currentSchemaData = currentState.values || {};
 
-      const isSectionValid = sectionValidate(originalSection, currentSchemaData, dispatch);
+      const isSectionValid = sectionValidate(
+        originalSection,
+        currentSchemaData,
+        dispatch,
+        true, // skipRequired: Next/Save does not enforce mandatory fields
+      );
       if (!isSectionValid) return;
 
       const oldSchemaData = schemaData || contextSchemaData;

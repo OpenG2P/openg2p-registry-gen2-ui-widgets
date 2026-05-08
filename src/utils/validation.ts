@@ -3,12 +3,17 @@ import { WidgetValidation, WidgetDataPath } from '../types';
 import { getValidationPattern } from './validationPatterns';
 
 /**
- * Validate value against validation rules
+ * Validate value against validation rules.
+ *
+ * @param skipRequired - When true, required-field checks are skipped (used by
+ *   per-section Save/Next buttons so the user can move between sections without
+ *   filling every mandatory field; only format/range checks still run).
  */
 export const validateWidget = (
   value: any,
   validation: WidgetValidation | undefined,
-  required: boolean = false
+  required: boolean = false,
+  skipRequired: boolean = false,
 ): string[] => {
   const errors: string[] = [];
 
@@ -16,8 +21,8 @@ export const validateWidget = (
     return errors;
   }
 
-  // Check required
-  const isRequired = validation?.required ?? required;
+  // Check required (skipped when navigating between sections)
+  const isRequired = !skipRequired && (validation?.required ?? required);
   // For boolean, false is a valid value, so only check for null/undefined/empty string
   const isEmpty = value === null || value === undefined || value === '';
   if (isRequired && isEmpty) {
@@ -25,9 +30,8 @@ export const validateWidget = (
     return errors; // Return early if required field is empty
   }
 
-  // Skip other validations if value is empty and not required
-  // Note: For boolean, false is a valid value, so we only skip if truly empty
-  if (isEmpty && !isRequired) {
+  // Skip format/range validations if value is empty
+  if (isEmpty) {
     return errors;
   }
 

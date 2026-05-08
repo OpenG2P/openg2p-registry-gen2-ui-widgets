@@ -39,6 +39,7 @@ const personalInfoSection: SectionConfig = {
               'widget-type': 'input',
               'widget-label': 'Birth Date',
               'widget-data-path': `${REG_ID}.birth_date`,
+              'widget-required': true,
             },
             {
               widget: 'number',
@@ -53,6 +54,7 @@ const personalInfoSection: SectionConfig = {
               'widget-type': 'input',
               'widget-label': 'Gender',
               'widget-data-path': `${REG_ID}.gender`,
+              'widget-required': true,
               'widget-data-source': {
                 type: 'static',
                 options: [
@@ -74,6 +76,7 @@ const personalInfoSection: SectionConfig = {
               'widget-type': 'input',
               'widget-label': 'Marital Status',
               'widget-data-path': `${REG_ID}.marital_status`,
+              'widget-required': true,
               'widget-data-source': {
                 type: 'static',
                 options: [
@@ -127,6 +130,7 @@ const personalInfoSection: SectionConfig = {
               'widget-type': 'input',
               'widget-label': 'Phone',
               'widget-data-path': `${REG_ID}.phone`,
+              'widget-required': true,
             },
             {
               widget: 'text',
@@ -134,7 +138,7 @@ const personalInfoSection: SectionConfig = {
               'widget-type': 'input',
               'widget-label': 'Email',
               'widget-data-path': `${REG_ID}.email`,
-              'widget-data-validation': { validationType: 'email' },
+              'widget-data-validation': { validationType: 'email', required: true },
             },
           ],
         },
@@ -171,6 +175,7 @@ const locationSection: SectionConfig = {
               'widget-type': 'input',
               'widget-label': 'Address Line 1',
               'widget-data-path': `${REG_ID}.address_line_1`,
+              'widget-required': true,
             },
             {
               widget: 'text',
@@ -192,6 +197,7 @@ const locationSection: SectionConfig = {
               'widget-type': 'input',
               'widget-label': 'Country Code',
               'widget-data-path': `${REG_ID}.country_code`,
+              'widget-required': true,
             },
           ],
         },
@@ -346,6 +352,7 @@ const socioEconomicSection: SectionConfig = {
               'widget-type': 'input',
               'widget-label': 'Source of Income',
               'widget-data-path': `${REG_ID}.source_of_income`,
+              'widget-required': true,
               'widget-data-source': {
                 type: 'static',
                 options: [
