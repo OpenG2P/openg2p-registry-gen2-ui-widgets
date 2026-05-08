@@ -163,6 +163,12 @@ export const SectionsContainer = ({
   // IntakeForm mode: accordion state - which section is expanded (null = none; first expanded by default)
   const [expandedSectionIndex, setExpandedSectionIndex] = useState<number | null>(0);
 
+  // IntakeForm mode: high-water mark of the furthest section the user has clicked Next on.
+  // A section at index i is accessible when i <= maxVisitedIndex + 1
+  // (i.e. every visited section plus the one immediately after it).
+  // Starts at -1 so only section 0 is accessible before any Next is clicked.
+  const [maxVisitedIndex, setMaxVisitedIndex] = useState<number>(-1);
+
   // RegistryView: track which section is currently in edit mode (by section-id); null = none
   const [editingSectionId, setEditingSectionId] = useState<string | null>(null);
 
@@ -193,8 +199,9 @@ export const SectionsContainer = ({
     setExpandedSectionIndex(prev => (prev === index ? null : index));
   }, []);
 
-  // IntakeForm mode: called after section save - collapse current, expand next
+  // IntakeForm mode: called after section save - advance high-water mark, collapse current, expand next
   const handleSectionSaveSuccess = useCallback((index: number) => {
+    setMaxVisitedIndex(prev => Math.max(prev, index));
     if (index + 1 < safeSections.length) {
       setExpandedSectionIndex(index + 1);
     } else {
@@ -407,6 +414,8 @@ export const SectionsContainer = ({
               onSectionSaveSuccess: handleSectionSaveSuccess,
               onPreviousSection: handlePreviousSection,
               isDraft,
+              // Accessible = every visited section + the one immediately after
+              isAccessible: index <= maxVisitedIndex + 1,
             }
             : {};
 

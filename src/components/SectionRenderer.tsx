@@ -97,6 +97,12 @@ export interface SectionRendererProps {
   onPreviousSection?: (index: number) => void;
   /** IntakeForm mode: when true or undefined, sections are editable; when false, sections are readonly */
   isDraft?: boolean;
+  /**
+   * IntakeForm mode: when true the accordion header is clickable so the user can open/close this
+   * section freely. False (default) locks the header — navigation is only via Next/Previous.
+   * SectionsContainer sets this to true for every visited section plus the one immediately after.
+   */
+  isAccessible?: boolean;
 
   /** RegistryView: called when this section enters or exits edit mode. Used by SectionsContainer to enforce single-edit. */
   onEditModeChange?: (sectionId: string, editing: boolean) => void;
@@ -135,6 +141,7 @@ export const SectionRenderer = ({
   onSectionSaveSuccess,
   onPreviousSection,
   isDraft,
+  isAccessible = false,
   onEditModeChange,
   forceExitEdit,
 }: SectionRendererProps) => {
@@ -227,14 +234,24 @@ export const SectionRenderer = ({
   const isExpandedStandalone = sectionIndex === undefined && standaloneExpanded;
   const isExpanded = mode === 'IntakeForm' && (isExpandedFromContainer || isExpandedStandalone);
 
+  // IntakeForm only: tracks whether the user has clicked Next on this section at least once.
+  // Used to unlock the accordion header so the user can navigate back to a visited section.
+  const [hasBeenSavedByUser, setHasBeenSavedByUser] = useState(false);
+
+  // Accordion header click behaviour in IntakeForm mode:
+  //   - Standalone (no sectionIndex): always toggleable.
+  //   - Managed by SectionsContainer: toggleable only when isAccessible is true
+  //     (i.e. the section has been visited OR is the immediate next one).
+  //     Sections beyond that remain locked.
   const handleAccordionToggle = useCallback(() => {
     if (mode !== 'IntakeForm') return;
-    if (typeof sectionIndex === 'number' && onExpandSection) {
-      onExpandSection(sectionIndex);
-    } else if (sectionIndex === undefined) {
+    if (sectionIndex === undefined) {
       setStandaloneExpanded(prev => !prev);
+    } else if (isAccessible && onExpandSection) {
+      onExpandSection(sectionIndex);
     }
-  }, [mode, sectionIndex, onExpandSection]);
+    // Intentionally no-op for locked sections (isAccessible === false)
+  }, [mode, sectionIndex, isAccessible, onExpandSection]);
 
   // Recursively count all vertical panels, especially those nested inside horizontal panels
   // Typically: horizontal panels at first level contain vertical panels at second level
@@ -690,8 +707,6 @@ export const SectionRenderer = ({
   const baselineSnapshotRef = useRef<{ records: unknown[]; files: unknown[] } | null>(null);
   // IntakeForm only: increment when baseline is updated after save - forces badge to update (refs don't trigger re-renders)
   const [intakeFormBaselineTrigger, setIntakeFormBaselineTrigger] = useState(0);
-  // IntakeForm only: tracks whether the user has actually saved this section (prevents "Saved" badge on initial load)
-  const [hasBeenSavedByUser, setHasBeenSavedByUser] = useState(false);
 
   // IntakeForm: treat as edit mode for dirty tracking when isDraft. RegistryView: use isEditMode.
   const effectiveEditModeForDirty = mode === 'IntakeForm' ? (isDraft !== false) : isEditMode;
@@ -967,6 +982,10 @@ export const SectionRenderer = ({
         setHasBeenSavedByUser(true);
       }
       onSectionDirtyChange?.(sectionId, false);
+    } else if (mode === 'IntakeForm') {
+      // No onSectionSave provided, but still mark section as visited so the
+      // user can navigate back to it by clicking the accordion header.
+      setHasBeenSavedByUser(true);
     }
 
     // Always navigate to the next section
@@ -1199,12 +1218,16 @@ export const SectionRenderer = ({
         .${sectionClassId}.intake-form-accordion-item .intake-form-accordion-header h2 {
           color: var(--owt-color-primary-dark, #F07B1A);
         }
-        .${sectionClassId}.intake-form-accordion-item .intake-form-accordion-header:hover {
+        /* Hover / focus only shown when the header is actually interactive (standalone mode) */
+        .${sectionClassId}.intake-form-accordion-item .intake-form-accordion-header[data-interactive="true"]:hover {
           opacity: 0.85;
         }
-        .${sectionClassId}.intake-form-accordion-item .intake-form-accordion-header:focus-visible {
+        .${sectionClassId}.intake-form-accordion-item .intake-form-accordion-header[data-interactive="true"]:focus-visible {
           outline: 2px solid var(--owt-color-primary, #F5BB1A);
           outline-offset: 2px;
+        }
+        .${sectionClassId}.intake-form-accordion-item .intake-form-accordion-header[data-interactive="false"]:focus-visible {
+          outline: none;
         }
         .${sectionClassId}.intake-form-accordion-item .intake-form-accordion-content {
           padding-top: 8px;
@@ -1270,6 +1293,7 @@ export const SectionRenderer = ({
               onClick={handleAccordionToggle}
               aria-expanded={isExpanded}
               aria-controls={isExpanded ? `intake-form-accordion-content-${sectionId}` : undefined}
+              data-interactive={sectionIndex === undefined || isAccessible ? 'true' : 'false'}
               style={{
                 width: '100%',
                 display: 'flex',
@@ -1280,7 +1304,7 @@ export const SectionRenderer = ({
                 marginBottom: 0,
                 background: 'none',
                 border: 'none',
-                cursor: 'pointer',
+                cursor: sectionIndex === undefined || isAccessible ? 'pointer' : 'default',
                 textAlign: 'left',
                 fontFamily: 'Roboto, sans-serif',
               }}
