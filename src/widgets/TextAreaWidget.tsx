@@ -125,20 +125,33 @@ export const TextAreaWidget = ({ config }: TextAreaWidgetProps) => {
     return (
       <div className="mb-[10px] TextAreaDisplayWidget flex flex-col sm:flex-row sm:items-start">
         {label && (
-          <div className="text-base text-gray-600 font-medium md:min-w-[120px] sm:pr-4 mb-1 sm:mb-0" style={{ fontFamily: 'Roboto, sans-serif' }} title={label}>
+          <div
+            className="text-base text-gray-600 font-medium md:min-w-[120px] sm:pr-4 mb-1 sm:mb-0"
+            style={{ fontFamily: 'Roboto, sans-serif' }}
+            title={label}
+          >
             {label}:
           </div>
         )}
         <div className="flex-1">
-          <pre className="text-base text-gray-900 font-medium whitespace-pre-wrap" title={String(displayValue || '')} style={{ 
-            fontFamily: 'Roboto, sans-serif',
-            margin: 0,
-            padding: 0,
-            backgroundColor: 'transparent',
-            border: 'none',
-          }}>
+          <div
+            title={String(displayValue || '')}
+            className="text-base text-gray-900 font-medium overflow-y-auto whitespace-pre-wrap break-words"
+            style={{
+              fontFamily: 'Roboto, sans-serif',
+              height: '56px',
+              minHeight: '56px',
+              maxHeight: '56px',
+
+              lineHeight: '20px',
+              padding: '8px 0',
+
+              backgroundColor: 'transparent',
+              border: 'none',
+            }}
+          >
             {displayValue}
-          </pre>
+          </div>
         </div>
       </div>
     );
