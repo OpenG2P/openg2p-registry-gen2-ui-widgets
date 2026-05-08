@@ -517,7 +517,12 @@ export const useBaseWidget = (options: UseBaseWidgetOptions) => {
 
         dispatch(setDataSource({ widgetId, data: transformed }));
       } catch (error) {
-        console.error(`[useBaseWidget] ERROR loading data source for ${widgetId}:`, error);
+        console.error(
+          `[useBaseWidget] ERROR loading data source for widget "${widgetId}" (type="${dataSource.type}"):`,
+          error,
+          '\nWidget config:', config,
+          '\ndataSourceRequestHandler provided:', Boolean(dataSourceRequestHandler),
+        );
         dispatch(setDataSource({ widgetId, data: [] }));
       } finally {
         dispatch(setLoading({ widgetId, loading: false }));

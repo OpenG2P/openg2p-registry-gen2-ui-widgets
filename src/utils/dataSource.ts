@@ -114,21 +114,18 @@ export const getApiDataSource = async (
       return [];
     }
 
-    let response: any;
-    try {
-      response = await dataSourceRequestHandler(
-        service,
-        endpoint,
-        method,
-        requestParams,
-        {
-          headers: dataSource.headers,
-        }
-      );
-    } catch (error) {
-      console.error('[getApiDataSource] Handler error:', error);
-      throw error;
-    }
+    // Call handler — let any throw propagate to the outer catch so it is logged once
+    // by useBaseWidget rather than double-logged here (which can cascade when
+    // intercept-console-error.js converts console.error calls into thrown errors).
+    const response = await dataSourceRequestHandler(
+      service,
+      endpoint,
+      method,
+      requestParams,
+      {
+        headers: dataSource.headers,
+      }
+    );
 
     // Handle OpenG2P response format (response_body.response_payload)
     if (response && typeof response === 'object') {
@@ -154,8 +151,8 @@ export const getApiDataSource = async (
 
     return [];
   } catch (error) {
-    console.error('Error fetching API data source:', error);
-    return [];
+    // Rethrow so useBaseWidget's catch can log it with full widget context
+    throw error;
   }
 };
 
