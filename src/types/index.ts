@@ -184,6 +184,8 @@ export interface WidgetFormat {
   booleanControlType?: BooleanControlType; // Control type (default: 'checkbox')
   booleanTrueLabel?: string; // Custom label for true value
   booleanFalseLabel?: string; // Custom label for false value
+  /** Label for null/unset when allowUnset (radio, toggle); defaults to "Not set" */
+  booleanUnsetLabel?: string;
   allowUnset?: boolean; // Allow unset/null value (default: false, unless widget-required is false)
   // Radio input specific format options
   layout?: 'vertical' | 'horizontal' | 'grid'; // Layout type (default: 'vertical')
