@@ -1,6 +1,6 @@
-import React, { useMemo, useCallback } from 'react';
+import React, { useMemo, useCallback, useId } from 'react';
 import { useBaseWidget } from '../hooks/useBaseWidget';
-import { BaseWidgetConfig, BooleanRepresentation, BooleanControlType } from '../types';
+import { BaseWidgetConfig, BooleanRepresentation } from '../types';
 import { useWidgetTranslation } from '../hooks/useWidgetTranslation';
 
 /**
@@ -75,6 +75,13 @@ export const BooleanWidget = ({ config }: BooleanWidgetProps) => {
 
   const { trueLabel, falseLabel } = getLabels();
 
+  const unsetLabel = useMemo(
+    () => translateConfig(formatConfig?.booleanUnsetLabel || 'Not set'),
+    [formatConfig?.booleanUnsetLabel, translateConfig]
+  );
+
+  const radioGroupName = `${widgetConfig['widget-id'] ?? 'boolean'}__${useId().replace(/:/g, '')}`;
+
   // Determine current value (handle null/undefined)
   const currentValue = useMemo(() => {
     if (value === null || value === undefined) {
@@ -110,7 +117,7 @@ export const BooleanWidget = ({ config }: BooleanWidgetProps) => {
     let displayValue = '';
     
     if (currentValue === null) {
-      displayValue = '-';
+      displayValue = '';
     } else if (currentValue === true) {
       displayValue = trueLabel;
     } else {
@@ -142,26 +149,28 @@ export const BooleanWidget = ({ config }: BooleanWidgetProps) => {
   if (controlType === 'checkbox') {
     return (
       <div className="mb-[10px]">
-        <div className="flex flex-col sm:flex-row sm:items-start">
-          <label className="text-base font-medium text-gray-700 md:min-w-[120px] sm:pr-4 sm:pt-1 mb-1 sm:mb-0" style={{ fontFamily: 'Roboto, sans-serif' }} title={translateConfig(widgetConfig['widget-label'])}>
+        <div className="flex flex-col sm:flex-row sm:items-baseline">
+          <label className="text-base font-medium leading-normal text-gray-700 md:min-w-[120px] sm:pr-4 mb-1 sm:mb-0 sm:pt-0.5" style={{ fontFamily: 'Roboto, sans-serif' }} title={translateConfig(widgetConfig['widget-label'])}>
             {translateConfig(widgetConfig['widget-label'])}
             {widgetConfig['widget-required'] && (
               <span className="text-red-500 ml-1">*</span>
             )}
           </label>
           <div className="flex-1 min-w-0">
-            <label className="flex items-center cursor-pointer">
+            <label className="inline-flex items-baseline cursor-pointer gap-2">
               <input
                 type="checkbox"
                 checked={currentValue === true}
                 onChange={handleCheckboxChange}
                 onBlur={onBlur}
                 disabled={!isEnabled || widgetConfig['widget-readonly']}
-                className="mr-2 h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                className="relative top-[0.2em] h-4 w-4 shrink-0 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
               />
-              <span className="text-sm text-gray-700">
-                {currentValue === true ? trueLabel : (currentValue === false ? falseLabel : '-')}
-              </span>
+              {(currentValue === true || currentValue === false) && (
+                <span className="text-base text-gray-700 leading-normal">
+                  {currentValue === true ? trueLabel : falseLabel}
+                </span>
+              )}
             </label>
             {touched && error.length > 0 && (
               <p className="text-red-500 text-sm mt-1">{error[0]}</p>
@@ -178,14 +187,18 @@ export const BooleanWidget = ({ config }: BooleanWidgetProps) => {
   }
 
   if (controlType === 'radio') {
-    const containerClass = orientation === 'horizontal' 
-      ? 'flex flex-row space-x-4' 
-      : 'flex flex-col space-y-2';
+    const containerClass =
+      orientation === 'horizontal'
+        ? 'flex flex-row flex-wrap items-baseline gap-x-4 gap-y-2'
+        : 'flex flex-col items-start gap-2';
+
+    const radioDisabled = !isEnabled || widgetConfig['widget-readonly'];
+    const optionDisabledClass = radioDisabled ? 'opacity-50 cursor-not-allowed' : '';
 
     return (
       <div className="mb-[10px]">
-        <div className="flex flex-col sm:flex-row sm:items-start">
-          <label className="text-base font-medium text-gray-700 md:min-w-[120px] sm:pr-4 sm:pt-1 mb-1 sm:mb-0" style={{ fontFamily: 'Roboto, sans-serif' }} title={translateConfig(widgetConfig['widget-label'])}>
+        <div className="flex flex-col sm:flex-row sm:items-baseline">
+          <label className="text-base font-medium leading-normal text-gray-700 md:min-w-[120px] sm:pr-4 mb-1 sm:mb-0 sm:pt-0.5" style={{ fontFamily: 'Roboto, sans-serif' }} title={translateConfig(widgetConfig['widget-label'])}>
             {translateConfig(widgetConfig['widget-label'])}
             {widgetConfig['widget-required'] && (
               <span className="text-red-500 ml-1">*</span>
@@ -194,45 +207,39 @@ export const BooleanWidget = ({ config }: BooleanWidgetProps) => {
           <div className="flex-1 min-w-0">
             <div className={containerClass} onBlur={onBlur}>
               {allowUnset && (
-                <label className={`flex items-center cursor-pointer ${
-                  !isEnabled || widgetConfig['widget-readonly'] ? 'opacity-50 cursor-not-allowed' : ''
-                }`}>
+                <label className={`inline-flex items-baseline gap-2 cursor-pointer ${optionDisabledClass}`}>
                   <input
                     type="radio"
-                    name={widgetConfig['widget-id']}
+                    name={radioGroupName}
                     checked={currentValue === null}
                     onChange={() => handleRadioChange(null)}
-                    disabled={!isEnabled || widgetConfig['widget-readonly']}
-                    className="mr-2 h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
+                    disabled={radioDisabled}
+                    className="relative top-[0.2em] h-4 w-4 shrink-0 text-blue-600 focus:ring-blue-500 border-gray-300"
                   />
-                  <span className="text-sm text-gray-700">-</span>
+                  <span className="text-base text-gray-700 leading-normal">{unsetLabel}</span>
                 </label>
               )}
-              <label className={`flex items-center cursor-pointer ${
-                !isEnabled || widgetConfig['widget-readonly'] ? 'opacity-50 cursor-not-allowed' : ''
-              }`}>
+              <label className={`inline-flex items-baseline gap-2 cursor-pointer ${optionDisabledClass}`}>
                 <input
                   type="radio"
-                  name={widgetConfig['widget-id']}
+                  name={radioGroupName}
                   checked={currentValue === true}
                   onChange={() => handleRadioChange(true)}
-                  disabled={!isEnabled || widgetConfig['widget-readonly']}
-                  className="mr-2 h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
+                  disabled={radioDisabled}
+                  className="relative top-[0.2em] h-4 w-4 shrink-0 text-blue-600 focus:ring-blue-500 border-gray-300"
                 />
-                <span className="text-sm text-gray-700">{trueLabel}</span>
+                <span className="text-base text-gray-700 leading-normal">{trueLabel}</span>
               </label>
-              <label className={`flex items-center cursor-pointer ${
-                !isEnabled || widgetConfig['widget-readonly'] ? 'opacity-50 cursor-not-allowed' : ''
-              }`}>
+              <label className={`inline-flex items-baseline gap-2 cursor-pointer ${optionDisabledClass}`}>
                 <input
                   type="radio"
-                  name={widgetConfig['widget-id']}
+                  name={radioGroupName}
                   checked={currentValue === false}
                   onChange={() => handleRadioChange(false)}
-                  disabled={!isEnabled || widgetConfig['widget-readonly']}
-                  className="mr-2 h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
+                  disabled={radioDisabled}
+                  className="relative top-[0.2em] h-4 w-4 shrink-0 text-blue-600 focus:ring-blue-500 border-gray-300"
                 />
-                <span className="text-sm text-gray-700">{falseLabel}</span>
+                <span className="text-base text-gray-700 leading-normal">{falseLabel}</span>
               </label>
             </div>
             {touched && error.length > 0 && (
@@ -252,15 +259,15 @@ export const BooleanWidget = ({ config }: BooleanWidgetProps) => {
   // Toggle/switch control type
   return (
     <div className="mb-[10px]">
-      <div className="flex flex-col sm:flex-row sm:items-start">
-        <label className="text-base font-medium text-gray-700 sm:min-w-[150px] sm:pr-4 sm:pt-1 mb-1 sm:mb-0" style={{ fontFamily: 'Roboto, sans-serif' }} title={translateConfig(widgetConfig['widget-label'])}>
+      <div className="flex flex-col sm:flex-row sm:items-baseline">
+        <label className="text-base font-medium leading-normal text-gray-700 sm:min-w-[150px] sm:pr-4 mb-1 sm:mb-0 sm:pt-0.5" style={{ fontFamily: 'Roboto, sans-serif' }} title={translateConfig(widgetConfig['widget-label'])}>
           {translateConfig(widgetConfig['widget-label'])}
           {widgetConfig['widget-required'] && (
             <span className="text-red-500 ml-1">*</span>
           )}
         </label>
         <div className="flex-1 min-w-0">
-          <div className="flex items-center space-x-3" onBlur={onBlur}>
+          <div className="flex flex-wrap items-center gap-3" onBlur={onBlur}>
             {allowUnset && (
               <button
                 type="button"
@@ -273,7 +280,7 @@ export const BooleanWidget = ({ config }: BooleanWidgetProps) => {
                 } ${!isEnabled || widgetConfig['widget-readonly'] ? 'opacity-50 cursor-not-allowed' : 'hover:bg-gray-50'}`}
                 style={{ borderRadius: '15px' }}
               >
-                -
+                {unsetLabel}
               </button>
             )}
             <button

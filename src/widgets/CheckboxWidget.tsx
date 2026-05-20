@@ -108,24 +108,24 @@ export const CheckboxWidget = ({ config }: CheckboxWidgetProps) => {
 
     return (
       <div className="mb-[10px]">
-        <div className="flex flex-col sm:flex-row sm:items-start">
-          <label className="text-base font-medium text-gray-700 md:min-w-[120px] sm:pr-4 sm:pt-1 mb-1 sm:mb-0" style={{ fontFamily: 'Roboto, sans-serif' }} title={translateConfig(widgetConfig['widget-label'])}>
+        <div className="flex flex-col sm:flex-row sm:items-baseline">
+          <label className="text-base font-medium leading-normal text-gray-700 md:min-w-[120px] sm:pr-4 mb-1 sm:mb-0 sm:pt-0.5" style={{ fontFamily: 'Roboto, sans-serif' }} title={translateConfig(widgetConfig['widget-label'])}>
             {translateConfig(widgetConfig['widget-label'])}
             {widgetConfig['widget-required'] && (
               <span className="text-red-500 ml-1">*</span>
             )}
           </label>
           <div className="flex-1 min-w-0">
-            <label className="flex items-center cursor-pointer">
+            <label className="inline-flex cursor-pointer items-baseline gap-2">
               <input
                 type="checkbox"
                 checked={isChecked}
                 onChange={(e) => onChange(e.target.checked)}
                 onBlur={onBlur}
                 disabled={!isEnabled || widgetConfig['widget-readonly']}
-                className="mr-2 h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                className="relative top-[0.2em] h-4 w-4 shrink-0 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
               />
-              <span className="text-sm text-gray-700">
+              <span className="text-base leading-normal text-gray-700">
                 {isChecked ? 'Yes' : 'No'}
               </span>
             </label>
@@ -188,7 +188,7 @@ export const CheckboxWidget = ({ config }: CheckboxWidgetProps) => {
     switch (layout) {
       case 'horizontal':
         return {
-          className: 'flex flex-row flex-wrap gap-4',
+          className: 'flex flex-row flex-wrap items-baseline gap-4',
           style: undefined,
         };
       case 'grid':
@@ -201,7 +201,7 @@ export const CheckboxWidget = ({ config }: CheckboxWidgetProps) => {
       case 'vertical':
       default:
         return {
-          className: 'flex flex-col space-y-2',
+          className: 'flex flex-col gap-2',
           style: undefined,
         };
     }
@@ -238,8 +238,8 @@ export const CheckboxWidget = ({ config }: CheckboxWidgetProps) => {
 
   return (
     <div className="mb-[10px]">
-      <div className="flex flex-col sm:flex-row sm:items-start">
-        <label className="text-base font-medium text-gray-700 md:min-w-[120px] sm:pr-4 sm:pt-1 mb-1 sm:mb-0" style={{ fontFamily: 'Roboto, sans-serif' }} title={translateConfig(widgetConfig['widget-label'])}>
+      <div className="flex flex-col sm:flex-row sm:items-baseline">
+        <label className="text-base font-medium leading-normal text-gray-700 md:min-w-[120px] sm:pr-4 mb-1 sm:mb-0 sm:pt-0.5" style={{ fontFamily: 'Roboto, sans-serif' }} title={translateConfig(widgetConfig['widget-label'])}>
           {translateConfig(widgetConfig['widget-label'])}
           {widgetConfig['widget-required'] && (
             <span className="text-red-500 ml-1">*</span>
@@ -253,7 +253,7 @@ export const CheckboxWidget = ({ config }: CheckboxWidgetProps) => {
               processedOptions.map((option) => (
                 <label
                   key={option.value}
-                  className={`flex items-center cursor-pointer ${
+                  className={`inline-flex cursor-pointer items-baseline gap-2 ${
                     !isEnabled || widgetConfig['widget-readonly'] ? 'opacity-50 cursor-not-allowed' : ''
                   }`}
                 >
@@ -263,9 +263,9 @@ export const CheckboxWidget = ({ config }: CheckboxWidgetProps) => {
                     checked={selectedValues.includes(option.value)}
                     onChange={(e) => handleCheckboxChange(option.value, e.target.checked)}
                     disabled={!isEnabled || widgetConfig['widget-readonly']}
-                    className="mr-2 h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                    className="relative top-[0.2em] h-4 w-4 shrink-0 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
                   />
-                  <span className="text-sm text-gray-700">{translateConfig(option.label)}</span>
+                  <span className="text-base leading-normal text-gray-700">{translateConfig(option.label)}</span>
                 </label>
               ))
             )}

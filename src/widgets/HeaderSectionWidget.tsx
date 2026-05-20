@@ -665,20 +665,29 @@ export const HeaderSectionWidget = ({ config }: HeaderSectionWidgetProps) => {
         .${cls} .hdr-field-row {
           display: flex;
           align-items: flex-start;
-          gap: 0.5rem;
           font-size: 1rem;
           line-height: 1.6;
         }
 
         .${cls} .hdr-field-label {
+          width: 50%;
+          flex: 0 0 50%;
           color: rgba(0, 0, 0, 0.5);
           font-weight: 400;
           white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          padding-right: 4px;
         }
 
         .${cls} .hdr-field-value {
+          width: 50%;
+          flex: 0 0 50%;
           color: var(--owt-color-text, #111827);
           font-weight: 500;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
         }
 
         .${cls} .hdr-status-badge {
@@ -688,24 +697,38 @@ export const HeaderSectionWidget = ({ config }: HeaderSectionWidgetProps) => {
           font-size: 0.75rem;
           font-weight: 600;
           color: #fff;
+          max-width: 100%;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
         }
 
         .${cls} .hdr-meta-row {
           display: flex;
           align-items: baseline;
-          gap: 0.35rem;
           font-size: 1rem;
           line-height: 1.6;
         }
 
         .${cls} .hdr-meta-label {
+          width: 50%;
+          flex: 0 0 50%;
           color: rgba(0, 0, 0, 0.5);
           font-weight: 400;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          padding-right: 4px;
         }
 
         .${cls} .hdr-meta-value {
+          width: 50%;
+          flex: 0 0 50%;
           color: var(--owt-color-text, #111827);
           font-weight: 500;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
         }
 
         .${cls} .hdr-select {
@@ -834,15 +857,15 @@ export const HeaderSectionWidget = ({ config }: HeaderSectionWidgetProps) => {
 
             {/* Functional Record ID */}
             <div className="hdr-field-row">
-              <span className="hdr-field-label">
+              <span className="hdr-field-label" title={`${getLabel('functionalId')} :`}>
                 {getLabel('functionalId')} :
               </span>
-              <span className="hdr-field-value">{functionalId || '-'}</span>
+              <span className="hdr-field-value" title={functionalId || '-'}>{functionalId || '-'}</span>
             </div>
 
             {/* Record Status */}
             <div className="hdr-field-row">
-              <span className="hdr-field-label">
+              <span className="hdr-field-label" title={getLabel('status')}>
                 {getLabel('status')}
               </span>
               {isReadonly ? (
@@ -850,11 +873,12 @@ export const HeaderSectionWidget = ({ config }: HeaderSectionWidgetProps) => {
                   <span
                     className="hdr-status-badge"
                     style={{ backgroundColor: statusColor }}
+                    title={statusLabel}
                   >
                     {statusLabel}
                   </span>
                 ) : (
-                  <span className="hdr-field-value">-</span>
+                  <span className="hdr-field-value" title="-">-</span>
                 )
               ) : (
                 <select
@@ -876,11 +900,11 @@ export const HeaderSectionWidget = ({ config }: HeaderSectionWidgetProps) => {
 
             {/* Status Reason */}
             <div className="hdr-field-row">
-              <span className="hdr-field-label">
+              <span className="hdr-field-label" title={`${getLabel('statusReason')} :`}>
                 {getLabel('statusReason')} :
               </span>
               {isReadonly ? (
-                <span className="hdr-field-value">{statusReason || '-'}</span>
+                <span className="hdr-field-value" title={statusReason || '-'}>{statusReason || '-'}</span>
               ) : (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
                   <input
@@ -917,31 +941,31 @@ export const HeaderSectionWidget = ({ config }: HeaderSectionWidgetProps) => {
           <div className="hdr-right-top">
             <div className="hdr-meta-col">
               <div className="hdr-meta-row">
-                <span className="hdr-meta-label">
+                <span className="hdr-meta-label" title={`${getLabel('createdBy')} :`}>
                   {getLabel('createdBy')} :
                 </span>
-                <span className="hdr-meta-value">{createdBy || '-'}</span>
+                <span className="hdr-meta-value" title={createdBy || '-'}>{createdBy || '-'}</span>
               </div>
 
               <div className="hdr-meta-row">
-                <span className="hdr-meta-label">
+                <span className="hdr-meta-label" title={`${getLabel('createdAt')} :`}>
                   {getLabel('createdAt')} :
                 </span>
-                <span className="hdr-meta-value">{createdAt || '-'}</span>
+                <span className="hdr-meta-value" title={createdAt || '-'}>{createdAt || '-'}</span>
               </div>
 
               <div className="hdr-meta-row">
-                <span className="hdr-meta-label">
+                <span className="hdr-meta-label" title={`${getLabel('lastApprovedBy')} :`}>
                   {getLabel('lastApprovedBy')} :
                 </span>
-                <span className="hdr-meta-value">{lastApprovedBy || '-'}</span>
+                <span className="hdr-meta-value" title={lastApprovedBy || '-'}>{lastApprovedBy || '-'}</span>
               </div>
 
               <div className="hdr-meta-row">
-                <span className="hdr-meta-label">
+                <span className="hdr-meta-label" title={`${getLabel('lastApprovedAt')} :`}>
                   {getLabel('lastApprovedAt')} :
                 </span>
-                <span className="hdr-meta-value">{lastApprovedAt || '-'}</span>
+                <span className="hdr-meta-value" title={lastApprovedAt || '-'}>{lastApprovedAt || '-'}</span>
               </div>
             </div>
 

@@ -6,7 +6,9 @@ import { WidgetRenderer } from '../components/WidgetRenderer';
 import { useWidgetTranslation } from '../hooks/useWidgetTranslation';
 import { formatValue } from '../utils/formatting';
 import { WidgetRootState } from '../store';
-import { resetWidget } from '../store/widgetSlice';
+import { resetWidget, setError, setTouched } from '../store/widgetSlice';
+import { validateWidget } from '../utils/validation';
+
 
 interface DialogTableWidgetProps {
   config: BaseWidgetConfig;
@@ -168,6 +170,34 @@ export const DialogTableWidget = ({ config }: DialogTableWidgetProps) => {
 
   const saveDialog = useCallback(() => {
     const payload = collectMergedRowPayload();
+    let hasErrors = false;
+
+    columns.forEach((col) => {
+      const key = col['column-key'];
+      const cellWidgetId = dialogFieldWidgetId(key);
+      const isColReadonly = isReadonly || col['widget-readonly'] === true;
+
+      if (isColReadonly) return;
+
+      const cellValue = payload[key];
+      const validationErrors = validateWidget(
+        cellValue,
+        col['widget-data-validation'],
+        col['widget-required']
+      );
+
+      if (validationErrors && validationErrors.length > 0) {
+        hasErrors = true;
+        dispatch(setError({ widgetId: cellWidgetId, errors: validationErrors }));
+        dispatch(setTouched({ widgetId: cellWidgetId, touched: true }));
+      } else {
+        dispatch(setError({ widgetId: cellWidgetId, errors: [] }));
+      }
+    });
+
+    if (hasErrors) {
+      return;
+    }
 
     if (dialogMode === 'add') {
       const savedRow = { ...payload, edit_action: 'ADD' };
@@ -185,7 +215,7 @@ export const DialogTableWidget = ({ config }: DialogTableWidgetProps) => {
       onChange(newRows);
       closeDialog();
     }
-  }, [collectMergedRowPayload, dialogMode, onChange, rows, closeDialog, activeRowIndex]);
+  }, [collectMergedRowPayload, dialogMode, onChange, rows, closeDialog, activeRowIndex, columns, dialogFieldWidgetId, isReadonly, dispatch]);
 
   const deleteRow = useCallback(
     (rowIndex: number) => {
