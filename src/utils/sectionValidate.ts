@@ -9,6 +9,97 @@ import {
 import { shouldShowWidget } from "./conditions";
 import { getValueByPath, getWidgetValue } from "./pathUtils";
 import { validateWidget } from "./validation";
+import { isTableLikeWidget } from "./extractTableRecordsFromSnapshot";
+
+const isColumnRequired = (
+  column: Record<string, unknown>,
+  skipRequired: boolean,
+): boolean => {
+  if (skipRequired) return false;
+  const validation = column['widget-data-validation'] as { required?: boolean } | undefined;
+  return !!(column['widget-required'] || validation?.required);
+};
+
+
+const validateTableLikeWidget = (
+  widget: BaseWidgetConfig,
+  currentSchemaData: Record<string, any>,
+  dispatch: WidgetDispatch,
+  skipRequired: boolean,
+): boolean => {
+  const widgetId = widget['widget-id'];
+  if (!widgetId) return true;
+
+  const columns = (widget['widget-data-columns'] || []) as Record<string, unknown>[];
+  const value = getWidgetValue(
+    currentSchemaData,
+    widget['widget-data-path'],
+    widgetId,
+  );
+  const rows: Record<string, unknown>[] = Array.isArray(value)
+    ? (value as Record<string, unknown>[])
+    : [];
+
+  const activeRows = rows.filter((row) => row?.edit_action !== 'DELETE');
+  const rowErrors: string[] = [];
+  let isValid = true;
+
+  if (!skipRequired && widget['widget-required'] && activeRows.length === 0) {
+    dispatch(setTouched({ widgetId, touched: true }));
+    dispatch(setError({ widgetId, errors: ['At least one record is required'] }));
+    return false;
+  }
+
+  const hasRequiredColumns = columns.some((col) => isColumnRequired(col, skipRequired));
+  if (!skipRequired && hasRequiredColumns && activeRows.length === 0) {
+    dispatch(setTouched({ widgetId, touched: true }));
+    dispatch(setError({
+      widgetId,
+      errors: ['Add at least one record and fill all required fields'],
+    }));
+    return false;
+  }
+
+  activeRows.forEach((row, rowIndex) => {
+    columns.forEach((col) => {
+      if (col['widget-readonly']) return;
+
+      const key = col['column-key'] as string | undefined;
+      if (!key) return;
+
+      const required = isColumnRequired(col, skipRequired);
+      const cellValue = row[key];
+      const errors = validateWidget(
+        cellValue,
+        col['widget-data-validation'] as BaseWidgetConfig['widget-data-validation'],
+        required,
+        skipRequired,
+      );
+
+      if (errors.length > 0) {
+        isValid = false;
+        const label = (col['widget-label'] as string) || key;
+        rowErrors.push(`Row ${rowIndex + 1}, ${label}: ${errors[0]}`);
+      }
+    });
+  });
+
+  if (!isValid) {
+    dispatch(setTouched({ widgetId, touched: true }));
+    dispatch(setError({
+      widgetId,
+      errors:
+        rowErrors.length > 0
+          ? rowErrors.slice(0, 5)
+          : ['Please fix required fields in the table'],
+    }));
+  } else {
+    dispatch(setTouched({ widgetId, touched: false }));
+    dispatch(setError({ widgetId, errors: [] }));
+  }
+
+  return isValid;
+};
 
 export const collectWidgets = (panels: PanelConfig[]): BaseWidgetConfig[] => {
   let widgets: BaseWidgetConfig[] = [];
@@ -51,6 +142,19 @@ export const sectionValidate = (
     if (!isVisible) continue;
 
     const widgetId = widget['widget-id'];
+
+    if (isTableLikeWidget(widget)) {
+      const tableValid = validateTableLikeWidget(
+        widget,
+        currentSchemaData,
+        dispatch,
+        skipRequired,
+      );
+      if (!tableValid) {
+        isValid = false;
+      }
+      continue;
+    }
 
     const value = getWidgetValue(
       currentSchemaData,
