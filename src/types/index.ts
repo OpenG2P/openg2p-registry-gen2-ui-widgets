@@ -228,6 +228,14 @@ export interface WidgetOptions {
   condition?: WidgetCondition;
   minDate?: string;
   maxDate?: string;
+  /** Dot-path to another date field; this field's minimum becomes that value (e.g. end >= start). */
+  minDateField?: string;
+  /** Dot-path to another date field; this field's maximum becomes that value. */
+  maxDateField?: string;
+  /** Custom message when below effective minimum (static minDate and/or minDateField). */
+  minDateMessage?: string;
+  /** Custom message when above effective maximum (static maxDate and/or maxDateField). */
+  maxDateMessage?: string;
   showCalendar?: boolean;
   [key: string]: any; // Allow widget-specific options
 }
